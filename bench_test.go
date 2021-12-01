@@ -41,18 +41,28 @@ func BenchmarkScanner(b *testing.B) {
 				} else if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
+			}
+		}
+	})
 
-				// The standard library Decoder converts tokens to values.
-				// For a fair comparison, do the same for string and numbers.
-				switch dec.Token() {
-				case jtree.String:
-					dec.Unescape()
-				case jtree.Integer:
-					dec.Int64()
-				case jtree.Number:
-					dec.Float64()
-				}
+	b.Run("Stream", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			dec := jtree.NewStream(bytes.NewReader(input))
+			if err := dec.Parse(noopHandler{}); err != nil {
+				b.Fatalf("Unexpected error: %v", err)
 			}
 		}
 	})
 }
+
+type noopHandler struct{}
+
+func (noopHandler) BeginObject(jtree.Anchor) error        { return nil }
+func (noopHandler) EndObject(jtree.Anchor) error          { return nil }
+func (noopHandler) BeginArray(jtree.Anchor) error         { return nil }
+func (noopHandler) EndArray(jtree.Anchor) error           { return nil }
+func (noopHandler) BeginMember(jtree.Anchor) error        { return nil }
+func (noopHandler) EndMember(jtree.Anchor) error          { return nil }
+func (noopHandler) Value(jtree.Anchor) error              { return nil }
+func (noopHandler) SyntaxError(jtree.Anchor, error) error { return nil }
+func (noopHandler) EndOfInput(jtree.Anchor)               {}
