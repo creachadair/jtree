@@ -115,8 +115,8 @@ func TestScanner_decodeAs(t *testing.T) {
 		if got := s.Text(); got != wantText {
 			t.Errorf("Text: got %#q, want %#q", got, wantText)
 		}
-		if got := s.Decode(); got != wantDec {
-			t.Errorf("Decode: got %#q, want %#q", got, wantDec)
+		if got := s.Unescape(); got != wantDec {
+			t.Errorf("Unescape: got %#q, want %#q", got, wantDec)
 		}
 	})
 }

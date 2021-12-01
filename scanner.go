@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 )
 
 // Token is the type of a lexical token in the JSON grammar.
@@ -196,60 +195,21 @@ func (s *Scanner) Float64() float64 {
 	return math.NaN()
 }
 
-// Decode decodes the text of the current token. If the current token is a
-// String, escape sequences are replaced by their equivalent runes. Otherwise,
-// this is equivalent to the Text method.
-func (s *Scanner) Decode() string {
-	src := s.Text()
-	if s.tok != String || !strings.ContainsRune(src, '\\') {
-		return src
+// Unescape returns the text of the current token If the current token is a
+// String, escape sequences are replaced by their equivalent runes.  Otherwise,
+// Unescape is equivalent to the Text method.
+//
+// Unescape will panic if a String token has incomplete escape sequences. This
+// should not occur unless there is a bug in the scanner.
+func (s *Scanner) Unescape() string {
+	if s.tok != String {
+		return s.Text()
 	}
-
-	var dec bytes.Buffer
-	for src != "" {
-		i := strings.IndexRune(src, '\\')
-		if i < 0 {
-			dec.WriteString(src)
-			break
-		}
-		dec.WriteString(src[:i])
-
-		// Decode the next rune after the escape to figure out what to
-		// substitute. There should not be errors here, but if there are, insert
-		// replacement runes (utf8.RuneError == '\ufffd').
-		src = src[i+1:]
-		r, n := utf8.DecodeRuneInString(src)
-		if n == 0 {
-			n++
-		}
-
-		src = src[n:]
-		switch r {
-		case '"', '\\', '/':
-			dec.WriteRune(r)
-		case 'b':
-			dec.WriteRune('\b')
-		case 'f':
-			dec.WriteRune('\f')
-		case 'n':
-			dec.WriteRune('\n')
-		case 'r':
-			dec.WriteRune('\r')
-		case 't':
-			dec.WriteRune('\t')
-		case 'u':
-			v, err := strconv.ParseInt(src[:4], 16, 64)
-			if err != nil {
-				dec.WriteRune(utf8.RuneError)
-			} else {
-				dec.WriteRune(rune(v))
-			}
-			src = src[4:]
-		default:
-			dec.WriteRune(utf8.RuneError)
-		}
+	dec, err := DecodeString(s.Text())
+	if err != nil {
+		panic("unescape: " + err.Error())
 	}
-	return dec.String()
+	return dec
 }
 
 func (s *Scanner) scanString(open rune) error {
