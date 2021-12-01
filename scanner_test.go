@@ -34,8 +34,8 @@ func TestScanner(t *testing.T) {
 		{`"\u0000\u01fc\uAA9c"`, []jtree.Token{jtree.String}},
 
 		// Numbers
-		{`0 -1 2.3 5e+9 3.6E+4 -0.001E-100`, []jtree.Token{
-			jtree.Integer, jtree.Integer,
+		{`0 -1 5139 2.3 5e+9 3.6E+4 -0.001E-100`, []jtree.Token{
+			jtree.Integer, jtree.Integer, jtree.Integer,
 			jtree.Number, jtree.Number, jtree.Number, jtree.Number,
 		}},
 

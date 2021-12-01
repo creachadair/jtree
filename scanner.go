@@ -251,10 +251,14 @@ func (s *Scanner) scanString(open rune) error {
 func (s *Scanner) scanNumber(start rune) error {
 	s.buf.WriteRune(start)
 
+	// N.B. This implementation deviates slightly from the JSON spec, which
+	// disallows multi-digit integers with a leading zero (e.g., "013").  This
+	// implementation accepts and ignores extra leading zeroes.
+
 	if start == '-' {
-		// If there is a leading sign, we need at least one full digit.
+		// If there is a leading sign, we need at least one digit.
 		// Otherwise, we already have one in start.
-		ch, err := s.require(isAnyDigit, "digit")
+		ch, err := s.require(isDigit, "digit")
 		if err != nil {
 			return err
 		}
@@ -262,7 +266,7 @@ func (s *Scanner) scanNumber(start rune) error {
 	}
 
 	// Consume the remainder of an integer.
-	ch, err := s.readWhile(isPosDigit)
+	ch, err := s.readWhile(isDigit)
 	if err != nil {
 		if err == io.EOF {
 			s.tok = Integer
@@ -275,7 +279,7 @@ func (s *Scanner) scanNumber(start rune) error {
 	var isFloat bool
 	if ch == '.' {
 		s.buf.WriteRune(ch)
-		ch, err = s.readWhile(isAnyDigit)
+		ch, err = s.readWhile(isDigit)
 		if err == io.EOF {
 			s.tok = Number
 			return nil
@@ -302,7 +306,7 @@ func (s *Scanner) scanNumber(start rune) error {
 		return err
 	}
 	s.buf.WriteRune(ch)
-	_, err = s.readWhile(isAnyDigit)
+	_, err = s.readWhile(isDigit)
 	if err == io.EOF {
 		s.tok = Number
 		return nil
@@ -400,10 +404,9 @@ func isSpace(ch rune) bool {
 	return ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t'
 }
 
-func isNumStart(ch rune) bool { return ch == '-' || isAnyDigit(ch) }
-func isExpStart(ch rune) bool { return ch == '-' || ch == '+' || isAnyDigit(ch) }
-func isAnyDigit(ch rune) bool { return '0' <= ch && ch <= '9' }
-func isPosDigit(ch rune) bool { return '1' <= ch && ch <= '9' }
+func isNumStart(ch rune) bool { return ch == '-' || isDigit(ch) }
+func isExpStart(ch rune) bool { return ch == '-' || ch == '+' || isDigit(ch) }
+func isDigit(ch rune) bool    { return '0' <= ch && ch <= '9' }
 func isNameRune(ch rune) bool { return ch >= 'a' && ch <= 'z' }
 
 func isHexDigit(ch rune) bool {
