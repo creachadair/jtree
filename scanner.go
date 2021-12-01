@@ -162,6 +162,18 @@ func (s *Scanner) Err() error { return s.err }
 // Text returns the undecoded text of the current token.
 func (s *Scanner) Text() string { return s.buf.String() }
 
+// Span returns the location span of the current token.
+func (s *Scanner) Span() Span { return Span{Pos: s.pos, End: s.end} }
+
+// Span returns the complete location of the current token.
+func (s *Scanner) Location() Location {
+	return Location{
+		Span:  s.Span(),
+		First: LineCol{Line: s.pline + 1, Column: s.pcol},
+		Last:  LineCol{Line: s.eline + 1, Column: s.ecol},
+	}
+}
+
 // Int64 returns the text of the current token as an int64, or 0 if the text
 // cannot be parsed as an integer. If the current token is Integer this will
 // always succeed.
