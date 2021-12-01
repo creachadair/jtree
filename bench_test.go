@@ -41,6 +41,17 @@ func BenchmarkScanner(b *testing.B) {
 				} else if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
+
+				// The standard library Decoder converts tokens to values.
+				// For a fair comparison, do the same for string and numbers.
+				switch dec.Token() {
+				case jtree.String:
+					dec.Unescape()
+				case jtree.Integer:
+					dec.Int64()
+				case jtree.Number:
+					dec.Float64()
+				}
 			}
 		}
 	})
