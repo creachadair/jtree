@@ -15,19 +15,19 @@ import (
 type Token byte
 
 const (
-	Invalid = iota // invalid token
-	LBrace         // left brace "{"
-	RBrace         // right brace "}"
-	LSquare        // left square bracket "["
-	RSquare        // right square bracket "]"
-	Comma          // comma ","
-	Colon          // colon ":"
-	Integer        // number: integer with no fraction or exponent
-	Number         // number with fraction and/or exponent
-	String         // quoted string
-	True           // constant: true
-	False          // constant: false
-	Null           // constant: null
+	Invalid Token = iota // invalid token
+	LBrace               // left brace "{"
+	RBrace               // right brace "}"
+	LSquare              // left square bracket "["
+	RSquare              // right square bracket "]"
+	Comma                // comma ","
+	Colon                // colon ":"
+	Integer              // number: integer with no fraction or exponent
+	Number               // number with fraction and/or exponent
+	String               // quoted string
+	True                 // constant: true
+	False                // constant: false
+	Null                 // constant: null
 
 	// Do not modify the order of these constants without updating the
 	// self-delimiting token check below.
