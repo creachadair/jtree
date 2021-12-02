@@ -161,8 +161,10 @@ func (s *Scanner) Token() Token { return s.tok }
 // Err returns the last error reported by Next.
 func (s *Scanner) Err() error { return s.err }
 
-// Text returns the undecoded text of the current token.
-func (s *Scanner) Text() string { return s.buf.String() }
+// Text returns the undecoded text of the current token.  The return value is
+// only valid until the next call of Next. The caller must copy the contents of
+// the returned slice if it is needed beyond that.
+func (s *Scanner) Text() []byte { return s.buf.Bytes() }
 
 // Span returns the location span of the current token.
 func (s *Scanner) Span() Span { return Span{Pos: s.pos, End: s.end} }
