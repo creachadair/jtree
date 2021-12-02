@@ -198,23 +198,6 @@ func (s *Scanner) Float64() float64 {
 	return math.NaN()
 }
 
-// Unescape returns the text of the current token If the current token is a
-// String, escape sequences are replaced by their equivalent runes.  Otherwise,
-// Unescape is equivalent to the Text method.
-//
-// Unescape will panic if a String token has incomplete escape sequences. This
-// should not occur unless there is a bug in the scanner.
-func (s *Scanner) Unescape() string {
-	if s.tok != String {
-		return s.Text()
-	}
-	dec, err := UnescapeString(s.Text())
-	if err != nil {
-		panic("unescape: " + err.Error())
-	}
-	return dec
-}
-
 func (s *Scanner) scanString(open rune) error {
 	// omit the quotes from the stored text
 	var esc bool

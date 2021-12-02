@@ -114,10 +114,13 @@ func TestScanner_decodeAs(t *testing.T) {
 		const wantText = `a\tb\u0020c\n` // as written, without quotes
 		const wantDec = "a\tb c\n"       // with escapes undone
 		s := mustScan(t, `"a\tb\u0020c\n"`, jtree.String)
-		if got := s.Text(); got != wantText {
-			t.Errorf("Text: got %#q, want %#q", got, wantText)
+		text := s.Text()
+		if text != wantText {
+			t.Errorf("Text: got %#q, want %#q", text, wantText)
 		}
-		if got := s.Unescape(); got != wantDec {
+		if got, err := jtree.UnescapeString(text); err != nil {
+			t.Errorf("Unescape failed: %v", err)
+		} else if got != wantDec {
 			t.Errorf("Unescape: got %#q, want %#q", got, wantDec)
 		}
 	})
