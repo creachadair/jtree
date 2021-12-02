@@ -40,16 +40,25 @@ type parseHandler struct {
 // intern interns a copy of text and returns a slice of the copy.  Allocations
 // are batched to reduce allocation overhead.
 func (h *parseHandler) intern(text []byte) []byte {
-	const bufBlockBytes = 4096
+	const bufBlockBytes = 8192
 
-	n := len(h.tbuf) - 1
-	if n < 0 || len(h.tbuf[n])+len(text) > cap(h.tbuf[n]) {
-		h.tbuf = append(h.tbuf, make([]byte, 0, bufBlockBytes))
-		n++
+	if len(text) >= bufBlockBytes {
+		return append([]byte(nil), text...)
 	}
-	s := len(h.tbuf[n])
-	h.tbuf[n] = append(h.tbuf[n], text...)
-	return h.tbuf[n][s : s+len(text)]
+
+	i := 0
+	for i < len(h.tbuf) {
+		if len(h.tbuf[i])+len(text) < cap(h.tbuf[i]) {
+			break
+		}
+		i++
+	}
+	if i == len(h.tbuf) {
+		h.tbuf = append(h.tbuf, make([]byte, 0, bufBlockBytes))
+	}
+	s := len(h.tbuf[i])
+	h.tbuf[i] = append(h.tbuf[i], text...)
+	return h.tbuf[i][s : s+len(text)]
 }
 
 func (h *parseHandler) reduce() error {
