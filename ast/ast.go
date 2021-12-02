@@ -63,20 +63,20 @@ func (a Array) Span() jtree.Span { return newSpan(a.pos, a.end) }
 
 type datum struct {
 	pos, end int
-	text     string
+	text     []byte
 }
 
 // Span satisfies the Value interface.
 func (d datum) Span() jtree.Span { return newSpan(d.pos, d.end) }
 
 // Text satisfies the Datum interface.
-func (d datum) Text() string { return d.text }
+func (d datum) Text() string { return string(d.text) }
 
 // An Integer is an integer value.
 type Integer struct{ datum }
 
 func (z Integer) Int64() int64 {
-	v, err := strconv.ParseInt(z.text, 10, 64)
+	v, err := strconv.ParseInt(string(z.text), 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +87,7 @@ func (z Integer) Int64() int64 {
 type Number struct{ datum }
 
 func (n Number) Float64() float64 {
-	v, err := strconv.ParseFloat(n.text, 64)
+	v, err := strconv.ParseFloat(string(n.text), 64)
 	if err != nil {
 		panic(err)
 	}
@@ -106,11 +106,11 @@ func (b Bool) Value() bool { return b.value }
 type String struct{ datum }
 
 func (s String) Unescape() string {
-	dec, err := jtree.UnescapeString(s.text)
+	dec, err := jtree.Unescape(s.text)
 	if err != nil {
 		panic(err)
 	}
-	return dec
+	return string(dec)
 }
 
 // Null represents the null constant.

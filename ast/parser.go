@@ -33,7 +33,23 @@ func Parse(r io.Reader) ([]Value, error) {
 // A parseHandler implements the jtree.Handler interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
-	stk []Value
+	stk  []Value
+	tbuf [][]byte
+}
+
+// intern interns a copy of text and returns a slice of the copy.  Allocations
+// are batched to reduce allocation overhead.
+func (h *parseHandler) intern(text []byte) []byte {
+	const bufBlockBytes = 4096
+
+	n := len(h.tbuf) - 1
+	if n < 0 || len(h.tbuf[n])+len(text) > cap(h.tbuf[n]) {
+		h.tbuf = append(h.tbuf, make([]byte, 0, bufBlockBytes))
+		n++
+	}
+	s := len(h.tbuf[n])
+	h.tbuf[n] = append(h.tbuf[n], text...)
+	return h.tbuf[n][s : s+len(text)]
 }
 
 func (h *parseHandler) reduce() error {
@@ -102,7 +118,7 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	span := loc.Span()
-	d := datum{pos: span.Pos, end: span.End, text: string(loc.Text())}
+	d := datum{pos: span.Pos, end: span.End, text: h.intern(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
 		h.push(&String{datum: d})
