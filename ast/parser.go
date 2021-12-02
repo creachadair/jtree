@@ -82,7 +82,7 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	dec, err := jtree.UnescapeString(loc.Text())
+	dec, err := jtree.Unescape(loc.Text())
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{pos: loc.Location().Pos, Key: dec}
+	mem := &Member{pos: loc.Location().Pos, Key: string(dec)}
 	obj := h.top().(*Object)
 	obj.Members = append(obj.Members, mem)
 	h.push(mem)
@@ -102,7 +102,7 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	span := loc.Location()
-	d := datum{pos: span.Pos, end: span.End, text: loc.Text()}
+	d := datum{pos: span.Pos, end: span.End, text: string(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
 		h.push(String{datum: d})
