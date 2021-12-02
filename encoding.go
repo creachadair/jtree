@@ -54,17 +54,17 @@ func Unescape(src []byte) ([]byte, error) {
 		src = src[n:]
 		switch r {
 		case '"', '\\', '/':
-			dec.WriteRune(r)
+			dec.WriteByte(byte(r))
 		case 'b':
-			dec.WriteRune('\b')
+			dec.WriteByte('\b')
 		case 'f':
-			dec.WriteRune('\f')
+			dec.WriteByte('\f')
 		case 'n':
-			dec.WriteRune('\n')
+			dec.WriteByte('\n')
 		case 'r':
-			dec.WriteRune('\r')
+			dec.WriteByte('\r')
 		case 't':
-			dec.WriteRune('\t')
+			dec.WriteByte('\t')
 		case 'u':
 			if len(src) < 4 {
 				return nil, errors.New("incomplete Unicode escape")
