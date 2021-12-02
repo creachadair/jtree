@@ -33,7 +33,7 @@ func (o Object) Span() jtree.Span { return newSpan(o.pos, o.end) }
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o.Members {
-		if m.Key == key {
+		if m.Key() == key {
 			return m
 		}
 	}
@@ -43,13 +43,29 @@ func (o Object) Find(key string) *Member {
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
 	pos, end int
+	key      []byte
+	dkey     string
 
-	Key   string
 	Value Value
 }
 
 // Span satisfies the Value interface.
 func (m Member) Span() jtree.Span { return newSpan(m.pos, m.end) }
+
+// Key returns the key of the member.
+func (m Member) Key() string {
+	if len(m.key) == 0 {
+		return ""
+	} else if m.dkey != "" {
+		return m.dkey
+	}
+	dec, err := jtree.Unescape(m.key)
+	if err != nil {
+		panic(err)
+	}
+	m.dkey = string(dec)
+	return m.dkey
+}
 
 // An Array is a sequence of values.
 type Array struct {
