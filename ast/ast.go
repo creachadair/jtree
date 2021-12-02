@@ -1,3 +1,5 @@
+// Copyright (C) 2021 Michael J. Fromberger. All Rights Reserved.
+
 // Package ast defines an abstract syntax tree for JSON values,
 // and a parser that constructs syntax trees from JSON source.
 package ast
