@@ -77,5 +77,5 @@ func TestParse(t *testing.T) {
 	if !ok {
 		t.Fatalf("Member value is %T, not string", ep.Value)
 	}
-	t.Logf("String field value: %s", str.Value)
+	t.Logf("String field value: %s", str.Unescape())
 }

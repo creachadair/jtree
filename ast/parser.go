@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/creachadair/jtree"
 )
@@ -106,25 +105,13 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	d := datum{pos: span.Pos, end: span.End, text: loc.Text()}
 	switch loc.Token() {
 	case jtree.String:
-		dec, err := jtree.UnescapeString(d.text)
-		if err != nil {
-			return err
-		}
-		h.push(String{datum: d, Value: dec})
+		h.push(String{datum: d})
 	case jtree.Integer:
-		v, err := strconv.ParseInt(d.text, 10, 64)
-		if err != nil {
-			return err
-		}
-		h.push(Integer{datum: d, Value: v})
+		h.push(Integer{datum: d})
 	case jtree.Number:
-		v, err := strconv.ParseFloat(d.text, 64)
-		if err != nil {
-			return err
-		}
-		h.push(Number{datum: d, Value: v})
+		h.push(Number{datum: d})
 	case jtree.True, jtree.False:
-		h.push(Bool{datum: d, Value: loc.Token() == jtree.True})
+		h.push(Bool{datum: d, value: loc.Token() == jtree.True})
 	case jtree.Null:
 		h.push(Null{datum: d})
 	default:
