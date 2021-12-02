@@ -54,14 +54,22 @@ func (h *parseHandler) intern(text []byte) []byte {
 
 func (h *parseHandler) reduce() error {
 	if len(h.stk) > 1 {
-		switch prev := h.stk[len(h.stk)-2].(type) {
+		v := h.pop()
+		return h.reduceValue(v)
+	}
+	return nil
+}
+
+func (h *parseHandler) reduceValue(v Value) error {
+	if len(h.stk) > 0 {
+		switch prev := h.stk[len(h.stk)-1].(type) {
 		case *Member:
-			prev.Value = h.pop()
-			prev.end = prev.Value.Span().End
+			prev.Value = v
+			prev.end = v.Span().End
 		case *Object:
-			h.pop() // already in the object
+			// already in the object
 		case *Array:
-			prev.Values = append(prev.Values, h.pop())
+			prev.Values = append(prev.Values, v)
 		}
 	}
 	return nil
@@ -98,16 +106,11 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	dec, err := jtree.Unescape(loc.Text())
-	if err != nil {
-		return err
-	}
-
 	// The object this member belongs to is atop the stack.  Add a pointer to
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{pos: loc.Span().Pos, Key: string(dec)}
+	mem := &Member{pos: loc.Span().Pos, key: h.intern(loc.Text())}
 	obj := h.top().(*Object)
 	obj.Members = append(obj.Members, mem)
 	h.push(mem)
@@ -121,19 +124,19 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	d := datum{pos: span.Pos, end: span.End, text: h.intern(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
-		h.push(&String{datum: d})
+		return h.reduceValue(&String{datum: d})
 	case jtree.Integer:
-		h.push(&Integer{datum: d})
+		return h.reduceValue(&Integer{datum: d})
 	case jtree.Number:
-		h.push(&Number{datum: d})
+		return h.reduceValue(&Number{datum: d})
 	case jtree.True, jtree.False:
-		h.push(&Bool{datum: d, value: loc.Token() == jtree.True})
+		ok := loc.Token() == jtree.True
+		return h.reduceValue(&Bool{datum: d, value: ok})
 	case jtree.Null:
-		h.push(&Null{datum: d})
+		return h.reduceValue(&Null{datum: d})
 	default:
 		return fmt.Errorf("unknown value %v", loc.Token())
 	}
-	return h.reduce()
 }
 
 func (h *parseHandler) SyntaxError(loc jtree.Anchor, err error) error { return err }
