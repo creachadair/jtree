@@ -39,7 +39,8 @@ type Handler interface {
 	// End the most-recently-opened array, whose close bracket is at loc.
 	EndArray(loc Anchor) error
 
-	// Begin a new object member, whose key is at loc.
+	// Begin a new object member, whose key is at loc. The handler is
+	// responsible for unescaping key values (see jtree.Unescape).
 	BeginMember(loc Anchor) error
 
 	// End the current object member giving the location and type of the token
