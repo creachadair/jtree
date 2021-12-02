@@ -70,8 +70,6 @@ func TestParse(t *testing.T) {
 	if ep == nil {
 		t.Fatal(`Key "summary" not found`)
 	}
-	span := ep.Span()
-	t.Logf("Member source:\n%s", string(input[span.Pos:span.End]))
 
 	str, ok := ep.Value.(*ast.String)
 	if !ok {

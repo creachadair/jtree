@@ -11,7 +11,7 @@ import (
 )
 
 // A Value is an arbitrary JSON value.
-type Value interface{ Span() jtree.Span }
+type Value interface{ astValue() }
 
 // A Datum is a Value with a text representation.
 type Datum interface {
@@ -19,16 +19,12 @@ type Datum interface {
 	Text() string
 }
 
-func newSpan(pos, end int) jtree.Span { return jtree.Span{Pos: pos, End: end} }
-
 // An Object is a collection of key-value members.
 type Object struct {
-	pos, end int
-	Members  []*Member
+	Members []*Member
 }
 
-// Span satisfies the Value interface.
-func (o Object) Span() jtree.Span { return newSpan(o.pos, o.end) }
+func (o Object) astValue() {}
 
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
@@ -42,15 +38,13 @@ func (o Object) Find(key string) *Member {
 
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
-	pos, end int
-	key      []byte
-	dkey     string
+	key  []byte
+	dkey string
 
 	Value Value
 }
 
-// Span satisfies the Value interface.
-func (m Member) Span() jtree.Span { return newSpan(m.pos, m.end) }
+func (m Member) astValue() {}
 
 // Key returns the key of the member.
 func (m Member) Key() string {
@@ -69,21 +63,14 @@ func (m Member) Key() string {
 
 // An Array is a sequence of values.
 type Array struct {
-	pos, end int
-
 	Values []Value
 }
 
-// Span satisfies the Value interface.
-func (a Array) Span() jtree.Span { return newSpan(a.pos, a.end) }
+func (a Array) astValue() {}
 
-type datum struct {
-	pos, end int
-	text     []byte
-}
+type datum struct{ text []byte }
 
-// Span satisfies the Value interface.
-func (d datum) Span() jtree.Span { return newSpan(d.pos, d.end) }
+func (d datum) astValue() {}
 
 // Text satisfies the Datum interface.
 func (d datum) Text() string { return string(d.text) }

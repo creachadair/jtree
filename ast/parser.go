@@ -74,7 +74,6 @@ func (h *parseHandler) reduceValue(v Value) error {
 		switch prev := h.stk[len(h.stk)-1].(type) {
 		case *Member:
 			prev.Value = v
-			prev.end = v.Span().End
 		case *Object:
 			// already in the object
 		case *Array:
@@ -95,22 +94,20 @@ func (h *parseHandler) pop() Value {
 func (h *parseHandler) push(v Value) { h.stk = append(h.stk, v) }
 
 func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
-	h.push(&Object{pos: loc.Span().Pos})
+	h.push(new(Object))
 	return nil
 }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
-	h.top().(*Object).end = loc.Span().End
 	return h.reduce()
 }
 
 func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
-	h.push(&Array{pos: loc.Span().Pos})
+	h.push(new(Array))
 	return nil
 }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
-	h.top().(*Array).end = loc.Span().End
 	return h.reduce()
 }
 
@@ -119,7 +116,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{pos: loc.Span().Pos, key: h.intern(loc.Text())}
+	mem := &Member{key: h.intern(loc.Text())}
 	obj := h.top().(*Object)
 	obj.Members = append(obj.Members, mem)
 	h.push(mem)
@@ -129,8 +126,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
-	span := loc.Span()
-	d := datum{pos: span.Pos, end: span.End, text: h.intern(loc.Text())}
+	d := datum{text: h.intern(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
 		return h.reduceValue(&String{datum: d})
