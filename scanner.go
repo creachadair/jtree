@@ -14,6 +14,7 @@ import (
 // Token is the type of a lexical token in the JSON grammar.
 type Token byte
 
+// Constants defining the valid Token values.
 const (
 	Invalid Token = iota // invalid token
 	LBrace               // left brace "{"
@@ -164,7 +165,7 @@ func (s *Scanner) Text() string { return s.buf.String() }
 // Span returns the location span of the current token.
 func (s *Scanner) Span() Span { return Span{Pos: s.pos, End: s.end} }
 
-// Span returns the complete location of the current token.
+// Location returns the complete location of the current token.
 func (s *Scanner) Location() Location {
 	return Location{
 		Span:  s.Span(),
