@@ -215,9 +215,9 @@ func (s *Scanner) scanString(open rune) error {
 			// We are awaiting the completion of a \-escape.
 			switch ch {
 			case '"', '\\', '/', 'b', 'f', 'n', 'r', 't':
-				s.buf.WriteRune(ch)
+				s.buf.WriteByte(byte(ch))
 			case 'u':
-				s.buf.WriteRune(ch)
+				s.buf.WriteByte(byte(ch))
 				if err := s.readHex4(); err != nil {
 					return s.failf("invalid Unicode escape: %w", err)
 				}
