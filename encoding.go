@@ -20,7 +20,7 @@ func UnescapeString(src string) (string, error) {
 		return src, nil
 	}
 
-	var dec bytes.Buffer
+	dec := bytes.NewBuffer(make([]byte, 0, len(src)))
 	for src != "" {
 		i := strings.IndexRune(src, '\\')
 		if i < 0 {
