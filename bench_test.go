@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree"
+	"github.com/creachadair/jtree/ast"
 )
 
 func BenchmarkScanner(b *testing.B) {
@@ -18,6 +19,15 @@ func BenchmarkScanner(b *testing.B) {
 		b.Fatalf("Reading test input: %v", err)
 	}
 	b.Logf("Benchmark input: %d bytes", len(input))
+
+	b.Run("Unmarshal", func(b *testing.B) {
+		var ignore interface{}
+		for i := 0; i < b.N; i++ {
+			if err := json.Unmarshal(input, &ignore); err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
 
 	b.Run("Decoder", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -51,6 +61,15 @@ func BenchmarkScanner(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			dec := jtree.NewStream(bytes.NewReader(input))
 			if err := dec.Parse(noopHandler{}); err != nil {
+				b.Fatalf("Unexpected error: %v", err)
+			}
+		}
+	})
+
+	b.Run("ParseAST", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := ast.Parse(bytes.NewReader(input))
+			if err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}
 		}
