@@ -200,7 +200,7 @@ func (t *testHandler) EndArray(loc jtree.Anchor) error    { t.pr("EndArray"); re
 func (t *testHandler) EndOfInput(loc jtree.Anchor)        { t.pr(".") }
 
 func (t *testHandler) BeginMember(loc jtree.Anchor) error {
-	t.pr("BeginMember %q", loc.Text())
+	t.pr("BeginMember %q", string(loc.Text()))
 	return nil
 }
 
@@ -210,7 +210,7 @@ func (t *testHandler) EndMember(loc jtree.Anchor) error {
 }
 
 func (t *testHandler) Value(loc jtree.Anchor) error {
-	t.pr(`Value %s "%s"`, loc.Token(), loc.Text())
+	t.pr(`Value %s "%s"`, loc.Token(), string(loc.Text()))
 	return nil
 }
 
