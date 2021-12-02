@@ -8,12 +8,12 @@ import (
 	"unicode/utf8"
 )
 
-// DecodeString decodes the JSON encoding of a string. The input must have the
-// enclosing double quotation marks already removed. Escape sequences are
+// UnescapeString decodes the JSON encoding of a string. The input must have
+// the enclosing double quotation marks already removed. Escape sequences are
 // replaced with their unescaped equivalents. Invalid escapes are replaced by
 // the Unicode replacement rune. DecodeString reports an error for an
 // incomplete escape sequence.
-func DecodeString(src string) (string, error) {
+func UnescapeString(src string) (string, error) {
 	if !strings.ContainsRune(src, '\\') {
 		return src, nil
 	}

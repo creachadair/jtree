@@ -206,7 +206,7 @@ func (s *Scanner) Unescape() string {
 	if s.tok != String {
 		return s.Text()
 	}
-	dec, err := DecodeString(s.Text())
+	dec, err := UnescapeString(s.Text())
 	if err != nil {
 		panic("unescape: " + err.Error())
 	}
