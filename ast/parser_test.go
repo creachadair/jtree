@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 	span := ep.Span()
 	t.Logf("Member source:\n%s", string(input[span.Pos:span.End]))
 
-	str, ok := ep.Value.(ast.String)
+	str, ok := ep.Value.(*ast.String)
 	if !ok {
 		t.Fatalf("Member value is %T, not string", ep.Value)
 	}

@@ -105,15 +105,15 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	d := datum{pos: span.Pos, end: span.End, text: string(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
-		h.push(String{datum: d})
+		h.push(&String{datum: d})
 	case jtree.Integer:
-		h.push(Integer{datum: d})
+		h.push(&Integer{datum: d})
 	case jtree.Number:
-		h.push(Number{datum: d})
+		h.push(&Number{datum: d})
 	case jtree.True, jtree.False:
-		h.push(Bool{datum: d, value: loc.Token() == jtree.True})
+		h.push(&Bool{datum: d, value: loc.Token() == jtree.True})
 	case jtree.Null:
-		h.push(Null{datum: d})
+		h.push(&Null{datum: d})
 	default:
 		return fmt.Errorf("unknown value %v", loc.Token())
 	}
