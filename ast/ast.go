@@ -27,6 +27,7 @@ type Object struct {
 	Members  []*Member
 }
 
+// Span satisfies the Value interface.
 func (o Object) Span() jtree.Span { return newSpan(o.pos, o.end) }
 
 // Find returns the first member of o with the given key, or nil.
@@ -47,6 +48,7 @@ type Member struct {
 	Value Value
 }
 
+// Span satisfies the Value interface.
 func (m Member) Span() jtree.Span { return newSpan(m.pos, m.end) }
 
 // An Array is a sequence of values.
@@ -56,6 +58,7 @@ type Array struct {
 	Values []Value
 }
 
+// Span satisfies the Value interface.
 func (a Array) Span() jtree.Span { return newSpan(a.pos, a.end) }
 
 type datum struct {
@@ -63,8 +66,10 @@ type datum struct {
 	text     string
 }
 
+// Span satisfies the Value interface.
 func (d datum) Span() jtree.Span { return newSpan(d.pos, d.end) }
 
+// Text satisfies the Datum interface.
 func (d datum) Text() string { return d.text }
 
 // An Integer is an integer value.
