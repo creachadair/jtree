@@ -9,16 +9,6 @@ import (
 	"unicode/utf8"
 )
 
-// UnescapeString decodes the JSON encoding of a string. This function is a
-// shorthand for a type conversion and a call to UnescapeBytes.
-func UnescapeString(src string) (string, error) {
-	u, err := Unescape([]byte(src))
-	if err != nil {
-		return "", err
-	}
-	return string(u), nil
-}
-
 // Unescape decodes a byte slice containing the JSON encoding of a string. The
 // input must have the enclosing double quotation marks already removed.
 //
