@@ -21,15 +21,15 @@ func BenchmarkScanner(b *testing.B) {
 	b.Logf("Benchmark input: %d bytes", len(input))
 
 	b.Run("Unmarshal", func(b *testing.B) {
-		var ignore interface{}
 		for i := 0; i < b.N; i++ {
+			var ignore interface{}
 			if err := json.Unmarshal(input, &ignore); err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}
 		}
 	})
 
-	b.Run("Decoder", func(b *testing.B) {
+	b.Run("Tokenize", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			dec := json.NewDecoder(bytes.NewReader(input))
 			for {
@@ -39,6 +39,16 @@ func BenchmarkScanner(b *testing.B) {
 				} else if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
+			}
+		}
+	})
+
+	b.Run("Decode", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			dec := json.NewDecoder(bytes.NewReader(input))
+			var ignore interface{}
+			if err := dec.Decode(&ignore); err != nil {
+				b.Fatalf("Unexpected error: %v", err)
 			}
 		}
 	})
