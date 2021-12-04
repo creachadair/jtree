@@ -154,3 +154,10 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 	}
 	return out, nil
 }
+
+// A Null query ignores its input and returns a null value.
+var Null = constQuery{new(ast.Null)}
+
+type constQuery struct{ ast.Value }
+
+func (c constQuery) eval(_ ast.Value) (ast.Value, error) { return c.Value, nil }

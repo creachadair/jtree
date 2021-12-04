@@ -107,4 +107,14 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
 		}
 	})
+
+	t.Run("Null", func(t *testing.T) {
+		v, err := query.Eval(val, query.Null)
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if _, ok := v.(*ast.Null); !ok {
+			t.Fatalf("Result: got %T, want null", v)
+		}
+	})
 }
