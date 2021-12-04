@@ -61,24 +61,28 @@ func (h *parseHandler) intern(text []byte) []byte {
 	return h.tbuf[i][s : s+len(text)]
 }
 
+func merge(old, v Value) {
+	switch t := old.(type) {
+	case *Member:
+		t.Value = v
+	case *Object:
+		// already in the object
+	case *Array:
+		t.Values = append(t.Values, v)
+	}
+}
+
 func (h *parseHandler) reduce() error {
 	if len(h.stk) > 1 {
 		v := h.pop()
-		return h.reduceValue(v)
+		merge(h.top(), v)
 	}
 	return nil
 }
 
 func (h *parseHandler) reduceValue(v Value) error {
 	if len(h.stk) > 0 {
-		switch prev := h.stk[len(h.stk)-1].(type) {
-		case *Member:
-			prev.Value = v
-		case *Object:
-			// already in the object
-		case *Array:
-			prev.Values = append(prev.Values, v)
-		}
+		merge(h.top(), v)
 	}
 	return nil
 }
