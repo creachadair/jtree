@@ -1,4 +1,4 @@
-// Packgae query implements structural queries over JSON values.
+// Package query implements structural queries over JSON values.
 package query
 
 import (
