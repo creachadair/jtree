@@ -89,6 +89,7 @@ type Integer struct {
 // NewInteger constructs an Integer token with the given value.
 func NewInteger(z int64) *Integer { return &Integer{value: &z} }
 
+// Int64 returns the value of z as an int64.
 func (z *Integer) Int64() int64 {
 	if z.value == nil {
 		v, err := strconv.ParseInt(string(z.text), 10, 64)
@@ -109,6 +110,7 @@ type Number struct {
 // NewNumber constructs a Number token with the given value.
 func NewNumber(f float64) *Number { return &Number{value: &f} }
 
+// Float64 returns the value of n as a float64.
 func (n *Number) Float64() float64 {
 	if n.value == nil {
 		v, err := strconv.ParseFloat(string(n.text), 64)
@@ -129,6 +131,7 @@ type Bool struct {
 // NewBool constructs a Bool token with the given value.
 func NewBool(v bool) *Bool { return &Bool{value: v} }
 
+// Value reports the truth value of the Boolean.
 func (b Bool) Value() bool { return b.value }
 
 // A String is a string value.
@@ -140,6 +143,7 @@ type String struct {
 // NewString constructs a String token with the given unescaped value.
 func NewString(s string) *String { return &String{unescaped: []byte(s)} }
 
+// Unescape returns the unescaped text of the string.
 func (s String) Unescape() string {
 	if s.unescaped == nil && len(s.text) != 0 {
 		dec, err := jtree.Unescape(s.text)
