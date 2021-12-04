@@ -124,7 +124,7 @@ func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
 }
 
 // Object constructs an object with the given keys mapped to the results of
-// matching the query values against v.
+// matching the query values against its input.
 type Object map[string]Query
 
 func (o Object) eval(v ast.Value) (ast.Value, error) {
@@ -135,6 +135,22 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
 		out.Members = append(out.Members, ast.NewMember(key, val))
+	}
+	return out, nil
+}
+
+// Array constructs an array with the values produced by matching the given
+// queries against its input.
+type Array []Query
+
+func (a Array) eval(v ast.Value) (ast.Value, error) {
+	out := &ast.Array{Values: make([]ast.Value, len(a))}
+	for i, q := range a {
+		val, err := q.eval(v)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		out.Values[i] = val
 	}
 	return out, nil
 }

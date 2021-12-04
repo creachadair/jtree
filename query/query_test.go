@@ -84,4 +84,27 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got length %d, want %d", got, wantLength)
 		}
 	})
+
+	t.Run("Array", func(t *testing.T) {
+		v, err := query.Eval(val, query.Array{
+			query.Seq{query.Key("episodes"), query.Len()},
+			query.Seq{query.Key("episodes"), query.Index(0), query.Key("hasDetail")},
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		arr, ok := v.(*ast.Array)
+		if !ok {
+			t.Fatalf("Result: got %T, want array", v)
+		}
+		if len(arr.Values) != 2 {
+			t.Fatalf("Result: got %d values, want %d", len(arr.Values), 2)
+		}
+		if got := arr.Values[0].(*ast.Integer).Int64(); got != wantLength {
+			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
+		}
+		if hasDetail := arr.Values[1].(*ast.Bool).Value(); hasDetail {
+			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
+		}
+	})
 }
