@@ -100,3 +100,25 @@ func (q Seq) eval(v ast.Value) (ast.Value, error) {
 	}
 	return cur, nil
 }
+
+// Each applies a query to each element of an array and returns an array of the
+// resulting values.
+func Each(q Query) Query { return eachQuery{q} }
+
+type eachQuery struct{ Query }
+
+func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
+	arr, ok := v.(*ast.Array)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want array", v)
+	}
+	out := new(ast.Array)
+	for i, elt := range arr.Values {
+		v, err := q.Query.eval(elt)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		out.Values = append(out.Values, v)
+	}
+	return out, nil
+}
