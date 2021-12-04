@@ -102,7 +102,7 @@ func (q Seq) eval(v ast.Value) (ast.Value, error) {
 }
 
 // Each applies a query to each element of an array and returns an array of the
-// resulting values.
+// resulting values. It fails if the input is not an array.
 func Each(q Query) Query { return eachQuery{q} }
 
 type eachQuery struct{ Query }
@@ -119,6 +119,22 @@ func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}
 		out.Values = append(out.Values, v)
+	}
+	return out, nil
+}
+
+// Object constructs an object with the given keys mapped to the results of
+// matching the query values against v.
+type Object map[string]Query
+
+func (o Object) eval(v ast.Value) (ast.Value, error) {
+	out := new(ast.Object)
+	for key, q := range o {
+		val, err := q.eval(v)
+		if err != nil {
+			return nil, fmt.Errorf("match %q: %w", key, err)
+		}
+		out.Members = append(out.Members, ast.NewMember(key, val))
 	}
 	return out, nil
 }

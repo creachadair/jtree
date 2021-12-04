@@ -23,9 +23,10 @@ func TestQuery(t *testing.T) {
 	}
 	val := vals[0]
 
-	t.Run("Seq", func(t *testing.T) {
-		const wantString = "2021-11-30"
+	const wantString = "2021-11-30"
+	const wantLength = 563
 
+	t.Run("Seq", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Key("episodes"),
 			query.Index(0),
@@ -52,8 +53,35 @@ func TestQuery(t *testing.T) {
 		if !ok {
 			t.Fatalf("Result: got %T, want array", v)
 		}
+		if len(a.Values) != wantLength {
+			t.Errorf("Result: got %d elements, want %d", len(a.Values), wantLength)
+		}
 		for i, elt := range a.Values[:5] {
 			t.Logf("Element %d: %v", i, elt.(*ast.String).Unescape())
+		}
+	})
+
+	t.Run("Object", func(t *testing.T) {
+		v, err := query.Eval(val, query.Object{
+			"first":  query.Seq{query.Key("episodes"), query.Index(0), query.Key("airDate")},
+			"length": query.Seq{query.Key("episodes"), query.Len()},
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		obj, ok := v.(*ast.Object)
+		if !ok {
+			t.Fatalf("Result: got %T, want object", v)
+		}
+		if first := obj.Find("first"); first == nil {
+			t.Error(`Missing "first" in result`)
+		} else if got := first.Value.(*ast.String).Unescape(); got != wantString {
+			t.Errorf("First: got %q, want %q", got, wantString)
+		}
+		if length := obj.Find("length"); length == nil {
+			t.Error(`Missing "length" in result`)
+		} else if got := length.Value.(*ast.Integer).Int64(); got != wantLength {
+			t.Errorf("Result: got length %d, want %d", got, wantLength)
 		}
 	})
 }

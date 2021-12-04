@@ -44,14 +44,19 @@ type Member struct {
 	Value Value
 }
 
+// NewMember constructs a member with the given key and value.
+func NewMember(key string, val Value) *Member {
+	return &Member{dkey: key, Value: val}
+}
+
 func (m Member) astValue() {}
 
 // Key returns the key of the member.
 func (m Member) Key() string {
-	if len(m.key) == 0 {
-		return ""
-	} else if m.dkey != "" {
+	if m.dkey != "" {
 		return m.dkey
+	} else if len(m.key) == 0 {
+		return ""
 	}
 	dec, err := jtree.Unescape(m.key)
 	if err != nil {
