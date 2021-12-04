@@ -40,6 +40,7 @@ type parseHandler struct {
 // intern interns a copy of text and returns a slice of the copy.  Allocations
 // are batched to reduce allocation overhead.
 func (h *parseHandler) intern(text []byte) []byte {
+	const minBlockSlop = 16
 	const bufBlockBytes = 8192
 
 	if len(text) >= bufBlockBytes {
@@ -48,12 +49,20 @@ func (h *parseHandler) intern(text []byte) []byte {
 
 	i := 0
 	for i < len(h.tbuf) {
-		if len(h.tbuf[i])+len(text) < cap(h.tbuf[i]) {
+		if n := len(h.tbuf[i]) + len(text); n < cap(h.tbuf[i]) {
+			// There is room in this block.
+			break
+		} else if cap(h.tbuf[i])-len(text) < minBlockSlop {
+			// There is no room in this block, but it is nearly-enough full.
+			// Allocate a fresh block at this location and release the old one.
+			// The old block will be retained until all its tokens are released.
+			h.tbuf[i] = make([]byte, 0, bufBlockBytes)
 			break
 		}
 		i++
 	}
 	if i == len(h.tbuf) {
+		// No block had room; add a new empty one to the arena.
 		h.tbuf = append(h.tbuf, make([]byte, 0, bufBlockBytes))
 	}
 	s := len(h.tbuf[i])
