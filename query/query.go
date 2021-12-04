@@ -60,7 +60,8 @@ func (iq indexQuery) eval(v ast.Value) (ast.Value, error) {
 	return arr.Values[idx], nil
 }
 
-// Len selects an Integer representing the length of the root.
+// Len returns an integer representing the length of the root.
+//
 // For an object, the length is the number of members.
 // For an array, the length is the number of elements.
 // For a string, the length is the length of the string.
