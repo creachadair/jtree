@@ -201,13 +201,14 @@ func (s *Scanner) Float64() float64 {
 }
 
 func (s *Scanner) scanString(open rune) error {
-	// omit the quotes from the stored text
+	s.buf.WriteRune(open)
 	var esc bool
 	for {
 		ch, err := s.rune()
 		if err != nil {
 			return s.fail(err)
 		} else if ch == open && !esc {
+			s.buf.WriteRune(ch)
 			s.tok = String
 			return nil
 		}

@@ -22,43 +22,43 @@ func TestStream(t *testing.T) {
 		{"   ", "."},
 
 		{"true false null", `
-Value true "true"
-Value false "false"
-Value null "null"
+Value true <true>
+Value false <false>
+Value null <null>
 .`},
 
 		{`0 5 -6.32 0.1e-2`, `
-Value integer "0"
-Value integer "5"
-Value number "-6.32"
-Value number "0.1e-2"
+Value integer <0>
+Value integer <5>
+Value number <-6.32>
+Value number <0.1e-2>
 .`},
 
 		{`"" "a b c" "a\tb" "a\u0020b"`, `
-Value string ""
-Value string "a b c"
-Value string "a\tb"
-Value string "a\u0020b"
+Value string <"">
+Value string <"a b c">
+Value string <"a\tb">
+Value string <"a\u0020b">
 .`},
 
 		{`{}`, "BeginObject\nEndObject\n."},
 
 		{`{"a":15}`, `
 BeginObject
-BeginMember "a"
-Value integer "15"
+BeginMember <"a">
+Value integer <15>
 EndMember "}"
 EndObject
 .`},
 
 		{`{"x":null, "y":[true]}`, `
 BeginObject
-BeginMember "x"
-Value null "null"
+BeginMember <"x">
+Value null <null>
 EndMember ","
-BeginMember "y"
+BeginMember <"y">
 BeginArray
-Value true "true"
+Value true <true>
 EndArray
 EndMember "}"
 EndObject
@@ -96,12 +96,12 @@ BeginObject
 SyntaxError at 1:1: expected "}" or string, got false`},
 		{`{"true":}`, `
 BeginObject
-BeginMember "true"
+BeginMember <"true">
 SyntaxError at 1:8: unexpected "}"`},
 		{`{"true":1,`, `
 BeginObject
-BeginMember "true"
-Value integer "1"
+BeginMember <"true">
+Value integer <1>
 EndMember ","
 SyntaxError at 1:10: expected string, got error: EOF`},
 
@@ -113,17 +113,17 @@ SyntaxError at 1:1: expected more input, got error: EOF`},
 SyntaxError at 1:0: unexpected "]"`},
 		{`[15,`, `
 BeginArray
-Value integer "15"
+Value integer <15>
 SyntaxError at 1:4: expected more input, got error: EOF`},
 		{`[15,]`, `
 BeginArray
-Value integer "15"
+Value integer <15>
 SyntaxError at 1:4: unexpected "]"`},
 
 		// Invalid values.
 		{`1 2.0 forthright`, `
-Value integer "1"
-Value number "2.0"
+Value integer <1>
+Value number <2.0>
 SyntaxError at 1:6: invalid input: offset 16: unknown constant "forthright"`},
 		{`"what did you`, `
 SyntaxError at 1:0: invalid input: offset 13: unexpected error: EOF`},
@@ -146,15 +146,15 @@ func TestParseOne(t *testing.T) {
 	const input = `{ "love": true } [] "ok"`
 	const want = `
 BeginObject
-BeginMember "love"
-Value true "true"
+BeginMember <"love">
+Value true <true>
 EndMember "}"
 EndObject
 ---
 BeginArray
 EndArray
 ---
-Value string "ok"
+Value string <"ok">
 ---
 .`
 	th := new(testHandler)
@@ -200,7 +200,7 @@ func (t *testHandler) EndArray(loc jtree.Anchor) error    { t.pr("EndArray"); re
 func (t *testHandler) EndOfInput(loc jtree.Anchor)        { t.pr(".") }
 
 func (t *testHandler) BeginMember(loc jtree.Anchor) error {
-	t.pr("BeginMember %q", string(loc.Text()))
+	t.pr("BeginMember <%s>", string(loc.Text()))
 	return nil
 }
 
@@ -210,7 +210,7 @@ func (t *testHandler) EndMember(loc jtree.Anchor) error {
 }
 
 func (t *testHandler) Value(loc jtree.Anchor) error {
-	t.pr(`Value %s "%s"`, loc.Token(), string(loc.Text()))
+	t.pr(`Value %s <%s>`, loc.Token(), string(loc.Text()))
 	return nil
 }
 

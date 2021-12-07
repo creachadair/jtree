@@ -58,7 +58,7 @@ func (m Member) Key() string {
 	} else if len(m.key) == 0 {
 		return ""
 	}
-	dec, err := jtree.Unescape(m.key)
+	dec, err := jtree.Unescape(m.key[1 : len(m.key)-1])
 	if err != nil {
 		panic(err)
 	}
@@ -144,9 +144,9 @@ type String struct {
 func NewString(s string) *String { return &String{unescaped: []byte(s)} }
 
 // Unescape returns the unescaped text of the string.
-func (s String) Unescape() string {
+func (s *String) Unescape() string {
 	if s.unescaped == nil && len(s.text) != 0 {
-		dec, err := jtree.Unescape(s.text)
+		dec, err := jtree.Unescape(s.text[1 : len(s.text)-1])
 		if err != nil {
 			panic(err)
 		}
