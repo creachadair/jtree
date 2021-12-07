@@ -9,6 +9,53 @@ import (
 	"unicode/utf8"
 )
 
+var controlEsc = [...]byte{
+	'\b': 'b',
+	'\f': 'f',
+	'\n': 'n',
+	'\r': 'r',
+	'\t': 't',
+	' ':  ' ', // sentinel
+}
+
+var hexDigit = []byte("0123456789abcdef")
+
+// Escape encodes a string to escape characters for inclusion in a JSON string.
+func Escape(src string) []byte {
+	var buf bytes.Buffer
+	for _, r := range src {
+		if r < utf8.RuneSelf {
+			if r < ' ' {
+				buf.WriteByte('\\')
+				if b := controlEsc[r]; b != 0 {
+					buf.WriteByte(b)
+				} else {
+					buf.WriteString("u00")
+					buf.WriteByte(hexDigit[int(r>>4)])
+					buf.WriteByte(hexDigit[int(r&255)])
+				}
+				continue
+			} else if r == '\\' || r == '"' {
+				buf.WriteByte('\\')
+			}
+			buf.WriteByte(byte(r))
+			continue
+		}
+
+		switch r {
+		case '\ufffd':
+			buf.WriteString(`\ufffd`)
+		case '\u2028':
+			buf.WriteString(`\u2028`)
+		case '\u2029':
+			buf.WriteString(`\u2029`)
+		default:
+			buf.WriteRune(r)
+		}
+	}
+	return buf.Bytes()
+}
+
 // Unescape decodes a byte slice containing the JSON encoding of a string. The
 // input must have the enclosing double quotation marks already removed.
 //

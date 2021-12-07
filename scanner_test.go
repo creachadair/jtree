@@ -125,3 +125,25 @@ func TestScanner_decodeAs(t *testing.T) {
 		}
 	})
 }
+
+func TestEscape(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"", ""},
+		{" ", " "},
+		{"a\t\nb", `a\t\nb`},
+		{"\x00\x01\x02", `\u0000\u0001\u0002`},
+		{`a "b c\" d"`, `a \"b c\\\" d\"`},
+		{`\ufffd`, `\\ufffd`},
+		{"\u2028 \u2029 \ufffd", `\u2028 \u2029 \ufffd`},
+		{"This is the end\v", `This is the end\u000b`},
+	}
+	for _, test := range tests {
+		got := string(jtree.Escape(test.input))
+		if got != test.want {
+			t.Errorf("Input: %#q\nGot:  %#q\nWant: %#q", test.input, got, test.want)
+		}
+	}
+}
