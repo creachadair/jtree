@@ -49,14 +49,14 @@ func TestQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
-		a, ok := v.(*ast.Array)
+		a, ok := v.(ast.Array)
 		if !ok {
 			t.Fatalf("Result: got %T, want array", v)
 		}
-		if len(a.Values) != wantLength {
-			t.Errorf("Result: got %d elements, want %d", len(a.Values), wantLength)
+		if len(a) != wantLength {
+			t.Errorf("Result: got %d elements, want %d", len(a), wantLength)
 		}
-		for i, elt := range a.Values[:5] {
+		for i, elt := range a[:5] {
 			t.Logf("Element %d: %v", i, elt.(*ast.String).Unescape())
 		}
 	})
@@ -69,7 +69,7 @@ func TestQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
-		obj, ok := v.(*ast.Object)
+		obj, ok := v.(ast.Object)
 		if !ok {
 			t.Fatalf("Result: got %T, want object", v)
 		}
@@ -93,17 +93,17 @@ func TestQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
-		arr, ok := v.(*ast.Array)
+		arr, ok := v.(ast.Array)
 		if !ok {
 			t.Fatalf("Result: got %T, want array", v)
 		}
-		if len(arr.Values) != 2 {
-			t.Fatalf("Result: got %d values, want %d", len(arr.Values), 2)
+		if len(arr) != 2 {
+			t.Fatalf("Result: got %d values, want %d", len(arr), 2)
 		}
-		if got := arr.Values[0].(*ast.Integer).Int64(); got != wantLength {
+		if got := arr[0].(*ast.Integer).Int64(); got != wantLength {
 			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
 		}
-		if hasDetail := arr.Values[1].(*ast.Bool).Value(); hasDetail {
+		if hasDetail := arr[1].(*ast.Bool).Value(); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
 		}
 	})

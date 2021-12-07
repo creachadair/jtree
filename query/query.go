@@ -26,7 +26,7 @@ type keyQuery []string
 
 func (kq keyQuery) eval(v ast.Value) (ast.Value, error) {
 	for _, key := range kq {
-		obj, ok := v.(*ast.Object)
+		obj, ok := v.(ast.Object)
 		if !ok {
 			return nil, fmt.Errorf("got %T, want object", v)
 		}
@@ -46,18 +46,18 @@ func Index(z int) Query { return indexQuery(z) }
 type indexQuery int
 
 func (iq indexQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(*ast.Array)
+	arr, ok := v.(ast.Array)
 	if !ok {
 		return nil, fmt.Errorf("got %T, want array", v)
 	}
 	idx := int(iq)
 	if idx < 0 {
-		idx += len(arr.Values)
+		idx += len(arr)
 	}
-	if idx < 0 || idx >= len(arr.Values) {
-		return nil, fmt.Errorf("index %d out of range (0..%d)", iq, len(arr.Values))
+	if idx < 0 || idx >= len(arr) {
+		return nil, fmt.Errorf("index %d out of range (0..%d)", iq, len(arr))
 	}
-	return arr.Values[idx], nil
+	return arr[idx], nil
 }
 
 // Len returns an integer representing the length of the root.
@@ -72,10 +72,10 @@ type lenQuery struct{}
 
 func (lenQuery) eval(v ast.Value) (ast.Value, error) {
 	switch t := v.(type) {
-	case *ast.Object:
-		return ast.NewInteger(int64(len(t.Members))), nil
-	case *ast.Array:
-		return ast.NewInteger(int64(len(t.Values))), nil
+	case ast.Object:
+		return ast.NewInteger(int64(len(t))), nil
+	case ast.Array:
+		return ast.NewInteger(int64(len(t))), nil
 	case *ast.Null:
 		return ast.NewInteger(0), nil
 	case *ast.String:
@@ -109,17 +109,17 @@ func Each(q Query) Query { return eachQuery{q} }
 type eachQuery struct{ Query }
 
 func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(*ast.Array)
+	arr, ok := v.(ast.Array)
 	if !ok {
 		return nil, fmt.Errorf("got %T, want array", v)
 	}
-	out := new(ast.Array)
-	for i, elt := range arr.Values {
+	var out ast.Array
+	for i, elt := range arr {
 		v, err := q.Query.eval(elt)
 		if err != nil {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}
-		out.Values = append(out.Values, v)
+		out = append(out, v)
 	}
 	return out, nil
 }
@@ -129,13 +129,13 @@ func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
 type Object map[string]Query
 
 func (o Object) eval(v ast.Value) (ast.Value, error) {
-	out := new(ast.Object)
+	var out ast.Object
 	for key, q := range o {
 		val, err := q.eval(v)
 		if err != nil {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
-		out.Members = append(out.Members, ast.NewMember(key, val))
+		out = append(out, ast.NewMember(key, val))
 	}
 	return out, nil
 }
@@ -145,13 +145,13 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 type Array []Query
 
 func (a Array) eval(v ast.Value) (ast.Value, error) {
-	out := &ast.Array{Values: make([]ast.Value, len(a))}
+	out := make(ast.Array, len(a))
 	for i, q := range a {
 		val, err := q.eval(v)
 		if err != nil {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}
-		out.Values[i] = val
+		out[i] = val
 	}
 	return out, nil
 }
