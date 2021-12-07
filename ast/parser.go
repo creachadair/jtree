@@ -139,19 +139,17 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
-	d := datum{text: h.intern(loc.Text())}
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(&String{datum: d})
+		return h.reduceValue(&String{text: h.intern(loc.Text())})
 	case jtree.Integer:
-		return h.reduceValue(&Integer{datum: d})
+		return h.reduceValue(&Integer{text: h.intern(loc.Text())})
 	case jtree.Number:
-		return h.reduceValue(&Number{datum: d})
+		return h.reduceValue(&Number{text: h.intern(loc.Text())})
 	case jtree.True, jtree.False:
-		ok := loc.Token() == jtree.True
-		return h.reduceValue(&Bool{datum: d, value: ok})
+		return h.reduceValue(&Bool{value: loc.Token() == jtree.True})
 	case jtree.Null:
-		return h.reduceValue(&Null{datum: d})
+		return h.reduceValue(&Null{})
 	default:
 		return fmt.Errorf("unknown value %v", loc.Token())
 	}

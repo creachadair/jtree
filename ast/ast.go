@@ -6,17 +6,15 @@ package ast
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/creachadair/jtree"
 )
 
 // A Value is an arbitrary JSON value.
-type Value interface{ astValue() }
-
-// A Datum is a Value with a text representation.
-type Datum interface {
-	Value
-	Text() string
+type Value interface {
+	astValue()
+	String() string
 }
 
 // An Object is a collection of key-value members.
@@ -24,16 +22,31 @@ type Object struct {
 	Members []*Member
 }
 
-func (o Object) astValue() {}
+func (o *Object) astValue() {}
 
 // Find returns the first member of o with the given key, or nil.
-func (o Object) Find(key string) *Member {
+func (o *Object) Find(key string) *Member {
 	for _, m := range o.Members {
 		if m.Key() == key {
 			return m
 		}
 	}
 	return nil
+}
+
+// String renders o as JSON text.
+func (o *Object) String() string {
+	var sb strings.Builder
+	sb.WriteString("{")
+	last := len(o.Members) - 1
+	for i, elt := range o.Members {
+		sb.WriteString(elt.String())
+		if i != last {
+			sb.WriteString(",")
+		}
+	}
+	sb.WriteString("}")
+	return sb.String()
 }
 
 // A Member is a single key-value pair belonging to an Object.
@@ -49,10 +62,16 @@ func NewMember(key string, val Value) *Member {
 	return &Member{dkey: key, Value: val}
 }
 
-func (m Member) astValue() {}
+func (m *Member) astValue() {}
+
+// String renders the member as JSON text.
+func (m *Member) String() string {
+	// FIXME: Handle constructed strings.
+	return string(m.key) + ":" + m.Value.String()
+}
 
 // Key returns the key of the member.
-func (m Member) Key() string {
+func (m *Member) Key() string {
 	if m.dkey != "" {
 		return m.dkey
 	} else if len(m.key) == 0 {
@@ -71,23 +90,33 @@ type Array struct {
 	Values []Value
 }
 
-func (a Array) astValue() {}
+func (a *Array) astValue() {}
 
-type datum struct{ text []byte }
-
-func (d datum) astValue() {}
-
-// Text satisfies the Datum interface.
-func (d datum) Text() string { return string(d.text) }
+// String renders the array as JSON text.
+func (a *Array) String() string {
+	var sb strings.Builder
+	sb.WriteString("[")
+	last := len(a.Values) - 1
+	for i, elt := range a.Values {
+		sb.WriteString(elt.String())
+		if i != last {
+			sb.WriteString(",")
+		}
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
 
 // An Integer is an integer value.
 type Integer struct {
-	datum
+	text  []byte
 	value *int64
 }
 
 // NewInteger constructs an Integer token with the given value.
 func NewInteger(z int64) *Integer { return &Integer{value: &z} }
+
+func (*Integer) astValue() {}
 
 // Int64 returns the value of z as an int64.
 func (z *Integer) Int64() int64 {
@@ -101,14 +130,24 @@ func (z *Integer) Int64() int64 {
 	return *z.value
 }
 
+// String renders z as JSON text.
+func (z *Integer) String() string {
+	if z.text != nil {
+		return string(z.text)
+	}
+	return strconv.FormatInt(*z.value, 10)
+}
+
 // A Number is a floating-point value.
 type Number struct {
-	datum
+	text  []byte
 	value *float64
 }
 
 // NewNumber constructs a Number token with the given value.
 func NewNumber(f float64) *Number { return &Number{value: &f} }
+
+func (*Number) astValue() {}
 
 // Float64 returns the value of n as a float64.
 func (n *Number) Float64() float64 {
@@ -122,9 +161,16 @@ func (n *Number) Float64() float64 {
 	return *n.value
 }
 
+// String renders n as JSON text.
+func (n *Number) String() string {
+	if n.text != nil {
+		return string(n.text)
+	}
+	return strconv.FormatFloat(*n.value, 'g', -1, 64)
+}
+
 // A Bool is a Boolean constant, true or false.
 type Bool struct {
-	datum
 	value bool
 }
 
@@ -132,16 +178,28 @@ type Bool struct {
 func NewBool(v bool) *Bool { return &Bool{value: v} }
 
 // Value reports the truth value of the Boolean.
-func (b Bool) Value() bool { return b.value }
+func (b *Bool) Value() bool { return b.value }
+
+func (*Bool) astValue() {}
+
+// String returns b as JSON text.
+func (b *Bool) String() string {
+	if b.value {
+		return "true"
+	}
+	return "false"
+}
 
 // A String is a string value.
 type String struct {
-	datum
-	unescaped []byte
+	text      []byte
+	unescaped *string
 }
 
 // NewString constructs a String token with the given unescaped value.
-func NewString(s string) *String { return &String{unescaped: []byte(s)} }
+func NewString(s string) *String { return &String{unescaped: &s} }
+
+func (*String) astValue() {}
 
 // Unescape returns the unescaped text of the string.
 func (s *String) Unescape() string {
@@ -150,10 +208,22 @@ func (s *String) Unescape() string {
 		if err != nil {
 			panic(err)
 		}
-		s.unescaped = dec
+		str := string(dec)
+		s.unescaped = &str
 	}
-	return string(s.unescaped)
+	return *s.unescaped
+}
+
+// String renders s as JSON text.
+func (s *String) String() string {
+	// FIXME: Handle constructed strings.
+	return string(s.text)
 }
 
 // Null represents the null constant.
-type Null struct{ datum }
+type Null struct{}
+
+func (Null) astValue() {}
+
+// String renders the value as a JSON null.
+func (Null) String() string { return "null" }
