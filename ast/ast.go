@@ -18,15 +18,13 @@ type Value interface {
 }
 
 // An Object is a collection of key-value members.
-type Object struct {
-	Members []*Member
-}
+type Object []*Member
 
-func (o *Object) astValue() {}
+func (o Object) astValue() {}
 
 // Find returns the first member of o with the given key, or nil.
-func (o *Object) Find(key string) *Member {
-	for _, m := range o.Members {
+func (o Object) Find(key string) *Member {
+	for _, m := range o {
 		if m.Key() == key {
 			return m
 		}
@@ -35,11 +33,11 @@ func (o *Object) Find(key string) *Member {
 }
 
 // String renders o as JSON text.
-func (o *Object) String() string {
+func (o Object) String() string {
 	var sb strings.Builder
 	sb.WriteString("{")
-	last := len(o.Members) - 1
-	for i, elt := range o.Members {
+	last := len(o) - 1
+	for i, elt := range o {
 		sb.WriteString(elt.String())
 		if i != last {
 			sb.WriteString(",")
@@ -52,52 +50,52 @@ func (o *Object) String() string {
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
 	key  []byte
-	dkey string
+	dkey *string
 
 	Value Value
 }
 
 // NewMember constructs a member with the given key and value.
 func NewMember(key string, val Value) *Member {
-	return &Member{dkey: key, Value: val}
+	return &Member{dkey: &key, Value: val}
 }
 
 func (m *Member) astValue() {}
 
 // String renders the member as JSON text.
 func (m *Member) String() string {
-	// FIXME: Handle constructed strings.
+	if m.key == nil {
+		m.key = append(m.key, '"')
+		m.key = append(m.key, jtree.Escape(*m.dkey)...)
+		m.key = append(m.key, '"')
+	}
 	return string(m.key) + ":" + m.Value.String()
 }
 
 // Key returns the key of the member.
 func (m *Member) Key() string {
-	if m.dkey != "" {
-		return m.dkey
-	} else if len(m.key) == 0 {
-		return ""
+	if m.dkey == nil && len(m.key) != 0 {
+		dec, err := jtree.Unescape(m.key[1 : len(m.key)-1])
+		if err != nil {
+			panic(err)
+		}
+		str := string(dec)
+		m.dkey = &str
 	}
-	dec, err := jtree.Unescape(m.key[1 : len(m.key)-1])
-	if err != nil {
-		panic(err)
-	}
-	m.dkey = string(dec)
-	return m.dkey
+	return *m.dkey
 }
 
 // An Array is a sequence of values.
-type Array struct {
-	Values []Value
-}
+type Array []Value
 
-func (a *Array) astValue() {}
+func (Array) astValue() {}
 
 // String renders the array as JSON text.
-func (a *Array) String() string {
+func (a Array) String() string {
 	var sb strings.Builder
 	sb.WriteString("[")
-	last := len(a.Values) - 1
-	for i, elt := range a.Values {
+	last := len(a) - 1
+	for i, elt := range a {
 		sb.WriteString(elt.String())
 		if i != last {
 			sb.WriteString(",")
@@ -216,7 +214,11 @@ func (s *String) Unescape() string {
 
 // String renders s as JSON text.
 func (s *String) String() string {
-	// FIXME: Handle constructed strings.
+	if s.text == nil {
+		s.text = append(s.text, '"')
+		s.text = append(s.text, jtree.Escape(*s.unescaped)...)
+		s.text = append(s.text, '"')
+	}
 	return string(s.text)
 }
 

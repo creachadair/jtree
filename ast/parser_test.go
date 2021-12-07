@@ -47,7 +47,7 @@ func TestParse(t *testing.T) {
 	// }
 	//
 
-	root, ok := vs[0].(*ast.Object)
+	root, ok := vs[0].(ast.Object)
 	if !ok {
 		t.Fatalf("Root is %T, not object", vs[0])
 	}
@@ -55,15 +55,15 @@ func TestParse(t *testing.T) {
 	if mem == nil {
 		t.Fatal(`Key "episodes" not found`)
 	}
-	lst, ok := mem.Value.(*ast.Array)
+	lst, ok := mem.Value.(ast.Array)
 	if !ok {
 		t.Fatalf("Member value is %T, not array", mem.Value)
-	} else if len(lst.Values) == 0 {
+	} else if len(lst) == 0 {
 		t.Fatal("Array value is empty")
 	}
-	obj, ok := lst.Values[0].(*ast.Object)
+	obj, ok := lst[0].(ast.Object)
 	if !ok {
-		t.Fatalf("Array entry is %T, not object", lst.Values[0])
+		t.Fatalf("Array entry is %T, not object", lst[0])
 	}
 
 	ep := obj.Find("summary")
@@ -76,4 +76,67 @@ func TestParse(t *testing.T) {
 		t.Fatalf("Member value is %T, not string", ep.Value)
 	}
 	t.Logf("String field value: %s", str.Unescape())
+}
+
+func TestString(t *testing.T) {
+	tests := []struct {
+		input ast.Value
+		want  string
+	}{
+		{&ast.Null{}, "null"},
+
+		{ast.NewBool(false), "false"},
+		{ast.NewBool(true), "true"},
+
+		{ast.NewString(""), `""`},
+		{ast.NewString("a \t b"), `"a \t b"`},
+
+		{ast.NewNumber(-0.00239), `-0.00239`},
+
+		{ast.NewInteger(0), `0`},
+		{ast.NewInteger(15), `15`},
+		{ast.NewInteger(-25), `-25`},
+
+		{ast.Array{}, `[]`},
+		{ast.Array{
+			ast.NewBool(false),
+		}, `[false]`},
+		{ast.Array{
+			ast.NewBool(true),
+			ast.NewInteger(199),
+		}, `[true,199]`},
+		{ast.Array{
+			ast.NewString("free"),
+			ast.NewString("your"),
+			ast.NewString("mind"),
+		}, `["free","your","mind"]`},
+
+		{ast.Object{}, `{}`},
+		{ast.Object{
+			ast.NewMember("xs", &ast.Null{}),
+		}, `{"xs":null}`},
+		{ast.Object{
+			ast.NewMember("name", ast.NewString("Dennis")),
+			ast.NewMember("age", ast.NewInteger(37)),
+			ast.NewMember("isOld", ast.NewBool(false)),
+		}, `{"name":"Dennis","age":37,"isOld":false}`},
+
+		{ast.Object{
+			ast.NewMember("values", ast.Array{
+				ast.NewInteger(5),
+				ast.NewNumber(10),
+				ast.NewBool(true),
+			}),
+			ast.NewMember("page", ast.Object{
+				ast.NewMember("token", ast.NewString("xyz-pdq-zvm")),
+				ast.NewMember("count", ast.NewInteger(100)),
+			}),
+		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
+	}
+	for _, test := range tests {
+		got := test.input.String()
+		if got != test.want {
+			t.Errorf("Input: %+v\nGot:  %s\nWant: %s", test.input, got, test.want)
+		}
+	}
 }

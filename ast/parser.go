@@ -25,7 +25,7 @@ func Parse(r io.Reader) ([]Value, error) {
 		if len(h.stk) != 1 {
 			return vs, errors.New("incomplete value")
 		}
-		vs = append(vs, h.stk[0])
+		vs = append(vs, *h.stk[0])
 		h.stk = h.stk[:0]
 	}
 }
@@ -33,7 +33,7 @@ func Parse(r io.Reader) ([]Value, error) {
 // A parseHandler implements the jtree.Handler interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
-	stk  []Value
+	stk  []*Value
 	tbuf [][]byte
 }
 
@@ -70,14 +70,14 @@ func (h *parseHandler) intern(text []byte) []byte {
 	return h.tbuf[i][s : s+len(text)]
 }
 
-func merge(old, v Value) {
-	switch t := old.(type) {
+func merge(old *Value, v Value) {
+	switch t := (*old).(type) {
 	case *Member:
 		t.Value = v
-	case *Object:
+	case Object:
 		// already in the object
-	case *Array:
-		t.Values = append(t.Values, v)
+	case Array:
+		*old = append(t, v)
 	}
 }
 
@@ -96,18 +96,18 @@ func (h *parseHandler) reduceValue(v Value) error {
 	return nil
 }
 
-func (h *parseHandler) top() Value { return h.stk[len(h.stk)-1] }
+func (h *parseHandler) top() *Value { return h.stk[len(h.stk)-1] }
 
 func (h *parseHandler) pop() Value {
 	last := h.top()
 	h.stk = h.stk[:len(h.stk)-1]
-	return last
+	return *last
 }
 
-func (h *parseHandler) push(v Value) { h.stk = append(h.stk, v) }
+func (h *parseHandler) push(v Value) { h.stk = append(h.stk, &v) }
 
 func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
-	h.push(new(Object))
+	h.push(Object(nil))
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
-	h.push(new(Array))
+	h.push(Array(nil))
 	return nil
 }
 
@@ -130,8 +130,9 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// stack after the value is known, we don't have to reduce multiple times.
 
 	mem := &Member{key: h.intern(loc.Text())}
-	obj := h.top().(*Object)
-	obj.Members = append(obj.Members, mem)
+	top := h.top()
+	obj := (*top).(Object)
+	*top = append(obj, mem)
 	h.push(mem)
 	return nil
 }
