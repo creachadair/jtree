@@ -70,8 +70,8 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Eval failed: %v", err)
 		} else if arr, ok := v.(ast.Array); !ok {
 			t.Errorf("Result: got %T, want array", v)
-		} else if s := arr.String(); s != wantJSON {
-			t.Errorf("Result source:\ngot:  %#q\nwant: %#q", s, wantJSON)
+		} else if got := arr.String(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 
@@ -149,6 +149,21 @@ func TestQuery(t *testing.T) {
 		}
 		if _, ok := v.(*ast.Null); !ok {
 			t.Fatalf("Result: got %T, want null", v)
+		}
+	})
+
+	t.Run("Mixed", func(t *testing.T) {
+		const wantJSON = `[18,67,56,54,52]`
+		v, err := query.Eval(val, query.Seq{
+			query.Key("episodes"),
+			query.Slice(0, 5),
+			query.Each(query.Key("summary")),
+			query.Each(query.Len()),
+		})
+		if err != nil {
+			t.Errorf("Eval failed: %v", err)
+		} else if got := v.String(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 }
