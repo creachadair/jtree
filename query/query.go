@@ -61,6 +61,36 @@ func (nq nthQuery) eval(v ast.Value) (ast.Value, error) {
 	return arr[idx], nil
 }
 
+// Slice selects a slice of an array from offsets lo to hi.  The range includes
+// lo but excludes hi. Negative offsets select from the end of the array.
+// If hi == 0, the length of the array is used.
+func Slice(lo, hi int) Query { return sliceQuery{lo, hi} }
+
+type sliceQuery struct{ lo, hi int }
+
+func (q sliceQuery) eval(v ast.Value) (ast.Value, error) {
+	arr, ok := v.(ast.Array)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want array", v)
+	}
+	lox := q.lo
+	if lox < 0 {
+		lox += len(arr)
+	}
+	hix := q.hi
+	if hix <= 0 {
+		hix += len(arr)
+	}
+	if lox < 0 || lox >= len(arr) {
+		return nil, fmt.Errorf("index %d out of range (0..%d)", q.lo, len(arr))
+	} else if hix < 0 || hix > len(arr) {
+		return nil, fmt.Errorf("index %d out of range (0..%d)", q.hi, len(arr))
+	} else if lox > hix {
+		return nil, fmt.Errorf("index start %d > end %d", q.lo, q.hi)
+	}
+	return arr[lox:hix], nil
+}
+
 // Len returns an integer representing the length of the root.
 //
 // For an object, the length is the number of members.

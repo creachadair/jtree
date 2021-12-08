@@ -59,6 +59,22 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Slice", func(t *testing.T) {
+		const wantJSON = `["2020-03-27","2020-03-26","2020-03-25"]`
+		v, err := query.Eval(val, query.Seq{
+			query.Key("episodes"),
+			query.Slice(-3, 0),
+			query.Each(query.Key("airDate")),
+		})
+		if err != nil {
+			t.Errorf("Eval failed: %v", err)
+		} else if arr, ok := v.(ast.Array); !ok {
+			t.Errorf("Result: got %T, want array", v)
+		} else if s := arr.String(); s != wantJSON {
+			t.Errorf("Result source:\ngot:  %#q\nwant: %#q", s, wantJSON)
+		}
+	})
+
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Key("episodes"),
