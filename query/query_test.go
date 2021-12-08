@@ -26,6 +26,31 @@ func TestQuery(t *testing.T) {
 	const wantString = "2021-11-30"
 	const wantLength = 563
 
+	t.Run("Const", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			query query.Query
+			want  string
+		}{
+			{"String", query.String("foo"), `"foo"`},
+			{"Number", query.Number(-3.1), `-3.1`},
+			{"Integer", query.Integer(17), `17`},
+			{"True", query.Bool(true), `true`},
+			{"False", query.Bool(false), `false`},
+			{"Null", query.Null, `null`},
+		}
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				v, err := query.Eval(val, test.query)
+				if err != nil {
+					t.Errorf("Eval failed: %v", err)
+				} else if got := v.String(); got != test.want {
+					t.Errorf("Result: got %#q, want %#q", got, test.want)
+				}
+			})
+		}
+	})
+
 	t.Run("Seq", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Key("episodes"),
@@ -139,16 +164,6 @@ func TestQuery(t *testing.T) {
 		}
 		if hasDetail := arr[1].(*ast.Bool).Value(); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
-		}
-	})
-
-	t.Run("Null", func(t *testing.T) {
-		v, err := query.Eval(val, query.Null)
-		if err != nil {
-			t.Fatalf("Eval failed: %v", err)
-		}
-		if _, ok := v.(*ast.Null); !ok {
-			t.Fatalf("Result: got %T, want null", v)
 		}
 	})
 

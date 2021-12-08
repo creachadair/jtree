@@ -204,6 +204,15 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 // A String query ignores its input and returns the given string.
 func String(s string) Query { return constQuery{ast.NewString(s)} }
 
+// A Number query ignores its input and returns the given number.
+func Number(n float64) Query { return constQuery{ast.NewNumber(n)} }
+
+// An Integer query ignores its input and returns the given integer.
+func Integer(z int64) Query { return constQuery{ast.NewInteger(z)} }
+
+// A Bool query ignores its input and returns the given bool.
+func Bool(b bool) Query { return constQuery{ast.NewBool(b)} }
+
 // A Null query ignores its input and returns a null value.
 var Null = constQuery{new(ast.Null)}
 
