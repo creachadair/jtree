@@ -201,6 +201,9 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 	return out, nil
 }
 
+// A String query ignores its input and returns the given string.
+func String(s string) Query { return constQuery{ast.NewString(s)} }
+
 // A Null query ignores its input and returns a null value.
 var Null = constQuery{new(ast.Null)}
 
