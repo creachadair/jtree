@@ -40,23 +40,23 @@ func (kq keyQuery) eval(v ast.Value) (ast.Value, error) {
 	return v, nil
 }
 
-// Index selects the array element at offset z. Negative offsets select from
-// the end of the array.
-func Index(z int) Query { return indexQuery(z) }
+// Nth selects the array element at offset z. Negative offsets select from the
+// end of the array.
+func Nth(z int) Query { return nthQuery(z) }
 
-type indexQuery int
+type nthQuery int
 
-func (iq indexQuery) eval(v ast.Value) (ast.Value, error) {
+func (nq nthQuery) eval(v ast.Value) (ast.Value, error) {
 	arr, ok := v.(ast.Array)
 	if !ok {
 		return nil, fmt.Errorf("got %T, want array", v)
 	}
-	idx := int(iq)
+	idx := int(nq)
 	if idx < 0 {
 		idx += len(arr)
 	}
 	if idx < 0 || idx >= len(arr) {
-		return nil, fmt.Errorf("index %d out of range (0..%d)", iq, len(arr))
+		return nil, fmt.Errorf("index %d out of range (0..%d)", nq, len(arr))
 	}
 	return arr[idx], nil
 }

@@ -29,7 +29,7 @@ func TestQuery(t *testing.T) {
 	t.Run("Seq", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Key("episodes"),
-			query.Index(0),
+			query.Nth(0),
 			query.Key("airDate"),
 		})
 		if err != nil {
@@ -46,7 +46,7 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Empty Alt: got %+v, want error", v)
 		}
 		v, err := query.Eval(val, query.Alt{
-			query.Index(0),
+			query.Nth(0),
 			query.Key("episodes"),
 			query.Null,
 		})
@@ -81,7 +81,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Object", func(t *testing.T) {
 		v, err := query.Eval(val, query.Object{
-			"first":  query.Seq{query.Key("episodes"), query.Index(0), query.Key("airDate")},
+			"first":  query.Seq{query.Key("episodes"), query.Nth(0), query.Key("airDate")},
 			"length": query.Seq{query.Key("episodes"), query.Len()},
 		})
 		if err != nil {
@@ -106,7 +106,7 @@ func TestQuery(t *testing.T) {
 	t.Run("Array", func(t *testing.T) {
 		v, err := query.Eval(val, query.Array{
 			query.Seq{query.Key("episodes"), query.Len()},
-			query.Seq{query.Key("episodes"), query.Index(0), query.Key("hasDetail")},
+			query.Seq{query.Key("episodes"), query.Nth(0), query.Key("hasDetail")},
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
