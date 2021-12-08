@@ -41,6 +41,24 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Alt", func(t *testing.T) {
+		if v, err := query.Eval(val, query.Alt{}); err == nil {
+			t.Errorf("Empty Alt: got %+v, want error", v)
+		}
+		v, err := query.Eval(val, query.Alt{
+			query.Index(0),
+			query.Key("episodes"),
+			query.Null,
+		})
+		if err != nil {
+			t.Errorf("Eval failed: %v", err)
+		} else if s, ok := v.(ast.Array); !ok {
+			t.Errorf("Result: got %T, want array", v)
+		} else if len(s) != wantLength {
+			t.Errorf("Result: got %d elements, want %d", len(s), wantLength)
+		}
+	})
+
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Key("episodes"),

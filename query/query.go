@@ -2,6 +2,7 @@
 package query
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/creachadair/jtree/ast"
@@ -100,6 +101,20 @@ func (q Seq) eval(v ast.Value) (ast.Value, error) {
 		cur = next
 	}
 	return cur, nil
+}
+
+// Alt is a query that selects among a sequence of alternatives.  The result of
+// the first alternative that does not report an error is returned. If there
+// are no alternatives, the query fails on all inputs.
+type Alt []Query
+
+func (q Alt) eval(v ast.Value) (ast.Value, error) {
+	for _, alt := range q {
+		if w, err := alt.eval(v); err == nil {
+			return w, nil
+		}
+	}
+	return nil, errors.New("no matching alternatives")
 }
 
 // Each applies a query to each element of an array and returns an array of the
