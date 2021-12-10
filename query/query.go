@@ -19,25 +19,36 @@ type Query interface {
 	eval(ast.Value) (ast.Value, error)
 }
 
-// Key traverses a sequence of nested object keys from the root.  If no keys
-// are specified, the root is returned.
-func Key(keys ...string) Query { return keyQuery(keys) }
-
-type keyQuery []string
-
-func (kq keyQuery) eval(v ast.Value) (ast.Value, error) {
-	for _, key := range kq {
-		obj, ok := v.(ast.Object)
-		if !ok {
-			return nil, fmt.Errorf("got %T, want object", v)
+// Key traverses a sequence of nested object keys or array indices from the
+// root.  If no keys are specified, the root is returned. Each key must be
+// either a string or an int, or Key will panic.
+func Key(keys ...interface{}) Query {
+	kq := make(Seq, len(keys))
+	for i, key := range keys {
+		switch t := key.(type) {
+		case string:
+			kq[i] = objKey(t)
+		case int:
+			kq[i] = nthQuery(t)
+		default:
+			panic("invalid key")
 		}
-		mem := obj.Find(key)
-		if mem == nil {
-			return nil, fmt.Errorf("key %q not found", key)
-		}
-		v = mem.Value
 	}
-	return v, nil
+	return kq
+}
+
+type objKey string
+
+func (o objKey) eval(v ast.Value) (ast.Value, error) {
+	obj, ok := v.(ast.Object)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want object", v)
+	}
+	mem := obj.Find(string(o))
+	if mem == nil {
+		return nil, fmt.Errorf("key %q not found", o)
+	}
+	return mem.Value, nil
 }
 
 // Nth selects the array element at offset z. Negative offsets select from the
