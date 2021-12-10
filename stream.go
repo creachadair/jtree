@@ -23,9 +23,6 @@ type Anchor interface {
 // The Anchor argument to a Handler method is only valid for the duration of
 // that method call. If the method needs to retain information about the
 // location after it returns, it must copy the relevant data.
-//
-// The SyntaxError method is special: The parser calls it to report a syntax
-// error, and terminates parsing regardless what it returns.
 type Handler interface {
 	// Begin a new object, whose open brace is at loc.
 	BeginObject(loc Anchor) error
@@ -50,11 +47,6 @@ type Handler interface {
 	// Report a data value at the given location.
 	Value(loc Anchor) error
 
-	// Report a syntax error at the given location and err != nil.
-	// If SyntaxError returns a non-nil error, that value replaces err and is
-	// reported from the parser. Otherwise the parser exits reporting err.
-	SyntaxError(loc Anchor, err error) error
-
 	// EndOfInput reports the end of the input stream.
 	EndOfInput(loc Anchor)
 }
@@ -75,7 +67,8 @@ func (s *Stream) recoverParseError(errp *error) {
 }
 
 // Parse parses the input stream and delivers events to h until either an error
-// occurs or the input is exhausted.
+// occurs or the input is exhausted. In case of a syntax error, the returned
+// error has type *SyntaxError.
 func (s *Stream) Parse(h Handler) (err error) {
 	defer s.recoverParseError(&err)
 
@@ -85,7 +78,7 @@ func (s *Stream) Parse(h Handler) (err error) {
 			h.EndOfInput(s.s)
 			return nil
 		} else if err != nil {
-			s.syntaxError(h, "invalid input: %w", err)
+			s.syntaxError(err, "invalid input")
 		}
 
 		s.parseElement(h)
@@ -94,7 +87,8 @@ func (s *Stream) Parse(h Handler) (err error) {
 
 // ParseOne parses a single value from the input stream and delivers events to
 // h until the value is complete or an error occurs. If no further value is
-// available from the input, ParseOne returns io.EOF.
+// available from the input, ParseOne returns io.EOF. In case of a syntax
+// error, the returned error has type *SyntaxError.
 func (s *Stream) ParseOne(h Handler) (err error) {
 	defer s.recoverParseError(&err)
 
@@ -102,7 +96,7 @@ func (s *Stream) ParseOne(h Handler) (err error) {
 		h.EndOfInput(s.s)
 		return err
 	} else if err != nil {
-		s.syntaxError(h, "invalid input: %w", err)
+		s.syntaxError(err, "invalid input")
 	}
 	s.parseElement(h)
 	return nil
@@ -125,9 +119,9 @@ func (s *Stream) parseElement(h Handler) {
 	case Integer, Number, String, True, False, Null:
 		s.checkError(h.Value(s.s))
 	case RBrace, RSquare, Comma, Colon:
-		s.syntaxError(h, "unexpected %v", tok)
+		s.syntaxError(nil, "unexpected %v", tok)
 	default:
-		s.syntaxError(h, "unknown token %v", tok)
+		s.syntaxError(nil, "unknown token %v", tok)
 	}
 }
 
@@ -177,28 +171,27 @@ func (s *Stream) parseElements(h Handler) {
 
 func (s *Stream) advance(h Handler, tokens ...Token) Token {
 	if err := s.s.Next(); err != nil {
-		s.syntaxError(h, "expected %v, got error: %w", tokLabel(tokens), err)
+		s.syntaxError(err, "expected %v, got error: %v", tokLabel(tokens), err)
 	}
 	tok := s.s.Token()
 	if len(tokens) != 0 && !tokOneOf(tok, tokens) {
-		s.syntaxError(h, "expected %v, got %v", tokLabel(tokens), tok)
+		s.syntaxError(nil, "expected %v, got %v", tokLabel(tokens), tok)
 	}
 	return tok
 }
 
 func (s *Stream) require(h Handler, token Token) {
 	if tok := s.s.Token(); tok != token {
-		s.syntaxError(h, "expected %v, got %v", token, tok)
+		s.syntaxError(nil, "expected %v, got %v", token, tok)
 	}
 }
 
-func (s *Stream) syntaxError(h Handler, msg string, args ...interface{}) {
-	loc := s.s.Location().First
-	err := fmt.Errorf("at %s: "+msg, append([]interface{}{loc}, args...)...)
-	if herr := h.SyntaxError(s.s, err); herr != nil {
-		panic(herr)
-	}
-	panic(err)
+func (s *Stream) syntaxError(err error, msg string, args ...interface{}) {
+	panic(&SyntaxError{
+		Location: s.s.Location().First,
+		Message:  fmt.Sprintf(msg, args...),
+		err:      err,
+	})
 }
 
 func (s *Stream) checkError(err error) {
@@ -231,3 +224,19 @@ func tokOneOf(cur Token, tokens []Token) bool {
 	}
 	return false
 }
+
+// SyntaxError is the concrete type of errors reported by the stream parser.
+type SyntaxError struct {
+	Location LineCol
+	Message  string
+
+	err error
+}
+
+// Error satisfies the error interface.
+func (s *SyntaxError) Error() string {
+	return fmt.Sprintf("at %s: %s", s.Location, s.Message)
+}
+
+// Unwrap supports error wrapping.
+func (s *SyntaxError) Unwrap() error { return s.err }

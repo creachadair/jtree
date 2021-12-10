@@ -84,60 +84,61 @@ func TestStreamErrors(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
+		estr  string
 	}{
 		// Various kinds of unbalanced object bits.
-		{`{`, `
-BeginObject
-SyntaxError at 1:1: expected "}" or string, got error: EOF`},
-		{`}`, `
-SyntaxError at 1:0: unexpected "}"`},
-		{`{false:1}`, `
-BeginObject
-SyntaxError at 1:1: expected "}" or string, got false`},
+		{`{`, `BeginObject`,
+			`at 1:1: expected "}" or string, got error: EOF`},
+		{`}`, ``, `at 1:0: unexpected "}"`},
+		{`{false:1}`, `BeginObject`,
+			`at 1:1: expected "}" or string, got false`},
 		{`{"true":}`, `
 BeginObject
-BeginMember <"true">
-SyntaxError at 1:8: unexpected "}"`},
+BeginMember <"true">`,
+			`at 1:8: unexpected "}"`},
 		{`{"true":1,`, `
 BeginObject
 BeginMember <"true">
 Value integer <1>
-EndMember ","
-SyntaxError at 1:10: expected string, got error: EOF`},
+EndMember ","`,
+			`at 1:10: expected string, got error: EOF`},
 
 		// Unbalanced array bits.
-		{`[`, `
-BeginArray
-SyntaxError at 1:1: expected more input, got error: EOF`},
-		{`]`, `
-SyntaxError at 1:0: unexpected "]"`},
+		{`[`, `BeginArray`,
+			`at 1:1: expected more input, got error: EOF`},
+		{`]`, ``, `at 1:0: unexpected "]"`},
 		{`[15,`, `
 BeginArray
-Value integer <15>
-SyntaxError at 1:4: expected more input, got error: EOF`},
+Value integer <15>`,
+			`at 1:4: expected more input, got error: EOF`},
 		{`[15,]`, `
 BeginArray
-Value integer <15>
-SyntaxError at 1:4: unexpected "]"`},
+Value integer <15>`,
+			`at 1:4: unexpected "]"`},
 
 		// Invalid values.
 		{`1 2.0 forthright`, `
 Value integer <1>
-Value number <2.0>
-SyntaxError at 1:6: invalid input: offset 16: unknown constant "forthright"`},
-		{`"what did you`, `
-SyntaxError at 1:0: invalid input: offset 13: unexpected error: EOF`},
+Value number <2.0>`,
+			`at 1:6: invalid input`},
+		{`"what did you`, ``,
+			`at 1:0: invalid input`},
 	}
 
 	for _, test := range tests {
 		st := jtree.NewStream(strings.NewReader(test.input))
 		th := new(testHandler)
-		if err := st.Parse(th); err == nil {
+		err := st.Parse(th)
+		if err == nil {
 			t.Error("Parse did not report an error")
+			continue
 		}
 
 		if diff := diffStrings(test.want, th.output()); diff != "" {
 			t.Errorf("Input: %#q\nOutput: (-want, +got)\n%s", test.input, diff)
+		}
+		if diff := diffStrings(test.estr, err.Error()); diff != "" {
+			t.Errorf("Input: %#q\nError: (-want, +got)\n%s", test.input, diff)
 		}
 	}
 }
