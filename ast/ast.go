@@ -32,6 +32,9 @@ func (o Object) Find(key string) *Member {
 	return nil
 }
 
+// Len returns the number of members in the object.
+func (o Object) Len() int { return len(o) }
+
 // String renders o as JSON text.
 func (o Object) String() string {
 	var sb strings.Builder
@@ -89,6 +92,9 @@ func (m *Member) Key() string {
 type Array []Value
 
 func (Array) astValue() {}
+
+// Len returns the number of elements in a.
+func (a Array) Len() int { return len(a) }
 
 // String renders the array as JSON text.
 func (a Array) String() string {
@@ -212,6 +218,9 @@ func (s *String) Unescape() string {
 	return *s.unescaped
 }
 
+// Len returns the length in bytes of the unescaped content of s.
+func (s *String) Len() int { return len(s.Unescape()) }
+
 // String renders s as JSON text.
 func (s *String) String() string {
 	if s.text == nil {
@@ -226,6 +235,9 @@ func (s *String) String() string {
 type Null struct{}
 
 func (Null) astValue() {}
+
+// Len returns the length of null, which is 0.
+func (Null) Len() int { return 0 }
 
 // String renders the value as a JSON null.
 func (Null) String() string { return "null" }

@@ -113,18 +113,12 @@ func Len() Query { return lenQuery{} }
 type lenQuery struct{}
 
 func (lenQuery) eval(v ast.Value) (ast.Value, error) {
-	switch t := v.(type) {
-	case ast.Object:
-		return ast.NewInteger(int64(len(t))), nil
-	case ast.Array:
-		return ast.NewInteger(int64(len(t))), nil
-	case *ast.Null:
-		return ast.NewInteger(0), nil
-	case *ast.String:
-		return ast.NewInteger(int64(len(t.Unescape()))), nil
-	default:
-		return nil, fmt.Errorf("cannot take length of %T", v)
+	if t, ok := v.(interface {
+		Len() int
+	}); ok {
+		return ast.NewInteger(int64(t.Len())), nil
 	}
+	return nil, fmt.Errorf("cannot take length of %T", v)
 }
 
 // Seq is a sequential composition of queries. An empty Seq selects the root;
