@@ -5,6 +5,7 @@ package jtree_test
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"io"
 	"os"
 	"testing"
@@ -13,8 +14,10 @@ import (
 	"github.com/creachadair/jtree/ast"
 )
 
+var inputPath = flag.String("input", "testdata/input.json", "Input JSON file")
+
 func BenchmarkScanner(b *testing.B) {
-	input, err := os.ReadFile("testdata/input.json")
+	input, err := os.ReadFile(*inputPath)
 	if err != nil {
 		b.Fatalf("Reading test input: %v", err)
 	}
