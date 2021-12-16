@@ -19,22 +19,22 @@ type Query interface {
 	eval(ast.Value) (ast.Value, error)
 }
 
-// Key traverses a sequence of nested object keys or array indices from the
+// Path traverses a sequence of nested object keys or array indices from the
 // root.  If no keys are specified, the root is returned. Each key must be
-// either a string or an int, or Key will panic.
-func Key(keys ...interface{}) Query {
-	kq := make(Seq, len(keys))
+// either a string or an int, or Path will panic.
+func Path(keys ...interface{}) Query {
+	pq := make(Seq, len(keys))
 	for i, key := range keys {
 		switch t := key.(type) {
 		case string:
-			kq[i] = objKey(t)
+			pq[i] = objKey(t)
 		case int:
-			kq[i] = nthQuery(t)
+			pq[i] = nthQuery(t)
 		default:
 			panic("invalid key")
 		}
 	}
-	return kq
+	return pq
 }
 
 type objKey string
