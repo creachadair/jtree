@@ -48,7 +48,7 @@ func Example_medium() {
 	v, err := query.Eval(root, query.Object{
 		"name": query.Path("plaintiff"),
 		"act": query.Array{
-			query.String("you"),
+			query.Path("complaint", "defendant"),
 			query.Path("complaint", "action"),
 			query.String("my"),
 			query.Path("relatedPersons", "Individual 1", "id"),
