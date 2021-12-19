@@ -1,4 +1,21 @@
 // Package query implements structural queries over JSON values.
+//
+// A query describes a syntactic substructure of a JSON syntax tree, such as an
+// object member, array element, or a path through the tree. Evaluating a query
+// against a concrete JSON value traverses the structure described by the query
+// and returns the resulting value.
+//
+// The simplest query is for a "path", a sequence of object keys and/or array
+// indices that describes a path from the root of a JSON value. For example,
+// given the JSON value:
+//
+//     [{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]
+//
+// the query
+//
+//     query.Path(1, "c", "d")
+//
+// yields the value "true".
 package query
 
 import (
