@@ -2,10 +2,7 @@ package query_test
 
 import (
 	"bytes"
-	"fmt"
-	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/creachadair/jtree/ast"
@@ -195,47 +192,4 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
-}
-
-func Example() {
-	vals, err := ast.Parse(strings.NewReader(`{
-  "plaintiff": "Inigo Montoya",
-  "complaint": {
-     "defendant": "you",
-     "action": "killed",
-     "target": "Individual 1"
-  },
-  "requestedRelief": ["die", "pay punitive damages", "pay attorney fees"],
-  "relatedPersons": {
-    "Individual 1": {"id": "father", "rel": "plaintiff"}
-  }
-}`))
-	if err != nil {
-		log.Fatalf("Parse: %v", err)
-	} else if len(vals) != 1 {
-		log.Fatalf("Got %d values, wanted 1", len(vals))
-	}
-
-	v, err := query.Eval(vals[0], query.Object{
-		"name": query.Path("plaintiff"),
-		"act": query.Array{
-			query.String("you"),
-			query.Path("complaint", "action"),
-			query.String("my"),
-			query.Path("relatedPersons", "Individual 1", "id"),
-		},
-		"req": query.Path("requestedRelief", 0),
-	})
-	if err != nil {
-		log.Fatalf("Eval: %v", err)
-	}
-	obj := v.(ast.Object)
-	fmt.Printf("Hello, my name is: %s\n", obj.Find("name").Value)
-	fmt.Println(obj.Find("act").Value)
-	fmt.Printf("Prepare to %s",
-		obj.Find("req").Value.(*ast.String).Unescape())
-	// Output:
-	// Hello, my name is: "Inigo Montoya"
-	// ["you","killed","my","father"]
-	// Prepare to die
 }
