@@ -10,23 +10,43 @@ import (
 	"github.com/creachadair/jtree"
 )
 
+// A Parser parses and returns JSON values from a reader.
+type Parser struct {
+	h  *parseHandler
+	st *jtree.Stream
+}
+
+// NewParser constructs a parser that consumes input from r.
+func NewParser(r io.Reader) *Parser {
+	return &Parser{h: new(parseHandler), st: jtree.NewStream(r)}
+}
+
+// Parse parses and returns the next JSON value from its input.
+// It returns io.EOF if no further values are available.
+func (p *Parser) Parse() (Value, error) {
+	if err := p.st.ParseOne(p.h); err != nil {
+		return nil, err
+	} else if len(p.h.stk) != 1 {
+		return nil, errors.New("incomplete value")
+	}
+	out := *p.h.stk[0]
+	p.h.stk = p.h.stk[:0]
+	return out, nil
+}
+
 // Parse parses and returns the JSON values from r. In case of error, any
 // complete values already parsed are returned along with the error.
 func Parse(r io.Reader) ([]Value, error) {
-	h := new(parseHandler)
-	st := jtree.NewStream(r)
+	p := NewParser(r)
 	var vs []Value
 	for {
-		if err := st.ParseOne(h); err == io.EOF {
+		v, err := p.Parse()
+		if err == io.EOF {
 			return vs, nil
 		} else if err != nil {
 			return vs, err
 		}
-		if len(h.stk) != 1 {
-			return vs, errors.New("incomplete value")
-		}
-		vs = append(vs, *h.stk[0])
-		h.stk = h.stk[:0]
+		vs = append(vs, v)
 	}
 }
 
