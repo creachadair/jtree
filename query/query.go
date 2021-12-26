@@ -68,10 +68,6 @@ func (o objKey) eval(v ast.Value) (ast.Value, error) {
 	return mem.Value, nil
 }
 
-// Nth selects the array element at offset z. Negative offsets select from the
-// end of the array.
-func Nth(z int) Query { return nthQuery(z) }
-
 type nthQuery int
 
 func (nq nthQuery) eval(v ast.Value) (ast.Value, error) {

@@ -54,7 +54,7 @@ func TestQuery(t *testing.T) {
 	t.Run("Seq", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Path("episodes"),
-			query.Nth(0),
+			query.Path(0),
 			query.Path("airDate"),
 		})
 		if err != nil {
@@ -82,7 +82,7 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Empty Alt: got %+v, want error", v)
 		}
 		v, err := query.Eval(val, query.Alt{
-			query.Nth(0),
+			query.Path(0),
 			query.Path("episodes"),
 			query.Null,
 		})
