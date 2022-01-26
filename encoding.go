@@ -60,8 +60,8 @@ func Escape(src string) []byte {
 // input must have the enclosing double quotation marks already removed.
 //
 // Escape sequences are replaced with their unescaped equivalents. Invalid
-// escapes are replaced by the Unicode replacement rune. DecodeString reports
-// an error for an incomplete escape sequence.
+// escapes are replaced by the Unicode replacement rune. Unescape reports an
+// error for an incomplete escape sequence.
 func Unescape(src []byte) ([]byte, error) {
 	if !bytes.ContainsRune(src, '\\') {
 		return src, nil
