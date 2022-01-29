@@ -32,7 +32,7 @@ func Escape(src string) []byte {
 				} else {
 					buf.WriteString("u00")
 					buf.WriteByte(hexDigit[int(r>>4)])
-					buf.WriteByte(hexDigit[int(r&255)])
+					buf.WriteByte(hexDigit[int(r&15)])
 				}
 				continue
 			} else if r == '\\' || r == '"' {

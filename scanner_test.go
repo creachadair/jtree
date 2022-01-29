@@ -139,6 +139,7 @@ func TestEscape(t *testing.T) {
 		{`\ufffd`, `\\ufffd`},
 		{"\u2028 \u2029 \ufffd", `\u2028 \u2029 \ufffd`},
 		{"This is the end\v", `This is the end\u000b`},
+		{"<\x1e>", `<\u001e>`},
 	}
 	for _, test := range tests {
 		got := string(jtree.Escape(test.input))
