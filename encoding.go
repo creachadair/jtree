@@ -43,11 +43,11 @@ func Escape(src string) []byte {
 		}
 
 		switch r {
-		case '\ufffd':
+		case '\ufffd': // replacement rune
 			buf.WriteString(`\ufffd`)
-		case '\u2028':
+		case '\u2028': // line separator
 			buf.WriteString(`\u2028`)
-		case '\u2029':
+		case '\u2029': // paragraph separator
 			buf.WriteString(`\u2029`)
 		default:
 			buf.WriteRune(r)
