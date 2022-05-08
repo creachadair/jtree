@@ -4,5 +4,4 @@
 
 This repository defines a Go module that implements an experimental JSON
 scanner and parser.  This implementation is a work-in-progress and should not
-be considered ready for producdtion use.
-
+be considered ready for production use.
