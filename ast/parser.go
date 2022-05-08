@@ -57,11 +57,10 @@ type parseHandler struct {
 	tbuf [][]byte
 }
 
-// intern interns a copy of text and returns a slice of the copy.  Allocations
-// are batched to reduce allocation overhead.
-func (h *parseHandler) intern(text []byte) []byte {
+// copyOf returns a copy of text.  Allocations are batched to reduce overhead.
+func (h *parseHandler) copyOf(text []byte) []byte {
 	const minBlockSlop = 16
-	const bufBlockBytes = 8192
+	const bufBlockBytes = 16384
 
 	if len(text) >= bufBlockBytes {
 		return append([]byte(nil), text...)
@@ -149,7 +148,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{key: h.intern(loc.Text())}
+	mem := &Member{key: h.copyOf(loc.Text())}
 	top := h.top()
 	obj := (*top).(Object)
 	*top = append(obj, mem)
@@ -162,11 +161,11 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(&String{text: h.intern(loc.Text())})
+		return h.reduceValue(&String{text: h.copyOf(loc.Text())})
 	case jtree.Integer:
-		return h.reduceValue(&Integer{text: h.intern(loc.Text())})
+		return h.reduceValue(&Integer{text: h.copyOf(loc.Text())})
 	case jtree.Number:
-		return h.reduceValue(&Number{text: h.intern(loc.Text())})
+		return h.reduceValue(&Number{text: h.copyOf(loc.Text())})
 	case jtree.True, jtree.False:
 		return h.reduceValue(&Bool{value: loc.Token() == jtree.True})
 	case jtree.Null:
