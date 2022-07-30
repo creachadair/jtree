@@ -186,7 +186,7 @@ func (s *Stream) require(h Handler, token Token) {
 	}
 }
 
-func (s *Stream) syntaxError(err error, msg string, args ...interface{}) {
+func (s *Stream) syntaxError(err error, msg string, args ...any) {
 	panic(&SyntaxError{
 		Location: s.s.Location().First,
 		Message:  fmt.Sprintf(msg, args...),

@@ -25,7 +25,7 @@ func BenchmarkScanner(b *testing.B) {
 
 	b.Run("Unmarshal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var ignore interface{}
+			var ignore any
 			if err := json.Unmarshal(input, &ignore); err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}
@@ -49,7 +49,7 @@ func BenchmarkScanner(b *testing.B) {
 	b.Run("Decode", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			dec := json.NewDecoder(bytes.NewReader(input))
-			var ignore interface{}
+			var ignore any
 			if err := dec.Decode(&ignore); err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}

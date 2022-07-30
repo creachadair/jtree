@@ -185,7 +185,7 @@ type testHandler struct {
 	buf bytes.Buffer
 }
 
-func (t *testHandler) pr(msg string, args ...interface{}) {
+func (t *testHandler) pr(msg string, args ...any) {
 	if !strings.HasSuffix(msg, "\n") {
 		msg += "\n"
 	}

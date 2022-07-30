@@ -39,7 +39,7 @@ type Query interface {
 // Path traverses a sequence of nested object keys or array indices from the
 // root.  If no keys are specified, the root is returned. Each key must be
 // either a string or an int, or Path will panic.
-func Path(keys ...interface{}) Query {
+func Path(keys ...any) Query {
 	pq := make(Seq, len(keys))
 	for i, key := range keys {
 		switch t := key.(type) {
