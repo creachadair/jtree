@@ -9,11 +9,11 @@
 // indices that describes a path from the root of a JSON value. For example,
 // given the JSON value:
 //
-//     [{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]
+//	[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]
 //
 // the query
 //
-//     query.Path(1, "c", "d")
+//	query.Path(1, "c", "d")
 //
 // yields the value "true".
 package query
