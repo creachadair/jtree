@@ -52,16 +52,24 @@ func (o Object) String() string {
 
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
-	Key   *String
+	Key   String
 	Value Value
 }
 
 // NewMember constructs a member with the given key and value.
 func NewMember(key string, val Value) *Member {
-	return &Member{Key: NewString(key), Value: val}
+	m := &Member{Value: val}
+	m.SetKey(key)
+	return m
 }
 
 func (m *Member) astValue() {}
+
+// SetKey replaces the key of m with k in-place.
+func (m *Member) SetKey(key string) {
+	m.Key.text = nil
+	m.Key.unescaped = &key
+}
 
 // String renders the member as JSON text.
 func (m *Member) String() string {
