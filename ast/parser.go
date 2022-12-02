@@ -148,7 +148,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{key: h.copyOf(loc.Text())}
+	mem := &Member{Key: &String{text: h.copyOf(loc.Text())}}
 	top := h.top()
 	obj := (*top).(Object)
 	*top = append(obj, mem)

@@ -25,7 +25,7 @@ func (o Object) astValue() {}
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key() == key {
+		if m.Key.Unescape() == key {
 			return m
 		}
 	}
@@ -52,40 +52,20 @@ func (o Object) String() string {
 
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
-	key  []byte
-	dkey *string
-
+	Key   *String
 	Value Value
 }
 
 // NewMember constructs a member with the given key and value.
 func NewMember(key string, val Value) *Member {
-	return &Member{dkey: &key, Value: val}
+	return &Member{Key: NewString(key), Value: val}
 }
 
 func (m *Member) astValue() {}
 
 // String renders the member as JSON text.
 func (m *Member) String() string {
-	if m.key == nil {
-		m.key = append(m.key, '"')
-		m.key = append(m.key, jtree.Escape(*m.dkey)...)
-		m.key = append(m.key, '"')
-	}
-	return string(m.key) + ":" + m.Value.String()
-}
-
-// Key returns the key of the member.
-func (m *Member) Key() string {
-	if m.dkey == nil && len(m.key) != 0 {
-		dec, err := jtree.Unescape(m.key[1 : len(m.key)-1])
-		if err != nil {
-			panic(err)
-		}
-		str := string(dec)
-		m.dkey = &str
-	}
-	return *m.dkey
+	return m.Key.String() + ":" + m.Value.String()
 }
 
 // An Array is a sequence of values.
