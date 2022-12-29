@@ -23,69 +23,73 @@ func BenchmarkScanner(b *testing.B) {
 	}
 	b.Logf("Benchmark input: %d bytes", len(input))
 
-	b.Run("Unmarshal", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			var ignore any
-			if err := json.Unmarshal(input, &ignore); err != nil {
-				b.Fatalf("Unexpected error: %v", err)
-			}
-		}
-	})
-
-	b.Run("Tokenize", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			dec := json.NewDecoder(bytes.NewReader(input))
-			for {
-				_, err := dec.Token()
-				if err == io.EOF {
-					break
-				} else if err != nil {
+	b.Run("Std", func(b *testing.B) {
+		b.Run("Unmarshal", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				var ignore any
+				if err := json.Unmarshal(input, &ignore); err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
 			}
-		}
-	})
+		})
 
-	b.Run("Decode", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			dec := json.NewDecoder(bytes.NewReader(input))
-			var ignore any
-			if err := dec.Decode(&ignore); err != nil {
-				b.Fatalf("Unexpected error: %v", err)
+		b.Run("Tokenize", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dec := json.NewDecoder(bytes.NewReader(input))
+				for {
+					_, err := dec.Token()
+					if err == io.EOF {
+						break
+					} else if err != nil {
+						b.Fatalf("Unexpected error: %v", err)
+					}
+				}
 			}
-		}
-	})
+		})
 
-	b.Run("Scanner", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			dec := jtree.NewScanner(bytes.NewReader(input))
-			for {
-				err := dec.Next()
-				if err == io.EOF {
-					break
-				} else if err != nil {
+		b.Run("Decode", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dec := json.NewDecoder(bytes.NewReader(input))
+				var ignore any
+				if err := dec.Decode(&ignore); err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
 			}
-		}
+		})
 	})
 
-	b.Run("Stream", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			dec := jtree.NewStream(bytes.NewReader(input))
-			if err := dec.Parse(noopHandler{}); err != nil {
-				b.Fatalf("Unexpected error: %v", err)
+	b.Run("JTree", func(b *testing.B) {
+		b.Run("Scanner", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dec := jtree.NewScanner(bytes.NewReader(input))
+				for {
+					err := dec.Next()
+					if err == io.EOF {
+						break
+					} else if err != nil {
+						b.Fatalf("Unexpected error: %v", err)
+					}
+				}
 			}
-		}
-	})
+		})
 
-	b.Run("ParseAST", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, err := ast.Parse(bytes.NewReader(input))
-			if err != nil {
-				b.Fatalf("Unexpected error: %v", err)
+		b.Run("Stream", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dec := jtree.NewStream(bytes.NewReader(input))
+				if err := dec.Parse(noopHandler{}); err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
 			}
-		}
+		})
+
+		b.Run("ParseAST", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := ast.Parse(bytes.NewReader(input))
+				if err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
 	})
 }
 
