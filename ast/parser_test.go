@@ -144,7 +144,7 @@ func TestString(t *testing.T) {
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 	}
 	for _, test := range tests {
-		got := test.input.String()
+		got := test.input.JSON()
 		if got != test.want {
 			t.Errorf("Input: %+v\nGot:  %s\nWant: %s", test.input, got, test.want)
 		}

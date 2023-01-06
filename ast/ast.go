@@ -13,25 +13,23 @@ import (
 
 // A Value is an arbitrary JSON value.
 type Value interface {
-	astValue()
-	String() string
+	// JSON converts the value into JSON source text.
+	JSON() string
 }
 
-// A Texter is a Value that can be rendered as a string.
-type Texter interface {
+// A Stringer is a Value that can be rendered as a string.
+type Stringer interface {
 	Value
-	Text() string
+	String() string
 }
 
 // An Object is a collection of key-value members.
 type Object []*Member
 
-func (o Object) astValue() {}
-
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.Text() == key {
+		if m.Key.String() == key {
 			return m
 		}
 	}
@@ -41,13 +39,13 @@ func (o Object) Find(key string) *Member {
 // Len returns the number of members in the object.
 func (o Object) Len() int { return len(o) }
 
-// String renders o as JSON text.
-func (o Object) String() string {
+// JSON renders o as JSON text.
+func (o Object) JSON() string {
 	var sb strings.Builder
 	sb.WriteString("{")
 	last := len(o) - 1
 	for i, elt := range o {
-		sb.WriteString(elt.String())
+		sb.WriteString(elt.JSON())
 		if i != last {
 			sb.WriteString(",")
 		}
@@ -56,46 +54,40 @@ func (o Object) String() string {
 	return sb.String()
 }
 
-// A Member is a single key-value pair belonging to an Object.
+// A Member is a single key-value pair belonging to an Object. A Key must be a
+// value convertible to a string, typically either an ast.Quoted or ast.String.
 type Member struct {
-	Key   Texter
+	Key   Stringer
 	Value Value
 }
 
 // Field constructs an object member with the given key and value.
 func Field(key string, val Value) *Member {
-	return &Member{
-		Key:   String(key),
-		Value: val,
-	}
+	return &Member{Key: String(key), Value: val}
 }
 
-func (m *Member) astValue() {}
-
-// String renders the member as JSON text.
-func (m *Member) String() string {
-	return m.Key.String() + ":" + m.Value.String()
+// JSON renders the member as JSON text.
+func (m *Member) JSON() string {
+	return m.Key.JSON() + ":" + m.Value.JSON()
 }
 
 // An Array is a sequence of values.
 type Array []Value
 
-func (Array) astValue() {}
-
 // Len returns the number of elements in a.
 func (a Array) Len() int { return len(a) }
 
-// String renders the array as JSON text.
-func (a Array) String() string {
+// JSON renders the array as JSON text.
+func (a Array) JSON() string {
 	if len(a) == 0 {
 		return "[]"
 	}
 	var sb strings.Builder
 	sb.WriteString("[")
-	sb.WriteString(a[0].String())
+	sb.WriteString(a[0].JSON())
 	for _, elt := range a[1:] {
 		sb.WriteByte(',')
-		sb.WriteString(elt.String())
+		sb.WriteString(elt.JSON())
 	}
 	sb.WriteByte(']')
 	return sb.String()
@@ -104,10 +96,8 @@ func (a Array) String() string {
 // A Number is a numeric literal.
 type Number struct{ text []byte }
 
-func (Number) astValue() {}
-
-// String renders n as JSON text.
-func (n Number) String() string { return string(n.text) }
+// JSON renders n as JSON text.
+func (n Number) JSON() string { return string(n.text) }
 
 // Float returns a representation of n as a Float. It panics if n is not
 // representable as a floating-point value.
@@ -133,10 +123,8 @@ func (n Number) Int() Int {
 // A Float is represents a floating-point number.
 type Float float64
 
-func (Float) astValue() {}
-
-// String renders f as JSON text.
-func (f Float) String() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
+// JSON renders f as JSON text.
+func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
 
 // Value returns f as a float64. It is shorthand for a type conversion.
 func (f Float) Value() float64 { return float64(f) }
@@ -144,10 +132,8 @@ func (f Float) Value() float64 { return float64(f) }
 // An Int represents an integer number.
 type Int int64
 
-func (Int) astValue() {}
-
-// String renders z as JSON text.
-func (z Int) String() string { return strconv.FormatInt(int64(z), 10) }
+// JSON renders z as JSON text.
+func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
 
 // Value returns z as an int64. It is shorthand for a type conversion.
 func (z Int) Value() int64 { return int64(z) }
@@ -158,10 +144,8 @@ type Bool bool
 // Value reports the truth value of the Boolean.
 func (b Bool) Value() bool { return bool(b) }
 
-func (Bool) astValue() {}
-
-// String returns b as JSON text.
-func (b Bool) String() string {
+// JSON returns b as JSON text.
+func (b Bool) JSON() string {
 	if b {
 		return "true"
 	}
@@ -170,8 +154,6 @@ func (b Bool) String() string {
 
 // A Quoted is a quoted string value.
 type Quoted struct{ text []byte }
-
-func (Quoted) astValue() {}
 
 // Unquote returns the unescaped text of the string.
 func (q Quoted) Unquote() String {
@@ -185,19 +167,17 @@ func (q Quoted) Unquote() String {
 	return String(dec)
 }
 
-// Text returns the unescaped text of the string.
-func (q Quoted) Text() string { return string(q.Unquote()) }
+// String returns the unescaped text of the string.
+func (q Quoted) String() string { return string(q.Unquote()) }
 
 // Len returns the length in bytes of the unquoted text of q.
 func (q Quoted) Len() int { return q.Unquote().Len() }
 
-// String returns the JSON encoding of q.
-func (q Quoted) String() string { return string(q.text) }
+// JSON returns the JSON encoding of q.
+func (q Quoted) JSON() string { return string(q.text) }
 
 // A String is an unquoted string value.
 type String string
-
-func (String) astValue() {}
 
 // Len returns the length in bytes of s.
 func (s String) Len() int { return len(s) }
@@ -205,11 +185,11 @@ func (s String) Len() int { return len(s) }
 // Quote converts s into its quoted representation.
 func (s String) Quote() Quoted { return Quoted{text: s.enquote()} }
 
-// String renders s as JSON text.
-func (s String) String() string { return string(s.enquote()) }
+// JSON renders s as JSON text.
+func (s String) JSON() string { return string(s.enquote()) }
 
 // Text returns s as a plain string. It is shorthand for a type conversion.
-func (s String) Text() string { return string(s) }
+func (s String) String() string { return string(s) }
 
 func (s String) enquote() []byte {
 	// We might need to reallocate once, but usually not.
@@ -224,10 +204,8 @@ var Null nullValue
 
 type nullValue struct{}
 
-func (nullValue) astValue() {}
-
 // Len returns the length of null, which is 0.
 func (nullValue) Len() int { return 0 }
 
-// String renders the value as a JSON null.
-func (nullValue) String() string { return "null" }
+// JSON renders the value as a JSON null.
+func (nullValue) JSON() string { return "null" }
