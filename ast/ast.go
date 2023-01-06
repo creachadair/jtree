@@ -86,16 +86,17 @@ func (a Array) Len() int { return len(a) }
 
 // String renders the array as JSON text.
 func (a Array) String() string {
+	if len(a) == 0 {
+		return "[]"
+	}
 	var sb strings.Builder
 	sb.WriteString("[")
-	last := len(a) - 1
-	for i, elt := range a {
+	sb.WriteString(a[0].String())
+	for _, elt := range a[1:] {
+		sb.WriteByte(',')
 		sb.WriteString(elt.String())
-		if i != last {
-			sb.WriteString(",")
-		}
 	}
-	sb.WriteString("]")
+	sb.WriteByte(']')
 	return sb.String()
 }
 
