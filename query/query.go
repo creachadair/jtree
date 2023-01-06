@@ -198,7 +198,7 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 		if err != nil {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
-		out = append(out, ast.NewMember(key, val))
+		out = append(out, ast.Field(key, val))
 	}
 	return out, nil
 }

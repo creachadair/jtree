@@ -56,8 +56,8 @@ type Member struct {
 	Value Value
 }
 
-// NewMember constructs a member with the given key and value.
-func NewMember(key string, val Value) *Member {
+// Field constructs an object member with the given key and value.
+func Field(key string, val Value) *Member {
 	m := &Member{Value: val}
 	m.SetKey(key)
 	return m

@@ -113,23 +113,23 @@ func TestString(t *testing.T) {
 
 		{ast.Object{}, `{}`},
 		{ast.Object{
-			ast.NewMember("xs", &ast.Null{}),
+			ast.Field("xs", &ast.Null{}),
 		}, `{"xs":null}`},
 		{ast.Object{
-			ast.NewMember("name", ast.NewString("Dennis")),
-			ast.NewMember("age", ast.NewInteger(37)),
-			ast.NewMember("isOld", ast.NewBool(false)),
+			ast.Field("name", ast.NewString("Dennis")),
+			ast.Field("age", ast.NewInteger(37)),
+			ast.Field("isOld", ast.NewBool(false)),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
 
 		{ast.Object{
-			ast.NewMember("values", ast.Array{
+			ast.Field("values", ast.Array{
 				ast.NewInteger(5),
 				ast.NewNumber(10),
 				ast.NewBool(true),
 			}),
-			ast.NewMember("page", ast.Object{
-				ast.NewMember("token", ast.NewString("xyz-pdq-zvm")),
-				ast.NewMember("count", ast.NewInteger(100)),
+			ast.Field("page", ast.Object{
+				ast.Field("token", ast.NewString("xyz-pdq-zvm")),
+				ast.Field("count", ast.NewInteger(100)),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 	}
