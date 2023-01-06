@@ -91,11 +91,11 @@ func TestString(t *testing.T) {
 		{ast.NewString(""), `""`},
 		{ast.NewString("a \t b"), `"a \t b"`},
 
-		{ast.NewNumber(-0.00239), `-0.00239`},
+		{ast.Float(-0.00239), `-0.00239`},
 
-		{ast.NewInteger(0), `0`},
-		{ast.NewInteger(15), `15`},
-		{ast.NewInteger(-25), `-25`},
+		{ast.Int(0), `0`},
+		{ast.Int(15), `15`},
+		{ast.Int(-25), `-25`},
 
 		{ast.Array{}, `[]`},
 		{ast.Array{
@@ -103,7 +103,7 @@ func TestString(t *testing.T) {
 		}, `[false]`},
 		{ast.Array{
 			ast.Bool(true),
-			ast.NewInteger(199),
+			ast.Int(199),
 		}, `[true,199]`},
 		{ast.Array{
 			ast.NewString("free"),
@@ -117,19 +117,19 @@ func TestString(t *testing.T) {
 		}, `{"xs":null}`},
 		{ast.Object{
 			ast.Field("name", ast.NewString("Dennis")),
-			ast.Field("age", ast.NewInteger(37)),
+			ast.Field("age", ast.Int(37)),
 			ast.Field("isOld", ast.Bool(false)),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
 
 		{ast.Object{
 			ast.Field("values", ast.Array{
-				ast.NewInteger(5),
-				ast.NewNumber(10),
+				ast.Int(5),
+				ast.Int(10),
 				ast.Bool(true),
 			}),
 			ast.Field("page", ast.Object{
 				ast.Field("token", ast.NewString("xyz-pdq-zvm")),
-				ast.Field("count", ast.NewInteger(100)),
+				ast.Field("count", ast.Int(100)),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 	}

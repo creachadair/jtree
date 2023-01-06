@@ -100,67 +100,56 @@ func (a Array) String() string {
 	return sb.String()
 }
 
-// An Integer is an integer value.
-type Integer struct {
-	text  []byte
-	value *int64
-}
+// A Number is a numeric literal.
+type Number struct{ text []byte }
 
-// NewInteger constructs an Integer token with the given value.
-func NewInteger(z int64) *Integer { return &Integer{value: &z} }
-
-func (*Integer) astValue() {}
-
-// Int64 returns the value of z as an int64.
-func (z *Integer) Int64() int64 {
-	if z.value == nil {
-		v, err := strconv.ParseInt(string(z.text), 10, 64)
-		if err != nil {
-			panic(err)
-		}
-		z.value = &v
-	}
-	return *z.value
-}
-
-// String renders z as JSON text.
-func (z *Integer) String() string {
-	if z.text != nil {
-		return string(z.text)
-	}
-	return strconv.FormatInt(*z.value, 10)
-}
-
-// A Number is a floating-point value.
-type Number struct {
-	text  []byte
-	value *float64
-}
-
-// NewNumber constructs a Number token with the given value.
-func NewNumber(f float64) *Number { return &Number{value: &f} }
-
-func (*Number) astValue() {}
-
-// Float64 returns the value of n as a float64.
-func (n *Number) Float64() float64 {
-	if n.value == nil {
-		v, err := strconv.ParseFloat(string(n.text), 64)
-		if err != nil {
-			panic(err)
-		}
-		n.value = &v
-	}
-	return *n.value
-}
+func (Number) astValue() {}
 
 // String renders n as JSON text.
-func (n *Number) String() string {
-	if n.text != nil {
-		return string(n.text)
+func (n Number) String() string { return string(n.text) }
+
+// Float returns a representation of n as a Float. It panics if n is not
+// representable as a floating-point value.
+func (n Number) Float() Float {
+	v, err := strconv.ParseFloat(string(n.text), 64)
+	if err != nil {
+		panic(err)
 	}
-	return strconv.FormatFloat(*n.value, 'g', -1, 64)
+	return Float(v)
 }
+
+// Int returns a representation of n as an Int.  If n is valid but has
+// fractional parts, the fractions are truncated; otherwise Int panics if n is
+// not representable as a number.
+func (n Number) Int() Int {
+	v, err := strconv.ParseFloat(string(n.text), 64)
+	if err != nil {
+		panic(err)
+	}
+	return Int(v)
+}
+
+// A Float is represents a floating-point number.
+type Float float64
+
+func (Float) astValue() {}
+
+// String renders f as JSON text.
+func (f Float) String() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
+
+// Value returns f as a float64. It is shorthand for a type conversion.
+func (f Float) Value() float64 { return float64(f) }
+
+// An Int represents an integer number.
+type Int int64
+
+func (Int) astValue() {}
+
+// String renders z as JSON text.
+func (z Int) String() string { return strconv.FormatInt(int64(z), 10) }
+
+// Value returns z as an int64. It is shorthand for a type conversion.
+func (z Int) Value() int64 { return int64(z) }
 
 // A Bool is a Boolean constant, true or false.
 type Bool bool

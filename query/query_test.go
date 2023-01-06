@@ -33,8 +33,8 @@ func TestQuery(t *testing.T) {
 			want  string
 		}{
 			{"String", query.String("foo"), `"foo"`},
-			{"Number", query.Number(-3.1), `-3.1`},
-			{"Integer", query.Integer(17), `17`},
+			{"Float", query.Float(-3.1), `-3.1`},
+			{"Integer", query.Int(17), `17`},
 			{"True", query.Bool(true), `true`},
 			{"False", query.Bool(false), `false`},
 			{"Null", query.Null, `null`},
@@ -150,7 +150,7 @@ func TestQuery(t *testing.T) {
 		}
 		if length := obj.Find("length"); length == nil {
 			t.Error(`Missing "length" in result`)
-		} else if got := length.Value.(*ast.Integer).Int64(); got != wantLength {
+		} else if got := length.Value.(ast.Int).Value(); got != wantLength {
 			t.Errorf("Result: got length %d, want %d", got, wantLength)
 		}
 	})
@@ -170,7 +170,7 @@ func TestQuery(t *testing.T) {
 		if len(arr) != 2 {
 			t.Fatalf("Result: got %d values, want %d", len(arr), 2)
 		}
-		if got := arr[0].(*ast.Integer).Int64(); got != wantLength {
+		if got := arr[0].(ast.Int).Value(); got != wantLength {
 			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
 		}
 		if hasDetail := arr[1].(ast.Bool).Value(); hasDetail {
