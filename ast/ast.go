@@ -219,13 +219,15 @@ func (s *String) String() string {
 	return string(s.text)
 }
 
-// Null represents the null constant.
-type Null struct{}
+// Null represents the JSON null constant. The length of Null is defined as 0.
+var Null nullValue
 
-func (Null) astValue() {}
+type nullValue struct{}
+
+func (nullValue) astValue() {}
 
 // Len returns the length of null, which is 0.
-func (Null) Len() int { return 0 }
+func (nullValue) Len() int { return 0 }
 
 // String renders the value as a JSON null.
-func (Null) String() string { return "null" }
+func (nullValue) String() string { return "null" }

@@ -169,7 +169,7 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	case jtree.True, jtree.False:
 		return h.reduceValue(&Bool{value: loc.Token() == jtree.True})
 	case jtree.Null:
-		return h.reduceValue(&Null{})
+		return h.reduceValue(Null)
 	default:
 		return fmt.Errorf("unknown value %v", loc.Token())
 	}

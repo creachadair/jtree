@@ -83,7 +83,7 @@ func TestString(t *testing.T) {
 		input ast.Value
 		want  string
 	}{
-		{&ast.Null{}, "null"},
+		{ast.Null, "null"},
 
 		{ast.NewBool(false), "false"},
 		{ast.NewBool(true), "true"},
@@ -113,7 +113,7 @@ func TestString(t *testing.T) {
 
 		{ast.Object{}, `{}`},
 		{ast.Object{
-			ast.Field("xs", &ast.Null{}),
+			ast.Field("xs", ast.Null),
 		}, `{"xs":null}`},
 		{ast.Object{
 			ast.Field("name", ast.NewString("Dennis")),

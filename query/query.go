@@ -232,7 +232,7 @@ func Integer(z int64) Query { return constQuery{ast.NewInteger(z)} }
 func Bool(b bool) Query { return constQuery{ast.NewBool(b)} }
 
 // A Null query ignores its input and returns a null value.
-var Null = constQuery{new(ast.Null)}
+var Null = constQuery{ast.Null}
 
 type constQuery struct{ ast.Value }
 
