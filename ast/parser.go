@@ -148,7 +148,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{Key: String{text: h.copyOf(loc.Text())}}
+	mem := &Member{Key: Quoted{text: h.copyOf(loc.Text())}}
 	top := h.top()
 	obj := (*top).(Object)
 	*top = append(obj, mem)
@@ -161,7 +161,7 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(&String{text: h.copyOf(loc.Text())})
+		return h.reduceValue(Quoted{text: h.copyOf(loc.Text())})
 	case jtree.Integer:
 		return h.reduceValue(Number{text: h.copyOf(loc.Text())})
 	case jtree.Number:

@@ -65,8 +65,8 @@ func TestParse(t *testing.T) {
 	if !ok {
 		t.Fatalf("Array entry is %T, not object", lst[0])
 	}
-	check[*ast.String](t, obj, "summary", func(s *ast.String) {
-		t.Logf("String field value: %s", s.Unescape())
+	check[ast.Quoted](t, obj, "summary", func(s ast.Quoted) {
+		t.Logf("String field value: %s", s.Unquote())
 	})
 	check[ast.Number](t, obj, "episode", func(v ast.Number) {
 		t.Logf("Number field value: %v", v)
@@ -98,8 +98,8 @@ func TestString(t *testing.T) {
 		{ast.Bool(false), "false"},
 		{ast.Bool(true), "true"},
 
-		{ast.NewString(""), `""`},
-		{ast.NewString("a \t b"), `"a \t b"`},
+		{ast.String(""), `""`},
+		{ast.String("a \t b"), `"a \t b"`},
 
 		{ast.Float(-0.00239), `-0.00239`},
 
@@ -116,9 +116,9 @@ func TestString(t *testing.T) {
 			ast.Int(199),
 		}, `[true,199]`},
 		{ast.Array{
-			ast.NewString("free"),
-			ast.NewString("your"),
-			ast.NewString("mind"),
+			ast.String("free"),
+			ast.String("your"),
+			ast.String("mind"),
 		}, `["free","your","mind"]`},
 
 		{ast.Object{}, `{}`},
@@ -126,7 +126,7 @@ func TestString(t *testing.T) {
 			ast.Field("xs", ast.Null),
 		}, `{"xs":null}`},
 		{ast.Object{
-			ast.Field("name", ast.NewString("Dennis")),
+			ast.Field("name", ast.String("Dennis")),
 			ast.Field("age", ast.Int(37)),
 			ast.Field("isOld", ast.Bool(false)),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
@@ -138,7 +138,7 @@ func TestString(t *testing.T) {
 				ast.Bool(true),
 			}),
 			ast.Field("page", ast.Object{
-				ast.Field("token", ast.NewString("xyz-pdq-zvm")),
+				ast.Field("token", ast.String("xyz-pdq-zvm")),
 				ast.Field("count", ast.Int(100)),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},

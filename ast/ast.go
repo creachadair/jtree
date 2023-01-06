@@ -17,6 +17,12 @@ type Value interface {
 	String() string
 }
 
+// A Texter is a Value that can be rendered as a string.
+type Texter interface {
+	Value
+	Text() string
+}
+
 // An Object is a collection of key-value members.
 type Object []*Member
 
@@ -25,7 +31,7 @@ func (o Object) astValue() {}
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.Unescape() == key {
+		if m.Key.Text() == key {
 			return m
 		}
 	}
@@ -52,24 +58,19 @@ func (o Object) String() string {
 
 // A Member is a single key-value pair belonging to an Object.
 type Member struct {
-	Key   String
+	Key   Texter
 	Value Value
 }
 
 // Field constructs an object member with the given key and value.
 func Field(key string, val Value) *Member {
-	m := &Member{Value: val}
-	m.SetKey(key)
-	return m
+	return &Member{
+		Key:   String(key),
+		Value: val,
+	}
 }
 
 func (m *Member) astValue() {}
-
-// SetKey replaces the key of m with k in-place.
-func (m *Member) SetKey(key string) {
-	m.Key.text = nil
-	m.Key.unescaped = &key
-}
 
 // String renders the member as JSON text.
 func (m *Member) String() string {
@@ -167,41 +168,55 @@ func (b Bool) String() string {
 	return "false"
 }
 
-// A String is a string value.
-type String struct {
-	text      []byte
-	unescaped *string
-}
+// A Quoted is a quoted string value.
+type Quoted struct{ text []byte }
 
-// NewString constructs a String token with the given unescaped value.
-func NewString(s string) *String { return &String{unescaped: &s} }
+func (Quoted) astValue() {}
 
-func (*String) astValue() {}
-
-// Unescape returns the unescaped text of the string.
-func (s *String) Unescape() string {
-	if s.unescaped == nil && len(s.text) != 0 {
-		dec, err := jtree.Unescape(s.text[1 : len(s.text)-1])
-		if err != nil {
-			panic(err)
-		}
-		str := string(dec)
-		s.unescaped = &str
+// Unquote returns the unescaped text of the string.
+func (q Quoted) Unquote() String {
+	if len(q.text) == 0 {
+		return ""
 	}
-	return *s.unescaped
+	dec, err := jtree.Unescape(q.text[1 : len(q.text)-1])
+	if err != nil {
+		panic(err)
+	}
+	return String(dec)
 }
 
-// Len returns the length in bytes of the unescaped content of s.
-func (s *String) Len() int { return len(s.Unescape()) }
+// Text returns the unescaped text of the string.
+func (q Quoted) Text() string { return string(q.Unquote()) }
+
+// Len returns the length in bytes of the unquoted text of q.
+func (q Quoted) Len() int { return q.Unquote().Len() }
+
+// String returns the JSON encoding of q.
+func (q Quoted) String() string { return string(q.text) }
+
+// A String is an unquoted string value.
+type String string
+
+func (String) astValue() {}
+
+// Len returns the length in bytes of s.
+func (s String) Len() int { return len(s) }
+
+// Quote converts s into its quoted representation.
+func (s String) Quote() Quoted { return Quoted{text: s.enquote()} }
 
 // String renders s as JSON text.
-func (s *String) String() string {
-	if s.text == nil {
-		s.text = append(s.text, '"')
-		s.text = append(s.text, jtree.Escape(*s.unescaped)...)
-		s.text = append(s.text, '"')
-	}
-	return string(s.text)
+func (s String) String() string { return string(s.enquote()) }
+
+// Text returns s as a plain string. It is shorthand for a type conversion.
+func (s String) Text() string { return string(s) }
+
+func (s String) enquote() []byte {
+	// We might need to reallocate once, but usually not.
+	buf := make([]byte, 0, len(s)+2)
+	buf = append(buf, '"')
+	buf = append(buf, jtree.Escape(string(s))...)
+	return append(buf, '"')
 }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.

@@ -220,7 +220,7 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 }
 
 // A String query ignores its input and returns the given string.
-func String(s string) Query { return constQuery{ast.NewString(s)} }
+func String(s string) Query { return constQuery{ast.String(s)} }
 
 // A Float query ignores its input and returns the given number.
 func Float(n float64) Query { return constQuery{ast.Float(n)} }
