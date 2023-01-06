@@ -229,7 +229,7 @@ func Number(n float64) Query { return constQuery{ast.NewNumber(n)} }
 func Integer(z int64) Query { return constQuery{ast.NewInteger(z)} }
 
 // A Bool query ignores its input and returns the given bool.
-func Bool(b bool) Query { return constQuery{ast.NewBool(b)} }
+func Bool(b bool) Query { return constQuery{ast.Bool(b)} }
 
 // A Null query ignores its input and returns a null value.
 var Null = constQuery{ast.Null}

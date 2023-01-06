@@ -85,8 +85,8 @@ func TestString(t *testing.T) {
 	}{
 		{ast.Null, "null"},
 
-		{ast.NewBool(false), "false"},
-		{ast.NewBool(true), "true"},
+		{ast.Bool(false), "false"},
+		{ast.Bool(true), "true"},
 
 		{ast.NewString(""), `""`},
 		{ast.NewString("a \t b"), `"a \t b"`},
@@ -99,10 +99,10 @@ func TestString(t *testing.T) {
 
 		{ast.Array{}, `[]`},
 		{ast.Array{
-			ast.NewBool(false),
+			ast.Bool(false),
 		}, `[false]`},
 		{ast.Array{
-			ast.NewBool(true),
+			ast.Bool(true),
 			ast.NewInteger(199),
 		}, `[true,199]`},
 		{ast.Array{
@@ -118,14 +118,14 @@ func TestString(t *testing.T) {
 		{ast.Object{
 			ast.Field("name", ast.NewString("Dennis")),
 			ast.Field("age", ast.NewInteger(37)),
-			ast.Field("isOld", ast.NewBool(false)),
+			ast.Field("isOld", ast.Bool(false)),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
 
 		{ast.Object{
 			ast.Field("values", ast.Array{
 				ast.NewInteger(5),
 				ast.NewNumber(10),
-				ast.NewBool(true),
+				ast.Bool(true),
 			}),
 			ast.Field("page", ast.Object{
 				ast.Field("token", ast.NewString("xyz-pdq-zvm")),

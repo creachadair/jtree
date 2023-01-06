@@ -162,21 +162,16 @@ func (n *Number) String() string {
 }
 
 // A Bool is a Boolean constant, true or false.
-type Bool struct {
-	value bool
-}
-
-// NewBool constructs a Bool token with the given value.
-func NewBool(v bool) *Bool { return &Bool{value: v} }
+type Bool bool
 
 // Value reports the truth value of the Boolean.
-func (b *Bool) Value() bool { return b.value }
+func (b Bool) Value() bool { return bool(b) }
 
-func (*Bool) astValue() {}
+func (Bool) astValue() {}
 
 // String returns b as JSON text.
-func (b *Bool) String() string {
-	if b.value {
+func (b Bool) String() string {
+	if b {
 		return "true"
 	}
 	return "false"

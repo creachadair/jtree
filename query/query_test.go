@@ -173,7 +173,7 @@ func TestQuery(t *testing.T) {
 		if got := arr[0].(*ast.Integer).Int64(); got != wantLength {
 			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
 		}
-		if hasDetail := arr[1].(*ast.Bool).Value(); hasDetail {
+		if hasDetail := arr[1].(ast.Bool).Value(); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
 		}
 	})
