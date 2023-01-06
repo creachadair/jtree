@@ -61,21 +61,31 @@ func TestParse(t *testing.T) {
 	} else if len(lst) == 0 {
 		t.Fatal("Array value is empty")
 	}
-	obj, ok := lst[0].(ast.Object)
+	obj, ok := lst[1].(ast.Object)
 	if !ok {
 		t.Fatalf("Array entry is %T, not object", lst[0])
 	}
+	check[*ast.String](t, obj, "summary", func(s *ast.String) {
+		t.Logf("String field value: %s", s.Unescape())
+	})
+	check[ast.Number](t, obj, "episode", func(v ast.Number) {
+		t.Logf("Number field value: %v", v)
+	})
+	check[ast.Bool](t, obj, "hasDetail", func(v ast.Bool) {
+		t.Logf("Bool field value: %v", v)
+	})
+}
 
-	ep := obj.Find("summary")
-	if ep == nil {
-		t.Fatal(`Key "summary" not found`)
+func check[T any](t *testing.T, obj ast.Object, key string, f func(T)) {
+	t.Helper()
+	if v := obj.Find(key); v == nil {
+		t.Fatalf("Key %q not found", key)
+	} else if tv, ok := v.Value.(T); !ok {
+		var zero T
+		t.Fatalf("Key %q value is %T, not %T", key, v, zero)
+	} else if f != nil {
+		f(tv)
 	}
-
-	str, ok := ep.Value.(*ast.String)
-	if !ok {
-		t.Fatalf("Member value is %T, not string", ep.Value)
-	}
-	t.Logf("String field value: %s", str.Unescape())
 }
 
 func TestString(t *testing.T) {
