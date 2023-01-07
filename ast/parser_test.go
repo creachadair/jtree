@@ -145,6 +145,11 @@ func TestString(t *testing.T) {
 				ast.Field("count", ast.Int(100)),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
+
+		{ast.Object{
+			// If a non-string Texter is used as a key, it is turned into a string.
+			&ast.Member{Key: ast.Int(25), Value: ast.String("ok")},
+		}, `{"25":"ok"}`},
 	}
 	for _, test := range tests {
 		got := test.input.JSON()

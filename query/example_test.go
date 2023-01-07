@@ -61,8 +61,7 @@ func Example_medium() {
 	obj := v.(ast.Object)
 	fmt.Printf("Hello, my name is: %s\n", obj.Find("name").Value)
 	fmt.Println(obj.Find("act").Value.JSON())
-	fmt.Printf("Prepare to %s",
-		obj.Find("req").Value.(ast.Stringer).String())
+	fmt.Printf("Prepare to %s", obj.Find("req").Value)
 	// Output:
 	// Hello, my name is: Inigo Montoya
 	// ["you","killed","my","father"]

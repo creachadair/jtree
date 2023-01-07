@@ -5,9 +5,11 @@
 package ast
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/internal/escape"
 	"go4.org/mem"
 )
@@ -18,10 +20,10 @@ type Value interface {
 	JSON() string
 }
 
-// A Stringer is a Value that can be rendered as a string.
-type Stringer interface {
+// A Texter is a Value that can be rendered as text.
+type Texter interface {
 	Value
-	String() string
+	Text() string
 }
 
 // An Object is a collection of key-value members.
@@ -30,7 +32,7 @@ type Object []*Member
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.String() == key {
+		if m.Key.Text() == key {
 			return m
 		}
 	}
@@ -56,10 +58,12 @@ func (o Object) JSON() string {
 	return sb.String()
 }
 
+func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o)) }
+
 // A Member is a single key-value pair belonging to an Object. A Key must be a
 // value convertible to a string, typically either an ast.Quoted or ast.String.
 type Member struct {
-	Key   Stringer
+	Key   Texter
 	Value Value
 }
 
@@ -70,13 +74,16 @@ func Field(key string, val Value) *Member {
 
 // JSON renders the member as JSON text.
 func (m *Member) JSON() string {
-	k, v := m.Key.JSON(), m.Value.JSON()
+	k := jtree.Quote(m.Key.Text())
+	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
 	n := copy(buf, k)
 	buf[n] = ':'
 	copy(buf[n+1:], v)
 	return string(buf)
 }
+
+func (m *Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
 
 // An Array is a sequence of values.
 type Array []Value
@@ -100,6 +107,8 @@ func (a Array) JSON() string {
 	return sb.String()
 }
 
+func (a Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a)) }
+
 // A Number is a numeric literal.
 type Number struct {
 	text  []byte
@@ -108,6 +117,11 @@ type Number struct {
 
 // JSON renders n as JSON text.
 func (n Number) JSON() string { return string(n.text) }
+
+// Text renders n as a plain string.
+func (n Number) Text() string { return string(n.text) }
+
+func (n Number) String() string { return n.Text() }
 
 // IsInt reports whether n is representable as an integer.
 func (n Number) IsInt() bool { return n.isInt }
@@ -139,6 +153,11 @@ type Float float64
 // JSON renders f as JSON text.
 func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
 
+// Text renders f as a plain string.
+func (f Float) Text() string { return f.JSON() }
+
+func (f Float) String() string { return f.Text() }
+
 // Value returns f as a float64. It is shorthand for a type conversion.
 func (f Float) Value() float64 { return float64(f) }
 
@@ -147,6 +166,11 @@ type Int int64
 
 // JSON renders z as JSON text.
 func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
+
+// Text renders z as a plain string.
+func (z Int) Text() string { return z.JSON() }
+
+func (z Int) String() string { return z.Text() }
 
 // Value returns z as an int64. It is shorthand for a type conversion.
 func (z Int) Value() int64 { return int64(z) }
@@ -165,6 +189,8 @@ func (b Bool) JSON() string {
 	return "false"
 }
 
+func (b Bool) String() string { return b.JSON() }
+
 // A Quoted is a quoted string value.
 type Quoted struct{ text []byte }
 
@@ -180,14 +206,16 @@ func (q Quoted) Unquote() String {
 	return String(dec)
 }
 
-// String returns the unescaped text of the string.
-func (q Quoted) String() string { return string(q.Unquote()) }
-
 // Len returns the length in bytes of the unquoted text of q.
 func (q Quoted) Len() int { return q.Unquote().Len() }
 
 // JSON returns the JSON encoding of q.
 func (q Quoted) JSON() string { return string(q.text) }
+
+// Text returns the unescaped text of the string.
+func (q Quoted) Text() string { return string(q.Unquote()) }
+
+func (q Quoted) String() string { return q.Text() }
 
 // A String is an unquoted string value.
 type String string
@@ -196,22 +224,15 @@ type String string
 func (s String) Len() int { return len(s) }
 
 // Quote converts s into its quoted representation.
-func (s String) Quote() Quoted { return Quoted{text: s.enquote()} }
+func (s String) Quote() Quoted { return Quoted{text: jtree.Quote(string(s))} }
 
 // JSON renders s as JSON text.
-func (s String) JSON() string { return string(s.enquote()) }
+func (s String) JSON() string { return string(jtree.Quote(string(s))) }
 
 // Text returns s as a plain string. It is shorthand for a type conversion.
-func (s String) String() string { return string(s) }
+func (s String) Text() string { return string(s) }
 
-func (s String) enquote() []byte {
-	esc := escape.Quote(mem.S(string(s)))
-	buf := make([]byte, len(esc)+2)
-	copy(buf[1:], esc)
-	buf[0] = '"'
-	buf[len(buf)-1] = '"'
-	return buf
-}
+func (s String) String() string { return s.Text() }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
 var Null nullValue
@@ -223,3 +244,5 @@ func (nullValue) Len() int { return 0 }
 
 // JSON renders the value as a JSON null.
 func (nullValue) JSON() string { return "null" }
+
+func (nullValue) String() string { return "null" }
