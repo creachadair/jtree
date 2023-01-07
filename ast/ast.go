@@ -101,10 +101,16 @@ func (a Array) JSON() string {
 }
 
 // A Number is a numeric literal.
-type Number struct{ text []byte }
+type Number struct {
+	text  []byte
+	isInt bool // whether the value was lexed as an integer
+}
 
 // JSON renders n as JSON text.
 func (n Number) JSON() string { return string(n.text) }
+
+// IsInt reports whether n is representable as an integer.
+func (n Number) IsInt() bool { return n.isInt }
 
 // Float returns a representation of n as a Float. It panics if n is not
 // representable as a floating-point value.

@@ -70,6 +70,9 @@ func TestParse(t *testing.T) {
 	})
 	check[ast.Number](t, obj, "episode", func(v ast.Number) {
 		t.Logf("Number field value: %v", v)
+		if !v.IsInt() {
+			t.Errorf("Number %s should be recognized as integer", v.JSON())
+		}
 	})
 	check[ast.Bool](t, obj, "hasDetail", func(v ast.Bool) {
 		t.Logf("Bool field value: %v", v)
