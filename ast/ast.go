@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/internal/escape"
 	"go4.org/mem"
 )
@@ -201,7 +200,7 @@ func (s String) String() string { return string(s) }
 
 func (s String) enquote() []byte {
 	// We might need to reallocate once, but usually not.
-	esc := jtree.Quote(string(s))
+	esc := escape.Quote(mem.S(string(s)))
 	buf := make([]byte, len(esc)+2)
 	copy(buf[1:], esc)
 	buf[0] = '"'
