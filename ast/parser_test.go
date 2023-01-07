@@ -61,21 +61,31 @@ func TestParse(t *testing.T) {
 	} else if len(lst) == 0 {
 		t.Fatal("Array value is empty")
 	}
-	obj, ok := lst[0].(ast.Object)
+	obj, ok := lst[1].(ast.Object)
 	if !ok {
 		t.Fatalf("Array entry is %T, not object", lst[0])
 	}
+	check[ast.Quoted](t, obj, "summary", func(s ast.Quoted) {
+		t.Logf("String field value: %s", s.Unquote())
+	})
+	check[ast.Number](t, obj, "episode", func(v ast.Number) {
+		t.Logf("Number field value: %v", v)
+	})
+	check[ast.Bool](t, obj, "hasDetail", func(v ast.Bool) {
+		t.Logf("Bool field value: %v", v)
+	})
+}
 
-	ep := obj.Find("summary")
-	if ep == nil {
-		t.Fatal(`Key "summary" not found`)
+func check[T any](t *testing.T, obj ast.Object, key string, f func(T)) {
+	t.Helper()
+	if v := obj.Find(key); v == nil {
+		t.Fatalf("Key %q not found", key)
+	} else if tv, ok := v.Value.(T); !ok {
+		var zero T
+		t.Fatalf("Key %q value is %T, not %T", key, v, zero)
+	} else if f != nil {
+		f(tv)
 	}
-
-	str, ok := ep.Value.(*ast.String)
-	if !ok {
-		t.Fatalf("Member value is %T, not string", ep.Value)
-	}
-	t.Logf("String field value: %s", str.Unescape())
 }
 
 func TestString(t *testing.T) {
@@ -83,58 +93,58 @@ func TestString(t *testing.T) {
 		input ast.Value
 		want  string
 	}{
-		{&ast.Null{}, "null"},
+		{ast.Null, "null"},
 
-		{ast.NewBool(false), "false"},
-		{ast.NewBool(true), "true"},
+		{ast.Bool(false), "false"},
+		{ast.Bool(true), "true"},
 
-		{ast.NewString(""), `""`},
-		{ast.NewString("a \t b"), `"a \t b"`},
+		{ast.String(""), `""`},
+		{ast.String("a \t b"), `"a \t b"`},
 
-		{ast.NewNumber(-0.00239), `-0.00239`},
+		{ast.Float(-0.00239), `-0.00239`},
 
-		{ast.NewInteger(0), `0`},
-		{ast.NewInteger(15), `15`},
-		{ast.NewInteger(-25), `-25`},
+		{ast.Int(0), `0`},
+		{ast.Int(15), `15`},
+		{ast.Int(-25), `-25`},
 
 		{ast.Array{}, `[]`},
 		{ast.Array{
-			ast.NewBool(false),
+			ast.Bool(false),
 		}, `[false]`},
 		{ast.Array{
-			ast.NewBool(true),
-			ast.NewInteger(199),
+			ast.Bool(true),
+			ast.Int(199),
 		}, `[true,199]`},
 		{ast.Array{
-			ast.NewString("free"),
-			ast.NewString("your"),
-			ast.NewString("mind"),
+			ast.String("free"),
+			ast.String("your"),
+			ast.String("mind"),
 		}, `["free","your","mind"]`},
 
 		{ast.Object{}, `{}`},
 		{ast.Object{
-			ast.NewMember("xs", &ast.Null{}),
+			ast.Field("xs", ast.Null),
 		}, `{"xs":null}`},
 		{ast.Object{
-			ast.NewMember("name", ast.NewString("Dennis")),
-			ast.NewMember("age", ast.NewInteger(37)),
-			ast.NewMember("isOld", ast.NewBool(false)),
+			ast.Field("name", ast.String("Dennis")),
+			ast.Field("age", ast.Int(37)),
+			ast.Field("isOld", ast.Bool(false)),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
 
 		{ast.Object{
-			ast.NewMember("values", ast.Array{
-				ast.NewInteger(5),
-				ast.NewNumber(10),
-				ast.NewBool(true),
+			ast.Field("values", ast.Array{
+				ast.Int(5),
+				ast.Int(10),
+				ast.Bool(true),
 			}),
-			ast.NewMember("page", ast.Object{
-				ast.NewMember("token", ast.NewString("xyz-pdq-zvm")),
-				ast.NewMember("count", ast.NewInteger(100)),
+			ast.Field("page", ast.Object{
+				ast.Field("token", ast.String("xyz-pdq-zvm")),
+				ast.Field("count", ast.Int(100)),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 	}
 	for _, test := range tests {
-		got := test.input.String()
+		got := test.input.JSON()
 		if got != test.want {
 			t.Errorf("Input: %+v\nGot:  %s\nWant: %s", test.input, got, test.want)
 		}

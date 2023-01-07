@@ -13,19 +13,23 @@ import (
 
 // A Value is an arbitrary JSON value.
 type Value interface {
-	astValue()
+	// JSON converts the value into JSON source text.
+	JSON() string
+}
+
+// A Stringer is a Value that can be rendered as a string.
+type Stringer interface {
+	Value
 	String() string
 }
 
 // An Object is a collection of key-value members.
 type Object []*Member
 
-func (o Object) astValue() {}
-
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.Unescape() == key {
+		if m.Key.String() == key {
 			return m
 		}
 	}
@@ -35,13 +39,13 @@ func (o Object) Find(key string) *Member {
 // Len returns the number of members in the object.
 func (o Object) Len() int { return len(o) }
 
-// String renders o as JSON text.
-func (o Object) String() string {
+// JSON renders o as JSON text.
+func (o Object) JSON() string {
 	var sb strings.Builder
 	sb.WriteString("{")
 	last := len(o) - 1
 	for i, elt := range o {
-		sb.WriteString(elt.String())
+		sb.WriteString(elt.JSON())
 		if i != last {
 			sb.WriteString(",")
 		}
@@ -50,182 +54,158 @@ func (o Object) String() string {
 	return sb.String()
 }
 
-// A Member is a single key-value pair belonging to an Object.
+// A Member is a single key-value pair belonging to an Object. A Key must be a
+// value convertible to a string, typically either an ast.Quoted or ast.String.
 type Member struct {
-	Key   String
+	Key   Stringer
 	Value Value
 }
 
-// NewMember constructs a member with the given key and value.
-func NewMember(key string, val Value) *Member {
-	m := &Member{Value: val}
-	m.SetKey(key)
-	return m
+// Field constructs an object member with the given key and value.
+func Field(key string, val Value) *Member {
+	return &Member{Key: String(key), Value: val}
 }
 
-func (m *Member) astValue() {}
-
-// SetKey replaces the key of m with k in-place.
-func (m *Member) SetKey(key string) {
-	m.Key.text = nil
-	m.Key.unescaped = &key
-}
-
-// String renders the member as JSON text.
-func (m *Member) String() string {
-	return m.Key.String() + ":" + m.Value.String()
+// JSON renders the member as JSON text.
+func (m *Member) JSON() string {
+	return m.Key.JSON() + ":" + m.Value.JSON()
 }
 
 // An Array is a sequence of values.
 type Array []Value
 
-func (Array) astValue() {}
-
 // Len returns the number of elements in a.
 func (a Array) Len() int { return len(a) }
 
-// String renders the array as JSON text.
-func (a Array) String() string {
+// JSON renders the array as JSON text.
+func (a Array) JSON() string {
+	if len(a) == 0 {
+		return "[]"
+	}
 	var sb strings.Builder
 	sb.WriteString("[")
-	last := len(a) - 1
-	for i, elt := range a {
-		sb.WriteString(elt.String())
-		if i != last {
-			sb.WriteString(",")
-		}
+	sb.WriteString(a[0].JSON())
+	for _, elt := range a[1:] {
+		sb.WriteByte(',')
+		sb.WriteString(elt.JSON())
 	}
-	sb.WriteString("]")
+	sb.WriteByte(']')
 	return sb.String()
 }
 
-// An Integer is an integer value.
-type Integer struct {
-	text  []byte
-	value *int64
-}
+// A Number is a numeric literal.
+type Number struct{ text []byte }
 
-// NewInteger constructs an Integer token with the given value.
-func NewInteger(z int64) *Integer { return &Integer{value: &z} }
+// JSON renders n as JSON text.
+func (n Number) JSON() string { return string(n.text) }
 
-func (*Integer) astValue() {}
-
-// Int64 returns the value of z as an int64.
-func (z *Integer) Int64() int64 {
-	if z.value == nil {
-		v, err := strconv.ParseInt(string(z.text), 10, 64)
-		if err != nil {
-			panic(err)
-		}
-		z.value = &v
+// Float returns a representation of n as a Float. It panics if n is not
+// representable as a floating-point value.
+func (n Number) Float() Float {
+	v, err := strconv.ParseFloat(string(n.text), 64)
+	if err != nil {
+		panic(err)
 	}
-	return *z.value
+	return Float(v)
 }
 
-// String renders z as JSON text.
-func (z *Integer) String() string {
-	if z.text != nil {
-		return string(z.text)
+// Int returns a representation of n as an Int.  If n is valid but has
+// fractional parts, the fractions are truncated; otherwise Int panics if n is
+// not representable as a number.
+func (n Number) Int() Int {
+	v, err := strconv.ParseFloat(string(n.text), 64)
+	if err != nil {
+		panic(err)
 	}
-	return strconv.FormatInt(*z.value, 10)
+	return Int(v)
 }
 
-// A Number is a floating-point value.
-type Number struct {
-	text  []byte
-	value *float64
-}
+// A Float is represents a floating-point number.
+type Float float64
 
-// NewNumber constructs a Number token with the given value.
-func NewNumber(f float64) *Number { return &Number{value: &f} }
+// JSON renders f as JSON text.
+func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
 
-func (*Number) astValue() {}
+// Value returns f as a float64. It is shorthand for a type conversion.
+func (f Float) Value() float64 { return float64(f) }
 
-// Float64 returns the value of n as a float64.
-func (n *Number) Float64() float64 {
-	if n.value == nil {
-		v, err := strconv.ParseFloat(string(n.text), 64)
-		if err != nil {
-			panic(err)
-		}
-		n.value = &v
-	}
-	return *n.value
-}
+// An Int represents an integer number.
+type Int int64
 
-// String renders n as JSON text.
-func (n *Number) String() string {
-	if n.text != nil {
-		return string(n.text)
-	}
-	return strconv.FormatFloat(*n.value, 'g', -1, 64)
-}
+// JSON renders z as JSON text.
+func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
+
+// Value returns z as an int64. It is shorthand for a type conversion.
+func (z Int) Value() int64 { return int64(z) }
 
 // A Bool is a Boolean constant, true or false.
-type Bool struct {
-	value bool
-}
-
-// NewBool constructs a Bool token with the given value.
-func NewBool(v bool) *Bool { return &Bool{value: v} }
+type Bool bool
 
 // Value reports the truth value of the Boolean.
-func (b *Bool) Value() bool { return b.value }
+func (b Bool) Value() bool { return bool(b) }
 
-func (*Bool) astValue() {}
-
-// String returns b as JSON text.
-func (b *Bool) String() string {
-	if b.value {
+// JSON returns b as JSON text.
+func (b Bool) JSON() string {
+	if b {
 		return "true"
 	}
 	return "false"
 }
 
-// A String is a string value.
-type String struct {
-	text      []byte
-	unescaped *string
-}
+// A Quoted is a quoted string value.
+type Quoted struct{ text []byte }
 
-// NewString constructs a String token with the given unescaped value.
-func NewString(s string) *String { return &String{unescaped: &s} }
-
-func (*String) astValue() {}
-
-// Unescape returns the unescaped text of the string.
-func (s *String) Unescape() string {
-	if s.unescaped == nil && len(s.text) != 0 {
-		dec, err := jtree.Unescape(s.text[1 : len(s.text)-1])
-		if err != nil {
-			panic(err)
-		}
-		str := string(dec)
-		s.unescaped = &str
+// Unquote returns the unescaped text of the string.
+func (q Quoted) Unquote() String {
+	if len(q.text) == 0 {
+		return ""
 	}
-	return *s.unescaped
-}
-
-// Len returns the length in bytes of the unescaped content of s.
-func (s *String) Len() int { return len(s.Unescape()) }
-
-// String renders s as JSON text.
-func (s *String) String() string {
-	if s.text == nil {
-		s.text = append(s.text, '"')
-		s.text = append(s.text, jtree.Escape(*s.unescaped)...)
-		s.text = append(s.text, '"')
+	dec, err := jtree.Unescape(q.text[1 : len(q.text)-1])
+	if err != nil {
+		panic(err)
 	}
-	return string(s.text)
+	return String(dec)
 }
 
-// Null represents the null constant.
-type Null struct{}
+// String returns the unescaped text of the string.
+func (q Quoted) String() string { return string(q.Unquote()) }
 
-func (Null) astValue() {}
+// Len returns the length in bytes of the unquoted text of q.
+func (q Quoted) Len() int { return q.Unquote().Len() }
+
+// JSON returns the JSON encoding of q.
+func (q Quoted) JSON() string { return string(q.text) }
+
+// A String is an unquoted string value.
+type String string
+
+// Len returns the length in bytes of s.
+func (s String) Len() int { return len(s) }
+
+// Quote converts s into its quoted representation.
+func (s String) Quote() Quoted { return Quoted{text: s.enquote()} }
+
+// JSON renders s as JSON text.
+func (s String) JSON() string { return string(s.enquote()) }
+
+// Text returns s as a plain string. It is shorthand for a type conversion.
+func (s String) String() string { return string(s) }
+
+func (s String) enquote() []byte {
+	// We might need to reallocate once, but usually not.
+	buf := make([]byte, 0, len(s)+2)
+	buf = append(buf, '"')
+	buf = append(buf, jtree.Escape(string(s))...)
+	return append(buf, '"')
+}
+
+// Null represents the JSON null constant. The length of Null is defined as 0.
+var Null nullValue
+
+type nullValue struct{}
 
 // Len returns the length of null, which is 0.
-func (Null) Len() int { return 0 }
+func (nullValue) Len() int { return 0 }
 
-// String renders the value as a JSON null.
-func (Null) String() string { return "null" }
+// JSON renders the value as a JSON null.
+func (nullValue) JSON() string { return "null" }

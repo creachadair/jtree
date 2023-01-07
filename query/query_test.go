@@ -33,8 +33,8 @@ func TestQuery(t *testing.T) {
 			want  string
 		}{
 			{"String", query.String("foo"), `"foo"`},
-			{"Number", query.Number(-3.1), `-3.1`},
-			{"Integer", query.Integer(17), `17`},
+			{"Float", query.Float(-3.1), `-3.1`},
+			{"Integer", query.Int(17), `17`},
 			{"True", query.Bool(true), `true`},
 			{"False", query.Bool(false), `false`},
 			{"Null", query.Null, `null`},
@@ -44,7 +44,7 @@ func TestQuery(t *testing.T) {
 				v, err := query.Eval(val, test.query)
 				if err != nil {
 					t.Errorf("Eval failed: %v", err)
-				} else if got := v.String(); got != test.want {
+				} else if got := v.JSON(); got != test.want {
 					t.Errorf("Result: got %#q, want %#q", got, test.want)
 				}
 			})
@@ -59,9 +59,9 @@ func TestQuery(t *testing.T) {
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
-		} else if s, ok := v.(*ast.String); !ok {
+		} else if s, ok := v.(ast.Stringer); !ok {
 			t.Errorf("Result: got %T, want string", v)
-		} else if got := s.Unescape(); got != wantString {
+		} else if got := s.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
@@ -70,9 +70,9 @@ func TestQuery(t *testing.T) {
 		v, err := query.Eval(val, query.Path("episodes", 0, "airDate"))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
-		} else if s, ok := v.(*ast.String); !ok {
+		} else if s, ok := v.(ast.Stringer); !ok {
 			t.Errorf("Result: got %T, want string", v)
-		} else if got := s.Unescape(); got != wantString {
+		} else if got := s.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
@@ -106,7 +106,7 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Eval failed: %v", err)
 		} else if arr, ok := v.(ast.Array); !ok {
 			t.Errorf("Result: got %T, want array", v)
-		} else if got := arr.String(); got != wantJSON {
+		} else if got := arr.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
@@ -127,7 +127,7 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %d elements, want %d", len(a), wantLength)
 		}
 		for i, elt := range a[:5] {
-			t.Logf("Element %d: %v", i, elt.(*ast.String).Unescape())
+			t.Logf("Element %d: %v", i, elt.(ast.Stringer).String())
 		}
 	})
 
@@ -145,12 +145,12 @@ func TestQuery(t *testing.T) {
 		}
 		if first := obj.Find("first"); first == nil {
 			t.Error(`Missing "first" in result`)
-		} else if got := first.Value.(*ast.String).Unescape(); got != wantString {
+		} else if got := first.Value.(ast.Stringer).String(); got != wantString {
 			t.Errorf("First: got %q, want %q", got, wantString)
 		}
 		if length := obj.Find("length"); length == nil {
 			t.Error(`Missing "length" in result`)
-		} else if got := length.Value.(*ast.Integer).Int64(); got != wantLength {
+		} else if got := length.Value.(ast.Int).Value(); got != wantLength {
 			t.Errorf("Result: got length %d, want %d", got, wantLength)
 		}
 	})
@@ -170,10 +170,10 @@ func TestQuery(t *testing.T) {
 		if len(arr) != 2 {
 			t.Fatalf("Result: got %d values, want %d", len(arr), 2)
 		}
-		if got := arr[0].(*ast.Integer).Int64(); got != wantLength {
+		if got := arr[0].(ast.Int).Value(); got != wantLength {
 			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
 		}
-		if hasDetail := arr[1].(*ast.Bool).Value(); hasDetail {
+		if hasDetail := arr[1].(ast.Bool).Value(); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
 		}
 	})
@@ -188,7 +188,7 @@ func TestQuery(t *testing.T) {
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
-		} else if got := v.String(); got != wantJSON {
+		} else if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})

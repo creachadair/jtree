@@ -25,7 +25,7 @@ func Example_small() {
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
-	fmt.Println(v.String())
+	fmt.Println(v.JSON())
 	// Output:
 	// true
 }
@@ -60,11 +60,11 @@ func Example_medium() {
 	}
 	obj := v.(ast.Object)
 	fmt.Printf("Hello, my name is: %s\n", obj.Find("name").Value)
-	fmt.Println(obj.Find("act").Value)
+	fmt.Println(obj.Find("act").Value.JSON())
 	fmt.Printf("Prepare to %s",
-		obj.Find("req").Value.(*ast.String).Unescape())
+		obj.Find("req").Value.(ast.Stringer).String())
 	// Output:
-	// Hello, my name is: "Inigo Montoya"
+	// Hello, my name is: Inigo Montoya
 	// ["you","killed","my","father"]
 	// Prepare to die
 }

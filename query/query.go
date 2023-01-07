@@ -129,7 +129,7 @@ func (lenQuery) eval(v ast.Value) (ast.Value, error) {
 	if t, ok := v.(interface {
 		Len() int
 	}); ok {
-		return ast.NewInteger(int64(t.Len())), nil
+		return ast.Int(t.Len()), nil
 	}
 	return nil, fmt.Errorf("cannot take length of %T", v)
 }
@@ -198,7 +198,7 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 		if err != nil {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
-		out = append(out, ast.NewMember(key, val))
+		out = append(out, ast.Field(key, val))
 	}
 	return out, nil
 }
@@ -220,19 +220,19 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 }
 
 // A String query ignores its input and returns the given string.
-func String(s string) Query { return constQuery{ast.NewString(s)} }
+func String(s string) Query { return constQuery{ast.String(s)} }
 
-// A Number query ignores its input and returns the given number.
-func Number(n float64) Query { return constQuery{ast.NewNumber(n)} }
+// A Float query ignores its input and returns the given number.
+func Float(n float64) Query { return constQuery{ast.Float(n)} }
 
-// An Integer query ignores its input and returns the given integer.
-func Integer(z int64) Query { return constQuery{ast.NewInteger(z)} }
+// An Int query ignores its input and returns the given integer.
+func Int(z int64) Query { return constQuery{ast.Int(z)} }
 
 // A Bool query ignores its input and returns the given bool.
-func Bool(b bool) Query { return constQuery{ast.NewBool(b)} }
+func Bool(b bool) Query { return constQuery{ast.Bool(b)} }
 
 // A Null query ignores its input and returns a null value.
-var Null = constQuery{new(ast.Null)}
+var Null = constQuery{ast.Null}
 
 type constQuery struct{ ast.Value }
 

@@ -29,7 +29,7 @@ func (p *Parser) Parse() (Value, error) {
 	} else if len(p.h.stk) != 1 {
 		return nil, errors.New("incomplete value")
 	}
-	out := *p.h.stk[0]
+	out := p.h.stk[0]
 	p.h.stk = p.h.stk[:0]
 	return out, nil
 }
@@ -53,7 +53,7 @@ func Parse(r io.Reader) ([]Value, error) {
 // A parseHandler implements the jtree.Handler interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
-	stk  []*Value
+	stk  []Value
 	tbuf [][]byte
 }
 
@@ -89,7 +89,8 @@ func (h *parseHandler) copyOf(text []byte) []byte {
 	return h.tbuf[i][s : s+len(text)]
 }
 
-func merge(old *Value, v Value) {
+func (h *parseHandler) mergeTop(v Value) {
+	old := &h.stk[len(h.stk)-1]
 	switch t := (*old).(type) {
 	case *Member:
 		t.Value = v
@@ -103,27 +104,25 @@ func merge(old *Value, v Value) {
 func (h *parseHandler) reduce() error {
 	if len(h.stk) > 1 {
 		v := h.pop()
-		merge(h.top(), v)
+		h.mergeTop(v)
 	}
 	return nil
 }
 
 func (h *parseHandler) reduceValue(v Value) error {
 	if len(h.stk) > 0 {
-		merge(h.top(), v)
+		h.mergeTop(v)
 	}
 	return nil
 }
 
-func (h *parseHandler) top() *Value { return h.stk[len(h.stk)-1] }
-
 func (h *parseHandler) pop() Value {
-	last := h.top()
+	last := h.stk[len(h.stk)-1]
 	h.stk = h.stk[:len(h.stk)-1]
-	return *last
+	return last
 }
 
-func (h *parseHandler) push(v Value) { h.stk = append(h.stk, &v) }
+func (h *parseHandler) push(v Value) { h.stk = append(h.stk, v) }
 
 func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
 	h.push(Object(nil))
@@ -148,8 +147,8 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{Key: String{text: h.copyOf(loc.Text())}}
-	top := h.top()
+	mem := &Member{Key: Quoted{text: h.copyOf(loc.Text())}}
+	top := &h.stk[len(h.stk)-1]
 	obj := (*top).(Object)
 	*top = append(obj, mem)
 	h.push(mem)
@@ -161,15 +160,15 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(&String{text: h.copyOf(loc.Text())})
+		return h.reduceValue(Quoted{text: h.copyOf(loc.Text())})
 	case jtree.Integer:
-		return h.reduceValue(&Integer{text: h.copyOf(loc.Text())})
+		return h.reduceValue(Number{text: h.copyOf(loc.Text())})
 	case jtree.Number:
-		return h.reduceValue(&Number{text: h.copyOf(loc.Text())})
+		return h.reduceValue(Number{text: h.copyOf(loc.Text())})
 	case jtree.True, jtree.False:
-		return h.reduceValue(&Bool{value: loc.Token() == jtree.True})
+		return h.reduceValue(Bool(loc.Token() == jtree.True))
 	case jtree.Null:
-		return h.reduceValue(&Null{})
+		return h.reduceValue(Null)
 	default:
 		return fmt.Errorf("unknown value %v", loc.Token())
 	}
