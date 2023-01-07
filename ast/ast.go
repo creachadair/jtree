@@ -64,8 +64,8 @@ func (o Object) JSON() string {
 
 func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o)) }
 
-// A Member is a single key-value pair belonging to an Object. A Key must be a
-// value convertible to a string, typically either an ast.Quoted or ast.String.
+// A Member is a single key-value pair belonging to an Object. A Key must
+// support being rendered as text, typically an ast.Quoted or ast.String.
 type Member struct {
 	Key   Texter
 	Value Value
@@ -78,7 +78,7 @@ func Field(key string, val Value) *Member {
 
 // JSON renders the member as JSON text.
 func (m *Member) JSON() string {
-	k := jtree.Quote(m.Key.Text())
+	k := jtree.Quote(m.Key.Text()) // render as a JSON string even if it's not
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
 	n := copy(buf, k)
