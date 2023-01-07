@@ -118,15 +118,15 @@ func TestScanner_decodeAs(t *testing.T) {
 		if got := string(text); got != wantText {
 			t.Errorf("Text: got %#q, want %#q", got, wantText)
 		}
-		if u, err := jtree.Unescape(text[1 : len(text)-1]); err != nil {
-			t.Errorf("Unescape failed: %v", err)
+		if u, err := jtree.Unquote(text[1 : len(text)-1]); err != nil {
+			t.Errorf("Unquote failed: %v", err)
 		} else if got := string(u); got != wantDec {
-			t.Errorf("Unescape: got %#q, want %#q", got, wantDec)
+			t.Errorf("Unquote: got %#q, want %#q", got, wantDec)
 		}
 	})
 }
 
-func TestEscape(t *testing.T) {
+func TestQuote(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
@@ -142,7 +142,7 @@ func TestEscape(t *testing.T) {
 		{"<\x1e>", `<\u001e>`},
 	}
 	for _, test := range tests {
-		got := string(jtree.Escape(test.input))
+		got := string(jtree.Quote(test.input))
 		if got != test.want {
 			t.Errorf("Input: %#q\nGot:  %#q\nWant: %#q", test.input, got, test.want)
 		}

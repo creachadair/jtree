@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/creachadair/jtree"
+	"github.com/creachadair/jtree/internal/escape"
+	"go4.org/mem"
 )
 
 // A Value is an arbitrary JSON value.
@@ -41,16 +43,17 @@ func (o Object) Len() int { return len(o) }
 
 // JSON renders o as JSON text.
 func (o Object) JSON() string {
-	var sb strings.Builder
-	sb.WriteString("{")
-	last := len(o) - 1
-	for i, elt := range o {
-		sb.WriteString(elt.JSON())
-		if i != last {
-			sb.WriteString(",")
-		}
+	if len(o) == 0 {
+		return "{}"
 	}
-	sb.WriteString("}")
+	var sb strings.Builder
+	sb.WriteByte('{')
+	sb.WriteString(o[0].JSON())
+	for _, elt := range o[1:] {
+		sb.WriteByte(',')
+		sb.WriteString(elt.JSON())
+	}
+	sb.WriteByte('}')
 	return sb.String()
 }
 
@@ -68,7 +71,12 @@ func Field(key string, val Value) *Member {
 
 // JSON renders the member as JSON text.
 func (m *Member) JSON() string {
-	return m.Key.JSON() + ":" + m.Value.JSON()
+	k, v := m.Key.JSON(), m.Value.JSON()
+	buf := make([]byte, len(k)+len(v)+1)
+	n := copy(buf, k)
+	buf[n] = ':'
+	copy(buf[n+1:], v)
+	return string(buf)
 }
 
 // An Array is a sequence of values.
@@ -102,7 +110,7 @@ func (n Number) JSON() string { return string(n.text) }
 // Float returns a representation of n as a Float. It panics if n is not
 // representable as a floating-point value.
 func (n Number) Float() Float {
-	v, err := strconv.ParseFloat(string(n.text), 64)
+	v, err := mem.ParseFloat(mem.B(n.text), 64)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +121,7 @@ func (n Number) Float() Float {
 // fractional parts, the fractions are truncated; otherwise Int panics if n is
 // not representable as a number.
 func (n Number) Int() Int {
-	v, err := strconv.ParseFloat(string(n.text), 64)
+	v, err := mem.ParseFloat(mem.B(n.text), 64)
 	if err != nil {
 		panic(err)
 	}
@@ -160,7 +168,7 @@ func (q Quoted) Unquote() String {
 	if len(q.text) == 0 {
 		return ""
 	}
-	dec, err := jtree.Unescape(q.text[1 : len(q.text)-1])
+	dec, err := escape.Unquote(mem.B(q.text[1 : len(q.text)-1]))
 	if err != nil {
 		panic(err)
 	}
@@ -193,10 +201,12 @@ func (s String) String() string { return string(s) }
 
 func (s String) enquote() []byte {
 	// We might need to reallocate once, but usually not.
-	buf := make([]byte, 0, len(s)+2)
-	buf = append(buf, '"')
-	buf = append(buf, jtree.Escape(string(s))...)
-	return append(buf, '"')
+	esc := jtree.Quote(string(s))
+	buf := make([]byte, len(esc)+2)
+	copy(buf[1:], esc)
+	buf[0] = '"'
+	buf[len(buf)-1] = '"'
+	return buf
 }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
