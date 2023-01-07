@@ -38,6 +38,9 @@ func TestQuery(t *testing.T) {
 			{"True", query.Bool(true), `true`},
 			{"False", query.Bool(false), `false`},
 			{"Null", query.Null(), `null`},
+			{"Obj", query.Value(ast.Object{
+				ast.Field("ok", ast.Bool(true)),
+			}), `{"ok":true}`},
 		}
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
