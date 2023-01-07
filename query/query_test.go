@@ -170,19 +170,14 @@ func TestQuery(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Path("episodes"),
 			query.Each(query.Path("airDate")),
+			query.Slice(-5, 0),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
-		a, ok := v.(ast.Array)
-		if !ok {
-			t.Fatalf("Result: got %T, want array", v)
-		}
-		if len(a) != wantLength {
-			t.Errorf("Result: got %d elements, want %d", len(a), wantLength)
-		}
-		for i, elt := range a[:5] {
-			t.Logf("Element %d: %v", i, elt)
+		const wantJSON = `["2020-03-29","2020-03-28","2020-03-27","2020-03-26","2020-03-25"]`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 
