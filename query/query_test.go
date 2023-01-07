@@ -59,9 +59,7 @@ func TestQuery(t *testing.T) {
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
-		} else if s, ok := v.(ast.Texter); !ok {
-			t.Errorf("Result: got %T, want string", v)
-		} else if got := s.Text(); got != wantString {
+		} else if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
@@ -70,9 +68,7 @@ func TestQuery(t *testing.T) {
 		v, err := query.Eval(val, query.Path("episodes", 0, "airDate"))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
-		} else if s, ok := v.(ast.Texter); !ok {
-			t.Errorf("Result: got %T, want string", v)
-		} else if got := s.Text(); got != wantString {
+		} else if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
@@ -145,7 +141,7 @@ func TestQuery(t *testing.T) {
 		}
 		if first := obj.Find("first"); first == nil {
 			t.Error(`Missing "first" in result`)
-		} else if got := first.Value.(ast.Texter).Text(); got != wantString {
+		} else if got := first.Value.String(); got != wantString {
 			t.Errorf("First: got %q, want %q", got, wantString)
 		}
 		if length := obj.Find("length"); length == nil {

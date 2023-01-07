@@ -18,6 +18,10 @@ import (
 type Value interface {
 	// JSON converts the value into JSON source text.
 	JSON() string
+
+	// String converts the value into a human-readable string.  The result is
+	// not required to be valid JSON.
+	String() string
 }
 
 // A Texter is a Value that can be rendered as text.
