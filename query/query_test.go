@@ -152,6 +152,20 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Pick", func(t *testing.T) {
+		v, err := query.Eval(val, query.Seq{
+			query.Sub(query.Path("episode")),
+			query.Pick(0, -1, 5, -3),
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		const wantJSON = `[557,"pilot",552,1]`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Path("episodes"),

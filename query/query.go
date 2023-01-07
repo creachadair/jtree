@@ -115,6 +115,30 @@ func (q sliceQuery) eval(v ast.Value) (ast.Value, error) {
 	return arr[lox:hix], nil
 }
 
+// Pick constructs an array by picking the designated offsets from an array.
+// Negative offsets select from the end of the input array.
+func Pick(offsets ...int) Query { return pickQuery(offsets) }
+
+type pickQuery []int
+
+func (q pickQuery) eval(v ast.Value) (ast.Value, error) {
+	arr, ok := v.(ast.Array)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want array", v)
+	}
+	var out ast.Array
+	for _, off := range q {
+		if off < 0 {
+			off += len(arr)
+		}
+		if off < 0 || off >= len(arr) {
+			return nil, fmt.Errorf("index %d out of range (0..%d)", off, len(arr))
+		}
+		out = append(out, arr[off])
+	}
+	return out, nil
+}
+
 // Len returns an integer representing the length of the root.
 //
 // For an object, the length is the number of members.
