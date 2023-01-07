@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"strconv"
 	"strings"
 	"unicode"
+
+	"go4.org/mem"
 )
 
 // Token is the type of a lexical token in the JSON grammar.
@@ -129,26 +130,26 @@ func (s *Scanner) Next() error {
 		}
 
 		// Handle constants: true, false, null
-		var want string
+		var want mem.RO
 		switch ch {
 		case 't':
 			s.tok = True
-			want = "true"
+			want = mem.S("true")
 			err = s.scanName(ch)
 		case 'f':
 			s.tok = False
-			want = "false"
+			want = mem.S("false")
 			err = s.scanName(ch)
 		case 'n':
 			s.tok = Null
-			want = "null"
+			want = mem.S("null")
 			err = s.scanName(ch)
 		default:
 			return s.failf("unexpected %q", ch)
 		}
 		if err != nil {
 			return err
-		} else if got := s.buf.String(); got != want {
+		} else if got := mem.B(s.buf.Bytes()); !got.Equal(want) {
 			return s.failf("unknown constant %q", got)
 		}
 		return nil // OK, token is already set
@@ -182,7 +183,7 @@ func (s *Scanner) Location() Location {
 // cannot be parsed as an integer. If the current token is Integer this will
 // always succeed.
 func (s *Scanner) Int64() int64 {
-	v, err := strconv.ParseInt(s.buf.String(), 10, 64)
+	v, err := mem.ParseInt(mem.B(s.buf.Bytes()), 10, 64)
 	if err == nil {
 		return v
 	}
@@ -193,7 +194,7 @@ func (s *Scanner) Int64() int64 {
 // the text cannot be parsed as a float. If the current token is Integer or
 // Number this will always succeed.
 func (s *Scanner) Float64() float64 {
-	v, err := strconv.ParseFloat(s.buf.String(), 64)
+	v, err := mem.ParseFloat(mem.B(s.buf.Bytes()), 64)
 	if err == nil {
 		return v
 	}
