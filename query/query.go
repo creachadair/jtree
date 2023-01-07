@@ -37,16 +37,21 @@ type Query interface {
 }
 
 // Path traverses a sequence of nested object keys or array indices from the
-// root.  If no keys are specified, the root is returned. Each key must be
-// either a string or an int, or Path will panic.
+// root.  If no keys are specified, the root is returned. Each key must be a
+// string, an int, query.All, or or Path will panic.
 func Path(keys ...any) Query {
-	pq := make(Seq, len(keys))
+	var pq Seq
 	for i, key := range keys {
 		switch t := key.(type) {
 		case string:
-			pq[i] = objKey(t)
+			pq = append(pq, objKey(t))
 		case int:
-			pq[i] = nthQuery(t)
+			pq = append(pq, nthQuery(t))
+		case Wildcard:
+			if t != All {
+				panic("invalid path wildcard")
+			}
+			return append(pq, Sub(Path(keys[i+1:]...)))
 		default:
 			panic("invalid key")
 		}
@@ -301,3 +306,11 @@ func Value(v ast.Value) Query { return constQuery{v} }
 type constQuery struct{ ast.Value }
 
 func (c constQuery) eval(_ ast.Value) (ast.Value, error) { return c.Value, nil }
+
+// A Wildcard is a query wildcard that affects path traversal.
+type Wildcard struct{ v int }
+
+var (
+	// All is a path wildcard for all recursive substructures of a path.
+	All = Wildcard{v: 1}
+)
