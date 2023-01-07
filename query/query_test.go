@@ -37,7 +37,7 @@ func TestQuery(t *testing.T) {
 			{"Integer", query.Int(17), `17`},
 			{"True", query.Bool(true), `true`},
 			{"False", query.Bool(false), `false`},
-			{"Null", query.Null, `null`},
+			{"Null", query.Null(), `null`},
 		}
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestQuery(t *testing.T) {
 		v, err := query.Eval(val, query.Alt{
 			query.Path(0),
 			query.Path("episodes"),
-			query.Null,
+			query.Null(),
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)

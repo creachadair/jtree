@@ -281,19 +281,22 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 }
 
 // A String query ignores its input and returns the given string.
-func String(s string) Query { return constQuery{ast.String(s)} }
+func String(s string) Query { return Value(ast.String(s)) }
 
 // A Float query ignores its input and returns the given number.
-func Float(n float64) Query { return constQuery{ast.Float(n)} }
+func Float(n float64) Query { return Value(ast.Float(n)) }
 
 // An Int query ignores its input and returns the given integer.
-func Int(z int64) Query { return constQuery{ast.Int(z)} }
+func Int(z int64) Query { return Value(ast.Int(z)) }
 
 // A Bool query ignores its input and returns the given bool.
-func Bool(b bool) Query { return constQuery{ast.Bool(b)} }
+func Bool(b bool) Query { return Value(ast.Bool(b)) }
 
 // A Null query ignores its input and returns a null value.
-var Null = constQuery{ast.Null}
+func Null() Query { return Value(ast.Null) }
+
+// A Value query ignores its input and returns the given value.
+func Value(v ast.Value) Query { return constQuery{v} }
 
 type constQuery struct{ ast.Value }
 
