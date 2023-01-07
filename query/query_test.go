@@ -145,7 +145,21 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Sub3", func(t *testing.T) {
+	t.Run("Count", func(t *testing.T) {
+		v, err := query.Eval(val, query.Seq{
+			query.Sub(query.Path("url")),
+			query.Len(),
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		const wantJSON = `183` // grep '"url"' testdata/input.json | wc -l
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
+	t.Run("Sub4", func(t *testing.T) {
 		v, err := query.Eval(val, query.Sub(query.Path("nonesuch")))
 		if err == nil {
 			t.Fatalf("Eval: got %T, wanted error", v)
