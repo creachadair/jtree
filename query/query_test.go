@@ -33,6 +33,7 @@ func TestQuery(t *testing.T) {
 			want  string
 		}{
 			{"String", query.String("foo"), `"foo"`},
+			{"Quoted", query.Value(ast.String("bar").Quote()), `"bar"`},
 			{"Float", query.Float(-3.1), `-3.1`},
 			{"Integer", query.Int(17), `17`},
 			{"True", query.Bool(true), `true`},
