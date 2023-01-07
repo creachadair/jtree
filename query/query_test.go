@@ -145,6 +145,13 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Sub3", func(t *testing.T) {
+		v, err := query.Eval(val, query.Sub(query.Path("nonesuch")))
+		if err == nil {
+			t.Fatalf("Eval: got %T, wanted error", v)
+		}
+	})
+
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Path("episodes"),
