@@ -199,7 +199,6 @@ func (s String) JSON() string { return string(s.enquote()) }
 func (s String) String() string { return string(s) }
 
 func (s String) enquote() []byte {
-	// We might need to reallocate once, but usually not.
 	esc := escape.Quote(mem.S(string(s)))
 	buf := make([]byte, len(esc)+2)
 	copy(buf[1:], esc)
