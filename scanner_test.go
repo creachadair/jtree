@@ -118,7 +118,7 @@ func TestScanner_decodeAs(t *testing.T) {
 		if got := string(text); got != wantText {
 			t.Errorf("Text: got %#q, want %#q", got, wantText)
 		}
-		if u, err := jtree.Unquote(text[1 : len(text)-1]); err != nil {
+		if u, err := jtree.Unquote(string(text)); err != nil {
 			t.Errorf("Unquote failed: %v", err)
 		} else if got := string(u); got != wantDec {
 			t.Errorf("Unquote: got %#q, want %#q", got, wantDec)
@@ -131,15 +131,15 @@ func TestQuote(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"", ""},
-		{" ", " "},
-		{"a\t\nb", `a\t\nb`},
-		{"\x00\x01\x02", `\u0000\u0001\u0002`},
-		{`a "b c\" d"`, `a \"b c\\\" d\"`},
-		{`\ufffd`, `\\ufffd`},
-		{"\u2028 \u2029 \ufffd", `\u2028 \u2029 \ufffd`},
-		{"This is the end\v", `This is the end\u000b`},
-		{"<\x1e>", `<\u001e>`},
+		{"", `""`},
+		{" ", `" "`},
+		{"a\t\nb", `"a\t\nb"`},
+		{"\x00\x01\x02", `"\u0000\u0001\u0002"`},
+		{`a "b c\" d"`, `"a \"b c\\\" d\""`},
+		{`\ufffd`, `"\\ufffd"`},
+		{"\u2028 \u2029 \ufffd", `"\u2028 \u2029 \ufffd"`},
+		{"This is the end\v", `"This is the end\u000b"`},
+		{"<\x1e>", `"<\u001e>"`},
 	}
 	for _, test := range tests {
 		got := string(jtree.Quote(test.input))
