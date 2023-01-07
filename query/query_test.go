@@ -107,6 +107,24 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Sub", func(t *testing.T) {
+		v, err := query.Eval(val, query.Seq{
+			query.Sub(query.Path("guestNames", 0)),
+			query.Slice(0, 3),
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		a, ok := v.(ast.Array)
+		if !ok {
+			t.Fatalf("Result: got %T, want array", v)
+		}
+		const wantJSON = `["Paul Rosenzweig","Mike Chase","Shane Harris"]`
+		if got := a.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
 			query.Path("episodes"),

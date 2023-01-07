@@ -165,6 +165,43 @@ func (q Alt) eval(v ast.Value) (ast.Value, error) {
 	return nil, errors.New("no matching alternatives")
 }
 
+// Sub applies a query to the root and all its descendants, returning an array
+// of all matching locations.
+func Sub(q Query) Query { return subQuery{q} }
+
+type subQuery struct{ Query }
+
+func (q subQuery) eval(v ast.Value) (ast.Value, error) {
+	var out ast.Array
+
+	stk := []ast.Value{v}
+	for len(stk) != 0 {
+		next := stk[len(stk)-1]
+		stk = stk[:len(stk)-1]
+
+		if r, err := q.Query.eval(next); err == nil {
+			out = append(out, r)
+		}
+
+		// N.B. Push in reverse order, so we visit in lexical order.
+		switch t := next.(type) {
+		case ast.Object:
+			for i := len(t) - 1; i >= 0; i-- {
+				stk = append(stk, t[i].Value)
+			}
+		case ast.Array:
+			for i := len(t) - 1; i >= 0; i-- {
+				stk = append(stk, t[i])
+			}
+		}
+	}
+
+	if len(out) == 0 {
+		return nil, errors.New("no matches")
+	}
+	return out, nil
+}
+
 // Each applies a query to each element of an array and returns an array of the
 // resulting values. It fails if the input is not an array.
 func Each(q Query) Query { return eachQuery{q} }
