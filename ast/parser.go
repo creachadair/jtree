@@ -98,13 +98,14 @@ func (h *parseHandler) mergeTop(v Value) {
 		// already in the object
 	case Array:
 		*old = append(t, v)
+	default:
+		h.push(v)
 	}
 }
 
 func (h *parseHandler) reduce() error {
 	if len(h.stk) > 1 {
-		v := h.pop()
-		h.mergeTop(v)
+		h.mergeTop(h.pop())
 	}
 	return nil
 }
@@ -112,6 +113,8 @@ func (h *parseHandler) reduce() error {
 func (h *parseHandler) reduceValue(v Value) error {
 	if len(h.stk) > 0 {
 		h.mergeTop(v)
+	} else {
+		h.push(v)
 	}
 	return nil
 }

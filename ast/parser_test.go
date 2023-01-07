@@ -5,10 +5,12 @@ package ast_test
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParse(t *testing.T) {
@@ -76,6 +78,24 @@ func TestParse(t *testing.T) {
 	})
 	check[ast.Bool](t, obj, "hasDetail", func(v ast.Bool) {
 		t.Logf("Bool field value: %v", v)
+	})
+}
+
+func TestRegression(t *testing.T) {
+	// Regression: Plain values were not correctly reduced at the top level.
+	t.Run("TopLevelValue", func(t *testing.T) {
+		vs, err := ast.Parse(strings.NewReader(`{"p" : null}"a" 5 true [1, {}]`))
+		if err != nil {
+			t.Fatalf("Parse: unexpected error: %v", err)
+		}
+		wantJSON := []string{`{"p":null}`, `"a"`, `5`, `true`, `[1,{}]`}
+		var got []string
+		for _, v := range vs {
+			got = append(got, v.JSON())
+		}
+		if diff := cmp.Diff(wantJSON, got); diff != "" {
+			t.Errorf("Parse (-want, +got):\n%s", diff)
+		}
 	})
 }
 
