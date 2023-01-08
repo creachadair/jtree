@@ -179,26 +179,7 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 
 // A Value query ignores its input and returns the given value.  The value must
 // be a string, int, float, bool, nil, or ast.Value.
-func Value(v any) Query {
-	switch t := v.(type) {
-	case string:
-		return constQuery{ast.String(t)}
-	case int:
-		return constQuery{ast.Int(t)}
-	case int64:
-		return constQuery{ast.Int(t)}
-	case float64:
-		return constQuery{ast.Float(t)}
-	case bool:
-		return constQuery{ast.Bool(t)}
-	case ast.Value:
-		return constQuery{t}
-	case nil:
-		return constQuery{ast.Null}
-	default:
-		panic(fmt.Sprintf("invalid constant %T", v))
-	}
-}
+func Value(v any) Query { return constQuery{ast.ToValue(v)} }
 
 // A Glob query returns an array of its inputs. If the input is an array, the
 // array is returned unchanged. if the input is an object, the result is an
