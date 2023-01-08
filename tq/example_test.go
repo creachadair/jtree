@@ -62,16 +62,26 @@ func Example_medium() {
 }`)
 
 	v, err := tq.Eval(root, tq.Let{
+		// Bind c to the "complaint" object.
 		{"c", tq.Path("complaint")},
-		{"@", tq.Path("relatedPersons", "Individual 1", "id")},
+
+		// Bindings can refer back to previous bindings in the frame.
+		{"t", tq.Path("$c", "target")},
+
+		// Use tq.Ref to use a query result as part of another query.
+		{"@", tq.Path("relatedPersons", tq.Ref("$t"), "id")},
 	}.In(tq.Object{
+		// Construct an object with field values pulled from other places.
+
 		"name": tq.Path("plaintiff"),
+
 		"act": tq.Array{
 			tq.Path("$c", "defendant"),
 			tq.Path("$c", "action"),
-			tq.Value("my"),
+			tq.Value("my"), // a constant value
 			tq.Get("@"),
 		},
+
 		"req": tq.Path("requestedRelief", 0),
 	}))
 	if err != nil {
