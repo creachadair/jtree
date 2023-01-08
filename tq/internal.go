@@ -231,6 +231,12 @@ type binding struct {
 }
 
 func (s *qstate) bind(name string, value ast.Value) *qstate {
+	for i, b := range s.bindings {
+		if b.name == name {
+			s.bindings[i].value = value
+			return s
+		}
+	}
 	s.bindings = append(s.bindings, binding{name: name, value: value})
 	return s
 }
