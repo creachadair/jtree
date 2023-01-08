@@ -219,6 +219,22 @@ func (q setQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	return v, nil
 }
 
+type refQuery struct{ Query }
+
+func (r refQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+	w, err := r.Query.eval(qs, v)
+	if err != nil {
+		return nil, err
+	}
+	switch t := w.(type) {
+	case ast.Numeric:
+		return nthQuery(int(t.Int())).eval(qs, v)
+	case ast.Keyer:
+		return objKey(t.Key()).eval(qs, v)
+	}
+	return nil, fmt.Errorf("value %T is not a valid reference", w)
+}
+
 func with[T ast.Value](v ast.Value, f func(T) (ast.Value, error)) (ast.Value, error) {
 	if v, ok := v.(T); ok {
 		return f(v)

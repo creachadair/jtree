@@ -363,6 +363,19 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %#q, want true", v)
 		}
 	})
+
+	t.Run("Ref", func(t *testing.T) {
+		v := mustEval(t, tq.Let{
+			{"x", tq.Value("airDate")},
+			{"p", tq.Value(25)},
+		}.In(
+			"episodes", tq.Ref("$p"), tq.Ref("$x"),
+		))
+		const want = `2021-10-19`
+		if got := v.String(); got != want {
+			t.Errorf("Result: got %#q, want %#q", got, want)
+		}
+	})
 }
 
 func failq(tq.Env, ast.Value) (ast.Value, error) { return nil, errors.New("gratuitous failure") }

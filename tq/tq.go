@@ -22,11 +22,11 @@
 // Queries can save intermediate results in named bindings. This is done using
 // the Set query, which stores its input under the given name:
 //
-//   tq.Path(0, "b", tq.Set("Q"))
+//	tq.Path(0, "b", tq.Set("Q"))
 //
 // Another part of the query can recover this value using a Get query:
 //
-//   tq.Get("Q")
+//	tq.Get("Q")
 //
 // Path constructors support the shorthand "$q" for a query like tq.Get("x").
 // You can escape this if you want the literal string "$x" by writing "$$x".
@@ -281,3 +281,9 @@ type Func func(Env, ast.Value) (ast.Value, error)
 func (f Func) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	return f(Env{qstate: qs}, v)
 }
+
+// Ref returns a query that looks up the string or integer value returned by q
+// as an object or array reference on its input. It is an error if the value
+// from q is not a string or a number. The parameter q has the same constraints
+// as the arguments to Path.
+func Ref(q any) Query { return refQuery{pathElem(q)} }
