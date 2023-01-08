@@ -290,4 +290,4 @@ func (f Func) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 // as an object or array reference on its input. It is an error if the value
 // from q is not a string or a number. The parameter q has the same constraints
 // as the arguments to Path.
-func Ref(q any) Query { return refQuery{pathElem(q)} }
+func Ref(q ...any) Query { return refQuery{Path(q...)} }

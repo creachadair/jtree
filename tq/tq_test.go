@@ -377,6 +377,21 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("RefWild", func(t *testing.T) {
+		v := mustEval(t, tq.Path(
+			"episodes",
+
+			// Use the fifth episode number from the end as the lookup index.
+			tq.Ref("$", "episodes", -5, "episode"),
+
+			"airDate",
+		))
+		const want = `2021-11-18`
+		if got := v.String(); got != want {
+			t.Errorf("Result: got %#q, want %#q", got, want)
+		}
+	})
+
 	t.Run("KeysObj", func(t *testing.T) {
 		v := mustEval(t, tq.Path("episodes", 0, tq.Keys(), -1))
 		const want = "hasDetail"
