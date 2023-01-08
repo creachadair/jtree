@@ -88,6 +88,22 @@ func (q pickQuery) eval(v ast.Value) (ast.Value, error) {
 	})
 }
 
+type eachQuery struct{ Query }
+
+func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		var out ast.Array
+		for i, elt := range a {
+			v, err := q.Query.eval(elt)
+			if err != nil {
+				return nil, fmt.Errorf("index %d: %w", i, err)
+			}
+			out = append(out, v)
+		}
+		return out, nil
+	})
+}
+
 type lenQuery struct{}
 
 func (lenQuery) eval(v ast.Value) (ast.Value, error) {

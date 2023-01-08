@@ -31,14 +31,16 @@ func Eval(root ast.Value, q Query) (ast.Value, error) {
 	return q.eval(root)
 }
 
-// A Query describes a traversal of a JSON value.
+// A Query describes a traversal of a JSON value. The behavior of a query is
+// described in terms of how it maps its input to an output. Both the input and
+// the output are JSON structures.
 type Query interface {
 	eval(ast.Value) (ast.Value, error)
 }
 
 // Path traverses a sequence of nested object keys or array indices from the
-// root.  If no keys are specified, the root is returned. Each key must be a
-// string, an int, or a Query.
+// input value.  If no keys are specified, the input is returned. Each key must
+// be a string (an object key), an int (an array offset), or a nested Query.
 func Path(keys ...any) Query {
 	if len(keys) == 1 {
 		return pathElem(keys[0])
@@ -55,7 +57,7 @@ func Path(keys ...any) Query {
 	return pq
 }
 
-// Selection constructs an array of the elements of its input array, for which
+// Selection constructs an array of the elements of its input array for which
 // the specified function returns true.
 type Selection func(ast.Value) bool
 
@@ -103,7 +105,7 @@ func Pick(offsets ...int) Query { return pickQuery(offsets) }
 func Len() Query { return lenQuery{} }
 
 // Seq is a sequential composition of queries. An empty sequence selects the
-// root; otherwise, each query is applied to the result selected by the
+// input value; otherwise, each query is applied to the result produced by the
 // previous query in the sequence.
 type Seq []Query
 
@@ -119,9 +121,9 @@ func (q Seq) eval(v ast.Value) (ast.Value, error) {
 	return cur, nil
 }
 
-// Alt is a query that selects among a sequence of alternatives.  The result of
-// the first alternative that does not report an error is returned. If there
-// are no alternatives, the query fails on all inputs.
+// Alt is a query that selects among a sequence of alternatives.  It returns
+// the value of the first alternative that does not report an error. If there
+// are no such alternatives, the query fails. An empty All fails on all inputs.
 type Alt []Query
 
 func (q Alt) eval(v ast.Value) (ast.Value, error) {
@@ -143,22 +145,6 @@ func Recur(keys ...any) Query { return recQuery{Path(keys...)} }
 // the same constraints as Path.
 func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 
-type eachQuery struct{ Query }
-
-func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
-	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
-		var out ast.Array
-		for i, elt := range a {
-			v, err := q.Query.eval(elt)
-			if err != nil {
-				return nil, fmt.Errorf("index %d: %w", i, err)
-			}
-			out = append(out, v)
-		}
-		return out, nil
-	})
-}
-
 // Object constructs an object with the given keys mapped to the results of
 // matching the query values against its input.
 type Object map[string]Query
@@ -175,8 +161,8 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 	return out, nil
 }
 
-// Array constructs an array with the values produced by matching the given
-// queries against its input.
+// Array constructs an array containing the values produced by matching the
+// given queries against its input.
 type Array []Query
 
 func (a Array) eval(v ast.Value) (ast.Value, error) {
@@ -214,5 +200,7 @@ func Value(v any) Query {
 	}
 }
 
-// A Glob query returns an array of all its inputs.
+// A Glob query returns an array of its inputs. If the input is an array, the
+// array is returned unchanged. if the input is an object, the result is an
+// array of all the object values.
 func Glob() Query { return globQuery{} }
