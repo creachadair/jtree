@@ -16,6 +16,22 @@
 //	tq.Path(1, "c", "d")
 //
 // yields the value "true".
+//
+// # Bindings
+//
+// A query can use the Let form to bind names to certain parts of the input
+// structure. These names can be looked up using a Get query to recover the
+// value previously bound. For example, in this query:
+//
+//	tq.Let{
+//	   {"@", tq.Path(1, "c")},
+//	}.In(tq.Get("@"), "d")
+//
+// yields the value "true".
+//
+// The special name "$" is pre-bound to the root of the input. Path queries
+// support the shorthand "$x" for a query like tg.Get("x"). You can escape this
+// by writing "$$x" to mean the literal string "$x".
 package tq
 
 import (
@@ -28,19 +44,22 @@ import (
 // Eval evaluates the given query beginning from root, returning the resulting
 // value or an error.
 func Eval(root ast.Value, q Query) (ast.Value, error) {
-	return q.eval(root)
+	return q.eval(new(qstate).bind("$", root), root)
 }
 
 // A Query describes a traversal of a JSON value. The behavior of a query is
 // defined in terms of how it maps its input to an output. Both the input and
 // the output are JSON structures.
 type Query interface {
-	eval(ast.Value) (ast.Value, error)
+	eval(*qstate, ast.Value) (ast.Value, error)
 }
 
 // Path traverses a sequence of nested object keys or array indices from the
 // input value.  If no keys are specified, the input is returned. Each key must
 // be a string (an object key), an int (an array offset), or a nested Query.
+//
+// As a special case, a string beginning with "$" is treated as a Get query.
+// To escape this treatment, double the "$".
 func Path(keys ...any) Query {
 	if len(keys) == 1 {
 		return pathElem(keys[0])
@@ -61,7 +80,7 @@ func Path(keys ...any) Query {
 // the specified function returns true.
 type Selection func(ast.Value) bool
 
-func (q Selection) eval(v ast.Value) (ast.Value, error) {
+func (q Selection) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
 		var out ast.Array
 		for _, elt := range a {
@@ -77,7 +96,7 @@ func (q Selection) eval(v ast.Value) (ast.Value, error) {
 // calling the specified function on the corresponding input value.
 type Mapping func(ast.Value) ast.Value
 
-func (q Mapping) eval(v ast.Value) (ast.Value, error) {
+func (q Mapping) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
 		out := make(ast.Array, len(a))
 		for i, elt := range a {
@@ -109,10 +128,10 @@ func Len() Query { return lenQuery{} }
 // previous query in the sequence.
 type Seq []Query
 
-func (q Seq) eval(v ast.Value) (ast.Value, error) {
+func (q Seq) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	cur := v
 	for _, sq := range q {
-		next, err := sq.eval(cur)
+		next, err := sq.eval(qs, cur)
 		if err != nil {
 			return nil, err
 		}
@@ -126,9 +145,9 @@ func (q Seq) eval(v ast.Value) (ast.Value, error) {
 // are no such alternatives, the query fails. An empty All fails on all inputs.
 type Alt []Query
 
-func (q Alt) eval(v ast.Value) (ast.Value, error) {
+func (q Alt) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	for _, alt := range q {
-		if w, err := alt.eval(v); err == nil {
+		if w, err := alt.eval(qs, v); err == nil {
 			return w, nil
 		}
 	}
@@ -149,10 +168,10 @@ func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 // matching the query values against its input.
 type Object map[string]Query
 
-func (o Object) eval(v ast.Value) (ast.Value, error) {
+func (o Object) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	var out ast.Object
 	for key, q := range o {
-		val, err := q.eval(v)
+		val, err := q.eval(qs, v)
 		if err != nil {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
@@ -165,10 +184,10 @@ func (o Object) eval(v ast.Value) (ast.Value, error) {
 // given queries against its input.
 type Array []Query
 
-func (a Array) eval(v ast.Value) (ast.Value, error) {
+func (a Array) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	out := make(ast.Array, len(a))
 	for i, q := range a {
-		val, err := q.eval(v)
+		val, err := q.eval(qs, v)
 		if err != nil {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}
@@ -185,3 +204,25 @@ func Value(v any) Query { return constQuery{ast.ToValue(v)} }
 // array is returned unchanged. if the input is an object, the result is an
 // array of all the object values.
 func Glob() Query { return globQuery{} }
+
+// Let defines a set of name to query bindings. These bindings can be applied
+// to a query q using the In method, to evaluate q with the names bound to the
+// values defined.
+//
+// Bindings in a Let are ordered: Each query can see the names of the queries
+// prior to it in the sequence.
+type Let []Bind
+
+// A Bind associates a name with a query.
+type Bind struct {
+	Name  string
+	Query Query
+}
+
+// In applies b to the specified query. The arguments have the same constraints
+// as Path.
+func (b Let) In(keys ...any) Query { return letQuery{binds: b, next: Path(keys...)} }
+
+// A Get query ignores its input and instead returns the value associated with
+// the specified parameter name. The query fails if the name is not defined.
+func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }

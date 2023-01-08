@@ -267,4 +267,23 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %#q, want %#q", v, want)
 		}
 	})
+
+	t.Run("LetGet", func(t *testing.T) {
+		v := mustEval(t, tq.Let{
+			// Let g be all the episode objects that define guestNames.
+			{"g", tq.Path("episodes", tq.Exists("guestNames"))},
+			// Let f be the third such episode.
+			{"f", tq.Path("$g", 2)},
+		}.In(tq.Object{
+			"count":  tq.Path("$g", tq.Len()),
+			"number": tq.Path("$f", "episode"),
+			"name":   tq.Path(tq.Get("$f"), "guestNames", 0),
+		}))
+		o := v.(ast.Object)
+		o.Sort()
+		const wantJSON = `{"count":468,"name":"Shane Harris","number":554}`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
 }

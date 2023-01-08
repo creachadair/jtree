@@ -7,7 +7,7 @@ import "github.com/creachadair/jtree/ast"
 func Exists(keys ...any) Selection {
 	q := Path(keys...)
 	return func(v ast.Value) bool {
-		_, err := q.eval(v)
+		_, err := q.eval(nil, v)
 		return err == nil
 	}
 }
