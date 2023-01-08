@@ -90,9 +90,33 @@ type Member struct {
 	Value Value
 }
 
-// Field constructs an object member with the given key and value.
-func Field(key string, val Value) *Member {
-	return &Member{Key: String(key), Value: val}
+// Field constructs an object member with the given key and value.  The value
+// must be a string, int, float, bool, nil, or ast.Value.
+func Field(key string, value any) *Member {
+	return &Member{Key: String(key), Value: ToValue(value)}
+}
+
+// ToValue converts a string, int, float, bool, nil, or ast.Value into an
+// ast.Value. It panics if v does not have one of those types.
+func ToValue(v any) Value {
+	switch t := v.(type) {
+	case string:
+		return String(t)
+	case int:
+		return Int(t)
+	case int64:
+		return Int(t)
+	case float64:
+		return Float(t)
+	case bool:
+		return Bool(t)
+	case nil:
+		return Null
+	case Value:
+		return t
+	default:
+		panic(fmt.Sprintf("invalid value %T", v))
+	}
 }
 
 // JSON renders the member as JSON text.
