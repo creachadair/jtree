@@ -6,6 +6,7 @@ package ast
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -76,6 +77,11 @@ func (o Object) JSON() string {
 }
 
 func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o)) }
+
+// Sort sorts the object in ascending order by key.
+func (o Object) Sort() {
+	sort.Slice(o, func(i, j int) bool { return o[i].Key.Key() < o[j].Key.Key() })
+}
 
 // A Member is a single key-value pair belonging to an Object. A Key must
 // support being rendered as text, typically an ast.Quoted or ast.String.
