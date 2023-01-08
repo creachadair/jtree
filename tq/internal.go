@@ -27,7 +27,7 @@ func pathElem(key any) Query {
 
 type objKey string
 
-func (o objKey) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (o objKey) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Object](v, func(obj ast.Object) (ast.Value, error) {
 		mem := obj.Find(string(o))
 		if mem == nil {
@@ -39,7 +39,7 @@ func (o objKey) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 
 type nthQuery int
 
-func (nq nthQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (nq nthQuery) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
 		idx := int(nq)
 		if idx < 0 {
@@ -54,7 +54,7 @@ func (nq nthQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 
 type sliceQuery struct{ lo, hi int }
 
-func (q sliceQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (q sliceQuery) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(arr ast.Array) (ast.Value, error) {
 		lox := q.lo
 		if lox < 0 {
@@ -77,7 +77,7 @@ func (q sliceQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 
 type pickQuery []int
 
-func (q pickQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (q pickQuery) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(arr ast.Array) (ast.Value, error) {
 		var out ast.Array
 		for _, off := range q {
@@ -111,7 +111,7 @@ func (q eachQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 
 type lenQuery struct{}
 
-func (lenQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (lenQuery) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	if t, ok := v.(interface {
 		Len() int
 	}); ok {
