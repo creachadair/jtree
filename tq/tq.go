@@ -131,7 +131,7 @@ type Seq []Query
 func (q Seq) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	cur := v
 	for _, sq := range q {
-		next, err := sq.eval(qs.push(), cur)
+		next, err := sq.eval(qs, cur)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ type Alt []Query
 
 func (q Alt) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	for _, alt := range q {
-		if w, err := alt.eval(qs.push(), v); err == nil {
+		if w, err := alt.eval(qs, v); err == nil {
 			return w, nil
 		}
 	}
@@ -171,7 +171,7 @@ type Object map[string]Query
 func (o Object) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	var out ast.Object
 	for key, q := range o {
-		val, err := q.eval(qs.push(), v)
+		val, err := q.eval(qs, v)
 		if err != nil {
 			return nil, fmt.Errorf("match %q: %w", key, err)
 		}
@@ -187,7 +187,7 @@ type Array []Query
 func (a Array) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	out := make(ast.Array, len(a))
 	for i, q := range a {
-		val, err := q.eval(qs.push(), v)
+		val, err := q.eval(qs, v)
 		if err != nil {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}

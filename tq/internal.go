@@ -99,7 +99,7 @@ func (q eachQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
 		var out ast.Array
 		for i, elt := range a {
-			v, err := q.Query.eval(qs.push(), elt)
+			v, err := q.Query.eval(qs, elt)
 			if err != nil {
 				return nil, fmt.Errorf("index %d: %w", i, err)
 			}
@@ -130,7 +130,7 @@ func (q recQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 		next := stk[len(stk)-1]
 		stk = stk[:len(stk)-1]
 
-		if r, err := q.Query.eval(qs.push(), next); err == nil {
+		if r, err := q.Query.eval(qs, next); err == nil {
 			out = append(out, r)
 		}
 
