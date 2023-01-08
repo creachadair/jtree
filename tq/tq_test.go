@@ -312,7 +312,7 @@ func TestQuery(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
-				e.Set("e10", e10)
+				e.Set("e10", e10) // this is visible to the rest of the query
 
 				// Ignore the input and do something else.
 				return ast.Bool(true), nil
@@ -325,6 +325,23 @@ func TestQuery(t *testing.T) {
 		const wantOut = 547
 		if got := v.(ast.Numeric).Int(); got != wantOut {
 			t.Errorf("Result: got %v, want %v", v, wantOut)
+		}
+	})
+
+	t.Run("CleanFunc", func(t *testing.T) {
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Path("episodes", 0),
+			tq.Func(func(e tq.Env, in ast.Value) (ast.Value, error) {
+				// When a function evaluates in a clean environment, the changes
+				// from the subquery should not be visible outside.
+				return e.New().Eval(in, tq.Path("airDate", tq.Set("@")))
+			}),
+			tq.Get("@"), // this should fail
+		})
+		if err == nil {
+			t.Errorf("Eval: got %#q, want error", v)
+		} else {
+			t.Logf("Eval: got error: %v (OK)", err)
 		}
 	})
 

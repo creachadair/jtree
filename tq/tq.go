@@ -255,6 +255,12 @@ func (e Env) Get(name string) ast.Value {
 // already exists, the new definition shadows the previous one.
 func (e Env) Set(name string, value ast.Value) { e.qstate.bind(name, value) }
 
+// New derives a new empty environment frame from e. Ordinarily when Func
+// evaluates a subquery, any modifications it makes to the environment are
+// preserved when the Func completes. A new frame isolates such changes to the
+// subquery.
+func (e Env) New() Env { return Env{qstate: e.qstate.push()} }
+
 // Eval evaluates the specified query starting from v.
 func (e Env) Eval(v ast.Value, q Query) (ast.Value, error) { return q.eval(e.qstate, v) }
 
