@@ -212,6 +212,13 @@ func (q getQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	return nil, fmt.Errorf("parameter %q not found", q.name)
 }
 
+type setQuery struct{ name string }
+
+func (q setQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+	qs.bind(q.name, v)
+	return v, nil
+}
+
 func with[T ast.Value](v ast.Value, f func(T) (ast.Value, error)) (ast.Value, error) {
 	if v, ok := v.(T); ok {
 		return f(v)

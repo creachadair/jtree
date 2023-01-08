@@ -227,6 +227,10 @@ func (b Let) In(keys ...any) Query { return letQuery{binds: b, next: Path(keys..
 // the specified parameter name. The query fails if the name is not defined.
 func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }
 
+// A Set query copies its input to its output, and as a side-effect updates the
+// specified parameter name with the input vaoue.
+func Set(name string) Query { base, _ := isMarked(name); return setQuery{base} }
+
 // Env is the namespace environment for a query.
 type Env struct{ *qstate }
 
