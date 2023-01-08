@@ -4,7 +4,9 @@ package ast_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +20,12 @@ var (
 	_ ast.Numeric = ast.Int(0)
 	_ ast.Numeric = ast.Float(0)
 )
+
+type testValue int
+
+func (t testValue) JSON() string   { return strconv.Itoa(int(t)) }
+func (t testValue) String() string { return fmt.Sprintf("z=%d", t) }
+func (t testValue) Key() string    { return fmt.Sprintf("key=%d", t) }
 
 func TestParse(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.json")
@@ -173,9 +181,9 @@ func TestString(t *testing.T) {
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 
 		{ast.Object{
-			// If a non-string Texter is used as a key, it is turned into a string.
-			&ast.Member{Key: ast.Int(25), Value: ast.String("ok")},
-		}, `{"25":"ok"}`},
+			// If a non-string Keyer is used as a key, it is turned into a string.
+			&ast.Member{Key: testValue(25), Value: testValue(101)},
+		}, `{"key=25":101}`},
 	}
 	for _, test := range tests {
 		got := test.input.JSON()

@@ -24,10 +24,14 @@ type Value interface {
 	String() string
 }
 
-// A Texter is a Value that can be rendered as text.
-type Texter interface {
+// A Keyer is a Value with a Key method, allowing it to be used as an object
+// member key.
+type Keyer interface {
 	Value
-	Text() string
+
+	// Key returns the string that is used to represent the receiver in an
+	// object key. The string should be quoted.
+	Key() string
 }
 
 // A Numeric is a Value that represents a number. Numeric values have the
@@ -45,7 +49,7 @@ type Object []*Member
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.Text() == key {
+		if m.Key.Key() == key {
 			return m
 		}
 	}
@@ -76,7 +80,7 @@ func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o)) }
 // A Member is a single key-value pair belonging to an Object. A Key must
 // support being rendered as text, typically an ast.Quoted or ast.String.
 type Member struct {
-	Key   Texter
+	Key   Keyer
 	Value Value
 }
 
@@ -87,7 +91,7 @@ func Field(key string, val Value) *Member {
 
 // JSON renders the member as JSON text.
 func (m *Member) JSON() string {
-	k := jtree.Quote(m.Key.Text()) // render as a JSON string even if it's not
+	k := jtree.Quote(m.Key.Key()) // render as a JSON string even if it's not
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
 	n := copy(buf, k)
@@ -131,10 +135,7 @@ type Number struct {
 // JSON renders n as JSON text.
 func (n Number) JSON() string { return string(n.text) }
 
-// Text renders n as a plain string.
-func (n Number) Text() string { return string(n.text) }
-
-func (n Number) String() string { return n.Text() }
+func (n Number) String() string { return string(n.text) }
 
 // IsInt reports whether n is representable as an integer.
 func (n Number) IsInt() bool { return n.isInt }
@@ -172,10 +173,7 @@ func (f Float) Int() Int { return Int(f) }
 // JSON renders f as JSON text.
 func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
 
-// Text renders f as a plain string.
-func (f Float) Text() string { return f.JSON() }
-
-func (f Float) String() string { return f.Text() }
+func (f Float) String() string { return f.JSON() }
 
 // Value returns f as a float64. It is shorthand for a type conversion.
 func (f Float) Value() float64 { return float64(f) }
@@ -192,10 +190,7 @@ func (z Int) Float() Float { return Float(z) }
 // JSON renders z as JSON text.
 func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
 
-// Text renders z as a plain string.
-func (z Int) Text() string { return z.JSON() }
-
-func (z Int) String() string { return z.Text() }
+func (z Int) String() string { return z.JSON() }
 
 // Value returns z as an int64. It is shorthand for a type conversion.
 func (z Int) Value() int64 { return int64(z) }
@@ -237,10 +232,10 @@ func (q Quoted) Len() int { return q.Unquote().Len() }
 // JSON returns the JSON encoding of q.
 func (q Quoted) JSON() string { return string(q.text) }
 
-// Text returns the unescaped text of the string.
-func (q Quoted) Text() string { return string(q.Unquote()) }
+// Key returns the unescaped text of the string.
+func (q Quoted) Key() string { return string(q.Unquote()) }
 
-func (q Quoted) String() string { return q.Text() }
+func (q Quoted) String() string { return q.Key() }
 
 // A String is an unquoted string value.
 type String string
@@ -254,10 +249,10 @@ func (s String) Quote() Quoted { return Quoted{text: jtree.Quote(string(s))} }
 // JSON renders s as JSON text.
 func (s String) JSON() string { return string(jtree.Quote(string(s))) }
 
-// Text returns s as a plain string. It is shorthand for a type conversion.
-func (s String) Text() string { return string(s) }
+// Key returns s as a plain string. It is shorthand for a type conversion.
+func (s String) Key() string { return string(s) }
 
-func (s String) String() string { return s.Text() }
+func (s String) String() string { return s.Key() }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
 var Null nullValue
