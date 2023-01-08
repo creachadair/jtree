@@ -10,13 +10,11 @@ import (
 )
 
 func mustParse(s string) ast.Value {
-	vals, err := ast.Parse(strings.NewReader(s))
+	val, err := ast.ParseSingle(strings.NewReader(s))
 	if err != nil {
 		log.Fatalf("Parse: %v", err)
-	} else if len(vals) != 1 {
-		log.Fatalf("Got %d values, want 1", len(vals))
 	}
-	return vals[0]
+	return val
 }
 
 func Example_simple() {

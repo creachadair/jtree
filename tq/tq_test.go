@@ -16,13 +16,10 @@ func TestQuery(t *testing.T) {
 		t.Fatalf("Reading test input: %v", err)
 	}
 
-	vals, err := ast.Parse(bytes.NewReader(input))
+	val, err := ast.ParseSingle(bytes.NewReader(input))
 	if err != nil {
 		t.Fatalf("Parse failed: %v", err)
-	} else if len(vals) == 0 {
-		t.Fatal("Parse returned no values")
 	}
-	val := vals[0]
 	mustEval := func(t *testing.T, q tq.Query) ast.Value {
 		t.Helper()
 		v, err := tq.Eval(val, q)
