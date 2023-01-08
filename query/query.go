@@ -38,25 +38,34 @@ type Query interface {
 
 // Path traverses a sequence of nested object keys or array indices from the
 // root.  If no keys are specified, the root is returned. Each key must be a
-// string, an int, query.All, or or Path will panic.
+// string, an int, or a Query.
 func Path(keys ...any) Query {
-	var pq Seq
+	if len(keys) == 1 {
+		return pathElem(keys[0])
+	}
+	pq := make(Seq, len(keys))
 	for i, key := range keys {
-		switch t := key.(type) {
-		case string:
-			pq = append(pq, objKey(t))
-		case int:
-			pq = append(pq, nthQuery(t))
-		case Wildcard:
-			if t != All {
-				panic("invalid path wildcard")
-			}
-			return append(pq, Sub(Path(keys[i+1:]...)))
-		default:
-			panic("invalid key")
-		}
+		pq[i] = pathElem(key)
 	}
 	return pq
+}
+
+func pathElem(key any) Query {
+	switch t := key.(type) {
+	case string:
+		return objKey(t)
+	case int:
+		return nthQuery(t)
+	case Seq:
+		if len(t) == 1 {
+			return t[0]
+		}
+		return t
+	case Query:
+		return t
+	default:
+		panic("invalid path element")
+	}
 }
 
 type objKey string
@@ -163,9 +172,9 @@ func (lenQuery) eval(v ast.Value) (ast.Value, error) {
 	return nil, fmt.Errorf("cannot take length of %T", v)
 }
 
-// Seq is a sequential composition of queries. An empty Seq selects the root;
-// otherwise, each query is applied to the result selected by the previous
-// query in the sequence.
+// Seq is a sequential composition of queries. An empty sequence selects the
+// root; otherwise, each query is applied to the result selected by the
+// previous query in the sequence.
 type Seq []Query
 
 func (q Seq) eval(v ast.Value) (ast.Value, error) {
@@ -194,13 +203,14 @@ func (q Alt) eval(v ast.Value) (ast.Value, error) {
 	return nil, errors.New("no matching alternatives")
 }
 
-// Sub applies a query to the root and all its descendants, returning an array
-// of all matching locations.
-func Sub(q Query) Query { return subQuery{q} }
+// Recur applies a query to each recursive descendant of its input and returns
+// an array of the resulting values. The arguments have the same constraints as
+// Path.
+func Recur(keys ...any) Query { return recQuery{Path(keys...)} }
 
-type subQuery struct{ Query }
+type recQuery struct{ Query }
 
-func (q subQuery) eval(v ast.Value) (ast.Value, error) {
+func (q recQuery) eval(v ast.Value) (ast.Value, error) {
 	var out ast.Array
 
 	stk := []ast.Value{v}
@@ -232,8 +242,9 @@ func (q subQuery) eval(v ast.Value) (ast.Value, error) {
 }
 
 // Each applies a query to each element of an array and returns an array of the
-// resulting values. It fails if the input is not an array.
-func Each(q Query) Query { return eachQuery{q} }
+// resulting values. It fails if the input is not an array.  The arguments have
+// the same constraints as Path.
+func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 
 type eachQuery struct{ Query }
 
@@ -307,10 +318,22 @@ type constQuery struct{ ast.Value }
 
 func (c constQuery) eval(_ ast.Value) (ast.Value, error) { return c.Value, nil }
 
-// A Wildcard is a query wildcard that affects path traversal.
-type Wildcard struct{ v int }
+// A Glob query returns an array of all its inputs.
+func Glob() Query { return globQuery{} }
 
-var (
-	// All is a path wildcard for all recursive substructures of a path.
-	All = Wildcard{v: 1}
-)
+type globQuery struct{}
+
+func (globQuery) eval(v ast.Value) (ast.Value, error) {
+	switch t := v.(type) {
+	case ast.Object:
+		out := make(ast.Array, len(t))
+		for i, m := range t {
+			out[i] = m.Value
+		}
+		return out, nil
+	case ast.Array:
+		return t, nil
+	default:
+		return nil, errors.New("no matching values")
+	}
+}

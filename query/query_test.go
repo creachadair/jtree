@@ -56,11 +56,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Seq", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Path(0),
-			query.Path("airDate"),
-		})
+		v, err := query.Eval(val, query.Path("episodes", 0, "airDate"))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
 		} else if got := v.String(); got != wantString {
@@ -97,11 +93,9 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Slice", func(t *testing.T) {
 		const wantJSON = `["2020-03-27","2020-03-26","2020-03-25"]`
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Slice(-3, 0),
-			query.Each(query.Path("airDate")),
-		})
+		v, err := query.Eval(val, query.Path(
+			"episodes", query.Slice(-3, 0), query.Each("airDate"),
+		))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
 		} else if arr, ok := v.(ast.Array); !ok {
@@ -111,12 +105,10 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Sub1", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Sub(query.Path("guestNames", 0)),
-			query.Slice(0, 3),
-		})
+	t.Run("Recur1", func(t *testing.T) {
+		v, err := query.Eval(val, query.Path(
+			"episodes", query.Recur("guestNames", 0), query.Slice(0, 3),
+		))
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
@@ -130,10 +122,9 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Sub2", func(t *testing.T) {
+	t.Run("Recur2", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Sub(query.Path("title")),
+			query.Path("episodes", query.Recur("title")),
 			query.Slice(0, 4),
 		})
 		if err != nil {
@@ -149,8 +140,8 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Sub3", func(t *testing.T) {
-		v, err := query.Eval(val, query.Sub(query.Path("nonesuch")))
+	t.Run("Recur3", func(t *testing.T) {
+		v, err := query.Eval(val, query.Recur("nonesuch"))
 		if err == nil {
 			t.Fatalf("Eval: got %T, wanted error", v)
 		}
@@ -158,7 +149,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Count", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes", query.All, "url"),
+			query.Path("episodes", query.Recur("url")),
 			query.Len(),
 		})
 		if err != nil {
@@ -170,9 +161,37 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Glob", func(t *testing.T) {
+		// The number of fields in the first object of the episodes array.
+		v, err := query.Eval(val, query.Path("episodes", 0, query.Glob(), query.Len()))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if n, ok := v.(ast.Int); !ok {
+			t.Errorf("Result: got %T, want number", v)
+		} else if n != 6 {
+			t.Errorf("Result: got %v, want 5", n)
+		}
+	})
+
+	t.Run("RecurGlob", func(t *testing.T) {
+		v, err := query.Eval(val, query.Seq{
+			query.Recur("links", -1),    // the last link object of each set
+			query.Each(query.Glob(), 0), // the first field of each such object
+			query.Path(-5),              // the fifth from the end
+		})
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		const want = "New York Times"
+		if got := v.String(); got != want {
+			t.Errorf("Result: got %#q, want %#q", got, want)
+		}
+	})
+
 	t.Run("Pick", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
-			query.Sub(query.Path("episode")),
+			query.Recur("episode"),
 			query.Pick(0, -1, 5, -3),
 		})
 		if err != nil {
@@ -186,8 +205,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Each", func(t *testing.T) {
 		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Each(query.Path("airDate")),
+			query.Path("episodes", query.Each("airDate")),
 			query.Slice(-5, 0),
 		})
 		if err != nil {
@@ -202,7 +220,7 @@ func TestQuery(t *testing.T) {
 	t.Run("Object", func(t *testing.T) {
 		v, err := query.Eval(val, query.Object{
 			"first":  query.Path("episodes", 0, "airDate"),
-			"length": query.Seq{query.Path("episodes"), query.Len()},
+			"length": query.Path("episodes", query.Len()),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -225,7 +243,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Array", func(t *testing.T) {
 		v, err := query.Eval(val, query.Array{
-			query.Seq{query.Path("episodes"), query.Len()},
+			query.Path("episodes", query.Len()),
 			query.Path("episodes", 0, "hasDetail"),
 		})
 		if err != nil {
@@ -249,10 +267,8 @@ func TestQuery(t *testing.T) {
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
 		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes"),
-			query.Slice(0, 5),
-			query.Each(query.Path("summary")),
-			query.Each(query.Len()),
+			query.Path("episodes", query.Slice(0, 5)),
+			query.Each("summary", query.Len()),
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
