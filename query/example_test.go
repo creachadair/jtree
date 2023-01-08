@@ -50,7 +50,7 @@ func Example_medium() {
 		"act": query.Array{
 			query.Path("complaint", "defendant"),
 			query.Path("complaint", "action"),
-			query.String("my"),
+			query.Value("my"),
 			query.Path("relatedPersons", "Individual 1", "id"),
 		},
 		"req": query.Path("requestedRelief", 0),

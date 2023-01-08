@@ -330,23 +330,28 @@ func (a Array) eval(v ast.Value) (ast.Value, error) {
 	return out, nil
 }
 
-// A String query ignores its input and returns the given string.
-func String(s string) Query { return Value(ast.String(s)) }
-
-// A Float query ignores its input and returns the given number.
-func Float(n float64) Query { return Value(ast.Float(n)) }
-
-// An Int query ignores its input and returns the given integer.
-func Int(z int64) Query { return Value(ast.Int(z)) }
-
-// A Bool query ignores its input and returns the given bool.
-func Bool(b bool) Query { return Value(ast.Bool(b)) }
-
-// A Null query ignores its input and returns a null value.
-func Null() Query { return Value(ast.Null) }
-
-// A Value query ignores its input and returns the given value.
-func Value(v ast.Value) Query { return constQuery{v} }
+// A Value query ignores its input and returns the given value.  The value must
+// be a string, int, float, bool, nil, or ast.Value.
+func Value(v any) Query {
+	switch t := v.(type) {
+	case string:
+		return constQuery{ast.String(t)}
+	case int:
+		return constQuery{ast.Int(t)}
+	case int64:
+		return constQuery{ast.Int(t)}
+	case float64:
+		return constQuery{ast.Float(t)}
+	case bool:
+		return constQuery{ast.Bool(t)}
+	case ast.Value:
+		return constQuery{t}
+	case nil:
+		return constQuery{ast.Null}
+	default:
+		panic(fmt.Sprintf("invalid constant %T", v))
+	}
+}
 
 type constQuery struct{ ast.Value }
 

@@ -26,19 +26,19 @@ func TestQuery(t *testing.T) {
 	const wantString = "2021-11-30"
 	const wantLength = 563
 
-	t.Run("Const", func(t *testing.T) {
+	t.Run("Value", func(t *testing.T) {
 		tests := []struct {
 			name  string
 			query query.Query
 			want  string
 		}{
-			{"String", query.String("foo"), `"foo"`},
+			{"String", query.Value("foo"), `"foo"`},
 			{"Quoted", query.Value(ast.String("bar").Quote()), `"bar"`},
-			{"Float", query.Float(-3.1), `-3.1`},
-			{"Integer", query.Int(17), `17`},
-			{"True", query.Bool(true), `true`},
-			{"False", query.Bool(false), `false`},
-			{"Null", query.Null(), `null`},
+			{"Float", query.Value(-3.1), `-3.1`},
+			{"Integer", query.Value(17), `17`},
+			{"True", query.Value(true), `true`},
+			{"False", query.Value(false), `false`},
+			{"Null", query.Value(nil), `null`},
 			{"Obj", query.Value(ast.Object{
 				ast.Field("ok", ast.Bool(true)),
 			}), `{"ok":true}`},
@@ -73,14 +73,17 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Alt", func(t *testing.T) {
+	t.Run("EmptyAlt", func(t *testing.T) {
 		if v, err := query.Eval(val, query.Alt{}); err == nil {
 			t.Errorf("Empty Alt: got %+v, want error", v)
 		}
+	})
+
+	t.Run("Alt", func(t *testing.T) {
 		v, err := query.Eval(val, query.Alt{
 			query.Path(0),
 			query.Path("episodes"),
-			query.Null(),
+			query.Value(nil),
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
