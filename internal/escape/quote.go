@@ -20,9 +20,10 @@ var controlEsc = [...]byte{
 var hexDigit = []byte("0123456789abcdef")
 
 // Quote encodes a string to escape characters for inclusion in a JSON string.
-func Quote(src mem.RO) []byte {
-	buf := make([]byte, 0, src.Len())
+func Quote(src mem.RO) mem.RO {
+	buf := make([]byte, 0, src.Len()+2)
 	putByte := func(bs ...byte) { buf = append(buf, bs...) }
+	putByte('"')
 
 	i := 0
 	for i < src.Len() {
@@ -58,5 +59,6 @@ func Quote(src mem.RO) []byte {
 
 		src = src.SliceFrom(n)
 	}
-	return buf
+	putByte('"')
+	return mem.B(buf)
 }

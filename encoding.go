@@ -10,10 +10,7 @@ import (
 
 // Quote encodes src as a JSON string value. The contents are escaped and
 // double quotation marks are added.
-func Quote(src string) []byte {
-	esc := escape.Quote(mem.S(src))
-	return append([]byte{'"'}, append(esc, '"')...)
-}
+func Quote(src string) string { return escape.Quote(mem.S(src)).StringCopy() }
 
 // Unquote decodes a JSON string value.  Double quotation marks are removed,
 // and escape sequences are replaced with their unescaped equivalents.
