@@ -13,6 +13,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+var (
+	_ ast.Numeric = ast.Number{}
+	_ ast.Numeric = ast.Int(0)
+	_ ast.Numeric = ast.Float(0)
+)
+
 func TestParse(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.json")
 	if err != nil {

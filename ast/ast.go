@@ -30,6 +30,15 @@ type Texter interface {
 	Text() string
 }
 
+// A Numeric is a Value that represents a number. Numeric values have the
+// property that they can be converted into Int or Float.
+type Numeric interface {
+	Value
+
+	Int() Int
+	Float() Float
+}
+
 // An Object is a collection of key-value members.
 type Object []*Member
 
@@ -154,6 +163,12 @@ func (n Number) Int() Int {
 // A Float is represents a floating-point number.
 type Float float64
 
+// Float satisfies the Numeric interface. It returns f unmodified.
+func (f Float) Float() Float { return f }
+
+// Int satisfies the numeric interface.
+func (f Float) Int() Int { return Int(f) }
+
 // JSON renders f as JSON text.
 func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 64) }
 
@@ -167,6 +182,12 @@ func (f Float) Value() float64 { return float64(f) }
 
 // An Int represents an integer number.
 type Int int64
+
+// Int satisfies the Numeric interface. It returns z unmodified.
+func (z Int) Int() Int { return z }
+
+// Float satisfies the Numeric interface.
+func (z Int) Float() Float { return Float(z) }
 
 // JSON renders z as JSON text.
 func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
