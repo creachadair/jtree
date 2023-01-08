@@ -32,7 +32,7 @@ func Eval(root ast.Value, q Query) (ast.Value, error) {
 }
 
 // A Query describes a traversal of a JSON value. The behavior of a query is
-// described in terms of how it maps its input to an output. Both the input and
+// defined in terms of how it maps its input to an output. Both the input and
 // the output are JSON structures.
 type Query interface {
 	eval(ast.Value) (ast.Value, error)
