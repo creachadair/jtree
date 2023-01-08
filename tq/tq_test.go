@@ -327,4 +327,25 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %v, want %v", v, wantOut)
 		}
 	})
+
+	t.Run("Set", func(t *testing.T) {
+		v := mustEval(t, tq.Seq{
+			tq.Path(tq.Value(true), tq.Set("x")),
+			tq.Alt{
+				tq.Get("y"), // fails (y is not bound)
+
+				// This query fails, so its set of x does not take effect.
+				tq.Path(tq.Value(nil), tq.Set("x"), tq.Func(failq)),
+
+				tq.Get("x"),     // succeeds (x is true)
+				tq.Value(false), // not reached (previous alternative succeeded)
+			},
+		})
+
+		if got, ok := v.(ast.Bool); !ok || !got.Value() {
+			t.Errorf("Result: got %#q, want true", v)
+		}
+	})
 }
+
+func failq(tq.Env, ast.Value) (ast.Value, error) { return nil, errors.New("gratuitous failure") }

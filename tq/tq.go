@@ -150,7 +150,12 @@ type Alt []Query
 
 func (q Alt) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	for _, alt := range q {
-		if w, err := alt.eval(qs, v); err == nil {
+		// When evaluating alternatives, don't let failed branches contribute to
+		// the namespace. Once we find one that succeeds we can copy any bindings
+		// it produced.
+		ns := qs.push()
+		if w, err := alt.eval(ns, v); err == nil {
+			qs.bindings = append(qs.bindings, ns.bindings...)
 			return w, nil
 		}
 	}
