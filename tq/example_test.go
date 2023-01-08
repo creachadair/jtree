@@ -9,7 +9,7 @@ import (
 	"github.com/creachadair/jtree/tq"
 )
 
-func mustParseOne(s string) ast.Value {
+func mustParse(s string) ast.Value {
 	vals, err := ast.Parse(strings.NewReader(s))
 	if err != nil {
 		log.Fatalf("Parse: %v", err)
@@ -19,9 +19,26 @@ func mustParseOne(s string) ast.Value {
 	return vals[0]
 }
 
-func Example_small() {
-	root := mustParseOne(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+func Example_simple() {
+	root := mustParse(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+
 	v, err := tq.Eval(root, tq.Path(1, "c", "d"))
+
+	if err != nil {
+		log.Fatalf("Eval: %v", err)
+	}
+	fmt.Println(v.JSON())
+	// Output:
+	// true
+}
+
+func Example_small() {
+	root := mustParse(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+
+	v, err := tq.Eval(root, tq.Let{
+		{"@", tq.Path(1, "c")},
+	}.In("$@", "d"))
+
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
@@ -31,8 +48,7 @@ func Example_small() {
 }
 
 func Example_medium() {
-	root := mustParseOne(`
-{
+	root := mustParse(`{
   "plaintiff": "Inigo Montoya",
   "complaint": {
      "defendant": "you",
@@ -45,16 +61,19 @@ func Example_medium() {
   }
 }`)
 
-	v, err := tq.Eval(root, tq.Object{
+	v, err := tq.Eval(root, tq.Let{
+		{"c", tq.Path("complaint")},
+		{"@", tq.Path("relatedPersons", "Individual 1", "id")},
+	}.In(tq.Object{
 		"name": tq.Path("plaintiff"),
 		"act": tq.Array{
-			tq.Path("complaint", "defendant"),
-			tq.Path("complaint", "action"),
+			tq.Path("$c", "defendant"),
+			tq.Path("$c", "action"),
 			tq.Value("my"),
-			tq.Path("relatedPersons", "Individual 1", "id"),
+			tq.Get("@"),
 		},
 		"req": tq.Path("requestedRelief", 0),
-	})
+	}))
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
