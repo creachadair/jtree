@@ -1,11 +1,11 @@
 // Package tq implements structural traversal queries over JSON values.
 //
-// A query describes a syntactic substructure of a JSON syntax tree, such as an
-// object member, array element, or a path through the tree. Evaluating a query
-// against a concrete JSON value traverses the structure described by the query
-// and returns the resulting value.
+// A query describes a syntactic substructure of a JSON document, such as an
+// object, array, array element, or basic value. Evaluating a query against a
+// concrete JSON value traverses the value as described by the query and
+// returns the resulting structure.
 //
-// The simplest query is for a "path", a sequence of object keys and/or array
+// The most basic query is for a "path", a sequence of object keys and/or array
 // indices that describes a path from the root of a JSON value. For example,
 // given the JSON value:
 //
