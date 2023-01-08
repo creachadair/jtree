@@ -295,7 +295,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Mapping", func(t *testing.T) {
 		// Choose numeric values greater than 500.
-		filter := query.Filter(func(z ast.Numeric) bool { return z.Int() > 500 })
+		filter := query.Select(func(z ast.Numeric) bool { return z.Int() > 500 })
 
 		// Multiply numeric values by 11.
 		multiply := query.Map(func(z ast.Numeric) ast.Int { return z.Int() * 11 })

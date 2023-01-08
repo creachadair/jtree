@@ -33,8 +33,8 @@ func Map[T, U ast.Value](f func(T) U) Mapping {
 	}
 }
 
-// Filter constructs a selection from the given function. The resulting
+// Select constructs a selection from the given function. The resulting
 // selection will discard any value whose type does not match T.
-func Filter[T ast.Value](f func(T) bool) Selection {
+func Select[T ast.Value](f func(T) bool) Selection {
 	return func(v ast.Value) bool { w, ok := v.(T); return ok && f(w) }
 }
