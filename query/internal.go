@@ -23,77 +23,69 @@ func pathElem(key any) Query {
 type objKey string
 
 func (o objKey) eval(v ast.Value) (ast.Value, error) {
-	obj, ok := v.(ast.Object)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want object", v)
-	}
-	mem := obj.Find(string(o))
-	if mem == nil {
-		return nil, fmt.Errorf("key %q not found", o)
-	}
-	return mem.Value, nil
+	return with[ast.Object](v, func(obj ast.Object) (ast.Value, error) {
+		mem := obj.Find(string(o))
+		if mem == nil {
+			return nil, fmt.Errorf("key %q not found", o)
+		}
+		return mem.Value, nil
+	})
 }
 
 type nthQuery int
 
 func (nq nthQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	idx := int(nq)
-	if idx < 0 {
-		idx += len(arr)
-	}
-	if idx < 0 || idx >= len(arr) {
-		return nil, fmt.Errorf("index %d out of range (0..%d)", nq, len(arr))
-	}
-	return arr[idx], nil
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		idx := int(nq)
+		if idx < 0 {
+			idx += len(a)
+		}
+		if idx < 0 || idx >= len(a) {
+			return nil, fmt.Errorf("index %d out of range (0..%d)", nq, len(a))
+		}
+		return a[idx], nil
+	})
 }
 
 type sliceQuery struct{ lo, hi int }
 
 func (q sliceQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	lox := q.lo
-	if lox < 0 {
-		lox += len(arr)
-	}
-	hix := q.hi
-	if hix <= 0 {
-		hix += len(arr)
-	}
-	if lox < 0 || lox >= len(arr) {
-		return nil, fmt.Errorf("index %d out of range (0..%d)", q.lo, len(arr))
-	} else if hix < 0 || hix > len(arr) {
-		return nil, fmt.Errorf("index %d out of range (0..%d)", q.hi, len(arr))
-	} else if lox > hix {
-		return nil, fmt.Errorf("index start %d > end %d", q.lo, q.hi)
-	}
-	return arr[lox:hix], nil
+	return with[ast.Array](v, func(arr ast.Array) (ast.Value, error) {
+		lox := q.lo
+		if lox < 0 {
+			lox += len(arr)
+		}
+		hix := q.hi
+		if hix <= 0 {
+			hix += len(arr)
+		}
+		if lox < 0 || lox >= len(arr) {
+			return nil, fmt.Errorf("index %d out of range (0..%d)", q.lo, len(arr))
+		} else if hix < 0 || hix > len(arr) {
+			return nil, fmt.Errorf("index %d out of range (0..%d)", q.hi, len(arr))
+		} else if lox > hix {
+			return nil, fmt.Errorf("index start %d > end %d", q.lo, q.hi)
+		}
+		return arr[lox:hix], nil
+	})
 }
 
 type pickQuery []int
 
 func (q pickQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	var out ast.Array
-	for _, off := range q {
-		if off < 0 {
-			off += len(arr)
+	return with[ast.Array](v, func(arr ast.Array) (ast.Value, error) {
+		var out ast.Array
+		for _, off := range q {
+			if off < 0 {
+				off += len(arr)
+			}
+			if off < 0 || off >= len(arr) {
+				return nil, fmt.Errorf("index %d out of range (0..%d)", off, len(arr))
+			}
+			out = append(out, arr[off])
 		}
-		if off < 0 || off >= len(arr) {
-			return nil, fmt.Errorf("index %d out of range (0..%d)", off, len(arr))
-		}
-		out = append(out, arr[off])
-	}
-	return out, nil
+		return out, nil
+	})
 }
 
 type lenQuery struct{}
@@ -159,4 +151,12 @@ func (globQuery) eval(v ast.Value) (ast.Value, error) {
 	default:
 		return nil, errors.New("no matching values")
 	}
+}
+
+func with[T ast.Value](v ast.Value, f func(T) (ast.Value, error)) (ast.Value, error) {
+	if v, ok := v.(T); ok {
+		return f(v)
+	}
+	var zero T
+	return nil, fmt.Errorf("got %T, want %T", v, zero)
 }

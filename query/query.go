@@ -60,17 +60,15 @@ func Path(keys ...any) Query {
 type Selection func(ast.Value) bool
 
 func (q Selection) eval(v ast.Value) (ast.Value, error) {
-	a, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	var out ast.Array
-	for _, elt := range a {
-		if q(elt) {
-			out = append(out, elt)
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		var out ast.Array
+		for _, elt := range a {
+			if q(elt) {
+				out = append(out, elt)
+			}
 		}
-	}
-	return out, nil
+		return out, nil
+	})
 }
 
 // Mapping constructs an array in which each value is replaced by the result of
@@ -78,15 +76,13 @@ func (q Selection) eval(v ast.Value) (ast.Value, error) {
 type Mapping func(ast.Value) ast.Value
 
 func (q Mapping) eval(v ast.Value) (ast.Value, error) {
-	a, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	out := make(ast.Array, len(a))
-	for i, elt := range a {
-		out[i] = q(elt)
-	}
-	return out, nil
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		out := make(ast.Array, len(a))
+		for i, elt := range a {
+			out[i] = q(elt)
+		}
+		return out, nil
+	})
 }
 
 // Slice selects a slice of an array from offsets lo to hi.  The range includes
@@ -150,19 +146,17 @@ func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 type eachQuery struct{ Query }
 
 func (q eachQuery) eval(v ast.Value) (ast.Value, error) {
-	arr, ok := v.(ast.Array)
-	if !ok {
-		return nil, fmt.Errorf("got %T, want array", v)
-	}
-	var out ast.Array
-	for i, elt := range arr {
-		v, err := q.Query.eval(elt)
-		if err != nil {
-			return nil, fmt.Errorf("index %d: %w", i, err)
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		var out ast.Array
+		for i, elt := range a {
+			v, err := q.Query.eval(elt)
+			if err != nil {
+				return nil, fmt.Errorf("index %d: %w", i, err)
+			}
+			out = append(out, v)
 		}
-		out = append(out, v)
-	}
-	return out, nil
+		return out, nil
+	})
 }
 
 // Object constructs an object with the given keys mapped to the results of
