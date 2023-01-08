@@ -206,7 +206,7 @@ func TestQuery(t *testing.T) {
 		}
 		if length := obj.Find("length"); length == nil {
 			t.Error(`Missing "length" in result`)
-		} else if got := length.Value.(ast.Int).Value(); got != wantLength {
+		} else if got := length.Value.(ast.Int); got != wantLength {
 			t.Errorf("Result: got length %d, want %d", got, wantLength)
 		}
 	})
@@ -223,10 +223,10 @@ func TestQuery(t *testing.T) {
 		if len(arr) != 2 {
 			t.Fatalf("Result: got %d values, want %d", len(arr), 2)
 		}
-		if got := arr[0].(ast.Int).Value(); got != wantLength {
+		if got := arr[0].(ast.Int); got != wantLength {
 			t.Errorf("Entry 0: got length %d, want %d", got, wantLength)
 		}
-		if hasDetail := arr[1].(ast.Bool).Value(); hasDetail {
+		if hasDetail := arr[1].(ast.Bool); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
 		}
 	})
@@ -359,7 +359,7 @@ func TestQuery(t *testing.T) {
 			},
 		})
 
-		if got, ok := v.(ast.Bool); !ok || !got.Value() {
+		if got, ok := v.(ast.Bool); !ok || !bool(got) {
 			t.Errorf("Result: got %#q, want true", v)
 		}
 	})

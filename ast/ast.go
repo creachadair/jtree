@@ -205,9 +205,6 @@ func (f Float) JSON() string { return strconv.FormatFloat(float64(f), 'g', -1, 6
 
 func (f Float) String() string { return f.JSON() }
 
-// Value returns f as a float64. It is shorthand for a type conversion.
-func (f Float) Value() float64 { return float64(f) }
-
 // An Int represents an integer number.
 type Int int64
 
@@ -222,14 +219,8 @@ func (z Int) JSON() string { return strconv.FormatInt(int64(z), 10) }
 
 func (z Int) String() string { return z.JSON() }
 
-// Value returns z as an int64. It is shorthand for a type conversion.
-func (z Int) Value() int64 { return int64(z) }
-
 // A Bool is a Boolean constant, true or false.
 type Bool bool
-
-// Value reports the truth value of the Boolean.
-func (b Bool) Value() bool { return bool(b) }
 
 // JSON returns b as JSON text.
 func (b Bool) JSON() string {
