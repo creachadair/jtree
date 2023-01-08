@@ -43,9 +43,14 @@ func Path(keys ...any) Query {
 	if len(keys) == 1 {
 		return pathElem(keys[0])
 	}
-	pq := make(Seq, len(keys))
-	for i, key := range keys {
-		pq[i] = pathElem(key)
+	pq := make(Seq, 0, len(keys))
+	for _, key := range keys {
+		q := pathElem(key)
+		if sq, ok := q.(Seq); ok {
+			pq = append(pq, sq...)
+		} else {
+			pq = append(pq, q)
+		}
 	}
 	return pq
 }
@@ -56,11 +61,6 @@ func pathElem(key any) Query {
 		return objKey(t)
 	case int:
 		return nthQuery(t)
-	case Seq:
-		if len(t) == 1 {
-			return t[0]
-		}
-		return t
 	case Query:
 		return t
 	default:
@@ -97,6 +97,40 @@ func (nq nthQuery) eval(v ast.Value) (ast.Value, error) {
 		return nil, fmt.Errorf("index %d out of range (0..%d)", nq, len(arr))
 	}
 	return arr[idx], nil
+}
+
+// Selection constructs an array of the elements of its input array, for which
+// the specified function returns true.
+type Selection func(ast.Value) bool
+
+func (q Selection) eval(v ast.Value) (ast.Value, error) {
+	a, ok := v.(ast.Array)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want array", v)
+	}
+	var out ast.Array
+	for _, elt := range a {
+		if q(elt) {
+			out = append(out, elt)
+		}
+	}
+	return out, nil
+}
+
+// Mapping constructs an array in which each value is replaced by the result of
+// calling the specified function on the corresponding input value.
+type Mapping func(ast.Value) ast.Value
+
+func (q Mapping) eval(v ast.Value) (ast.Value, error) {
+	a, ok := v.(ast.Array)
+	if !ok {
+		return nil, fmt.Errorf("got %T, want array", v)
+	}
+	out := make(ast.Array, len(a))
+	for i, elt := range a {
+		out[i] = q(elt)
+	}
+	return out, nil
 }
 
 // Slice selects a slice of an array from offsets lo to hi.  The range includes

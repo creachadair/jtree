@@ -276,4 +276,37 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
+
+	t.Run("Select", func(t *testing.T) {
+		v, err := query.Eval(val, query.Path(
+			"episodes", query.Exists("guestNames"), query.Each("guestNames", 0), -1,
+		))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		const want = "Danielle Citron"
+		if got := v.String(); got != want {
+			t.Errorf("Result: got %#q, want %#q", got, want)
+		}
+	})
+
+	t.Run("Mapping", func(t *testing.T) {
+		// Choose numeric values greater than 500.
+		filter := query.Filter(func(z ast.Numeric) bool { return z.Int() > 500 })
+
+		// Multiply numeric values by 11.
+		multiply := query.Map(func(z ast.Numeric) ast.Int { return z.Int() * 11 })
+
+		v, err := query.Eval(val, query.Path(
+			query.Recur("episode"),
+			filter, multiply, query.Slice(-3, 0), 0,
+		))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		const want = 5533
+		if got := v.(ast.Int); got != want {
+			t.Errorf("Result: got %#q, want %#q", v, want)
+		}
+	})
 }
