@@ -4,6 +4,7 @@ package ast_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -109,6 +110,32 @@ func TestRegression(t *testing.T) {
 		}
 		if diff := cmp.Diff(wantJSON, got); diff != "" {
 			t.Errorf("Parse (-want, +got):\n%s", diff)
+		}
+	})
+}
+
+func TestParseSingle(t *testing.T) {
+	t.Run("Good", func(t *testing.T) {
+		const input = ` [ 1, 2, 3 ]  `
+		v, err := ast.ParseSingle(strings.NewReader(input))
+		if err != nil {
+			t.Errorf("ParseOne: unexpected error: %v", err)
+		}
+		const wantJSON = `[1,2,3]`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
+	t.Run("Bad", func(t *testing.T) {
+		const input = ` {"a" : 1 } {"b: 2} 3`
+		v, err := ast.ParseSingle(strings.NewReader(input))
+		if !errors.Is(err, ast.ErrExtraInput) {
+			t.Errorf("ParseOne: got err=%v, want %v", err, ast.ErrExtraInput)
+		}
+		const wantJSON = `{"a":1}`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 }

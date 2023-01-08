@@ -51,6 +51,25 @@ func Parse(r io.Reader) ([]Value, error) {
 	}
 }
 
+// ParseSingle parses and returns a single JSON value from r. If r contains
+// more data after the first value, ParseOne returns the first value along with
+// an ErrExtraInput error.
+func ParseSingle(r io.Reader) (Value, error) {
+	p := NewParser(r)
+	v, err := p.Parse()
+	if err == io.EOF {
+		return v, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Trigger the parser with a handler that fails on any non-empty input.
+	if err := p.st.ParseOne(noMoreInput{}); err != io.EOF {
+		return v, err
+	}
+	return v, nil
+}
+
 // A parseHandler implements the jtree.Handler interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
@@ -181,3 +200,19 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 func (h *parseHandler) SyntaxError(loc jtree.Anchor, err error) error { return err }
 
 func (h *parseHandler) EndOfInput(loc jtree.Anchor) {}
+
+// ErrExtraInput is a sentinel error reported by ParseOne if the input contains
+// additional values after the first one.
+var ErrExtraInput = errors.New("extra data after value")
+
+// A noMoreInput is a jtree.Hanlder that reports an error for any input.
+type noMoreInput struct{}
+
+func (noMoreInput) BeginObject(jtree.Anchor) error { return ErrExtraInput }
+func (noMoreInput) EndObject(jtree.Anchor) error   { return ErrExtraInput }
+func (noMoreInput) BeginArray(jtree.Anchor) error  { return ErrExtraInput }
+func (noMoreInput) EndArray(jtree.Anchor) error    { return ErrExtraInput }
+func (noMoreInput) BeginMember(jtree.Anchor) error { return ErrExtraInput }
+func (noMoreInput) EndMember(jtree.Anchor) error   { return ErrExtraInput }
+func (noMoreInput) Value(jtree.Anchor) error       { return ErrExtraInput }
+func (noMoreInput) EndOfInput(jtree.Anchor)        {}
