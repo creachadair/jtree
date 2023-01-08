@@ -1,4 +1,4 @@
-package query_test
+package tq_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/creachadair/jtree/ast"
-	"github.com/creachadair/jtree/query"
+	"github.com/creachadair/jtree/tq"
 )
 
 func mustParseOne(s string) ast.Value {
@@ -21,7 +21,7 @@ func mustParseOne(s string) ast.Value {
 
 func Example_small() {
 	root := mustParseOne(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
-	v, err := query.Eval(root, query.Path(1, "c", "d"))
+	v, err := tq.Eval(root, tq.Path(1, "c", "d"))
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
@@ -45,15 +45,15 @@ func Example_medium() {
   }
 }`)
 
-	v, err := query.Eval(root, query.Object{
-		"name": query.Path("plaintiff"),
-		"act": query.Array{
-			query.Path("complaint", "defendant"),
-			query.Path("complaint", "action"),
-			query.Value("my"),
-			query.Path("relatedPersons", "Individual 1", "id"),
+	v, err := tq.Eval(root, tq.Object{
+		"name": tq.Path("plaintiff"),
+		"act": tq.Array{
+			tq.Path("complaint", "defendant"),
+			tq.Path("complaint", "action"),
+			tq.Value("my"),
+			tq.Path("relatedPersons", "Individual 1", "id"),
 		},
-		"req": query.Path("requestedRelief", 0),
+		"req": tq.Path("requestedRelief", 0),
 	})
 	if err != nil {
 		log.Fatalf("Eval: %v", err)

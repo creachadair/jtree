@@ -1,4 +1,4 @@
-// Package query implements structural queries over JSON values.
+// Package tq implements structural traversal queries over JSON values.
 //
 // A query describes a syntactic substructure of a JSON syntax tree, such as an
 // object member, array element, or a path through the tree. Evaluating a query
@@ -13,10 +13,10 @@
 //
 // the query
 //
-//	query.Path(1, "c", "d")
+//	tq.Path(1, "c", "d")
 //
 // yields the value "true".
-package query
+package tq
 
 import (
 	"errors"
