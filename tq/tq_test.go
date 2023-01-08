@@ -1,4 +1,4 @@
-package query_test
+package tq_test
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree/ast"
-	"github.com/creachadair/jtree/query"
+	"github.com/creachadair/jtree/tq"
 )
 
 func TestQuery(t *testing.T) {
@@ -29,23 +29,23 @@ func TestQuery(t *testing.T) {
 	t.Run("Value", func(t *testing.T) {
 		tests := []struct {
 			name  string
-			query query.Query
+			query tq.Query
 			want  string
 		}{
-			{"String", query.Value("foo"), `"foo"`},
-			{"Quoted", query.Value(ast.String("bar").Quote()), `"bar"`},
-			{"Float", query.Value(-3.1), `-3.1`},
-			{"Integer", query.Value(17), `17`},
-			{"True", query.Value(true), `true`},
-			{"False", query.Value(false), `false`},
-			{"Null", query.Value(nil), `null`},
-			{"Obj", query.Value(ast.Object{
+			{"String", tq.Value("foo"), `"foo"`},
+			{"Quoted", tq.Value(ast.String("bar").Quote()), `"bar"`},
+			{"Float", tq.Value(-3.1), `-3.1`},
+			{"Integer", tq.Value(17), `17`},
+			{"True", tq.Value(true), `true`},
+			{"False", tq.Value(false), `false`},
+			{"Null", tq.Value(nil), `null`},
+			{"Obj", tq.Value(ast.Object{
 				ast.Field("ok", ast.Bool(true)),
 			}), `{"ok":true}`},
 		}
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				v, err := query.Eval(val, test.query)
+				v, err := tq.Eval(val, test.query)
 				if err != nil {
 					t.Errorf("Eval failed: %v", err)
 				} else if got := v.JSON(); got != test.want {
@@ -56,7 +56,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Seq", func(t *testing.T) {
-		v, err := query.Eval(val, query.Path("episodes", 0, "airDate"))
+		v, err := tq.Eval(val, tq.Path("episodes", 0, "airDate"))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
 		} else if got := v.String(); got != wantString {
@@ -65,7 +65,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Key", func(t *testing.T) {
-		v, err := query.Eval(val, query.Path("episodes", 0, "airDate"))
+		v, err := tq.Eval(val, tq.Path("episodes", 0, "airDate"))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
 		} else if got := v.String(); got != wantString {
@@ -74,16 +74,16 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("EmptyAlt", func(t *testing.T) {
-		if v, err := query.Eval(val, query.Alt{}); err == nil {
+		if v, err := tq.Eval(val, tq.Alt{}); err == nil {
 			t.Errorf("Empty Alt: got %+v, want error", v)
 		}
 	})
 
 	t.Run("Alt", func(t *testing.T) {
-		v, err := query.Eval(val, query.Alt{
-			query.Path(0),
-			query.Path("episodes"),
-			query.Value(nil),
+		v, err := tq.Eval(val, tq.Alt{
+			tq.Path(0),
+			tq.Path("episodes"),
+			tq.Value(nil),
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
@@ -96,8 +96,8 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Slice", func(t *testing.T) {
 		const wantJSON = `["2020-03-27","2020-03-26","2020-03-25"]`
-		v, err := query.Eval(val, query.Path(
-			"episodes", query.Slice(-3, 0), query.Each("airDate"),
+		v, err := tq.Eval(val, tq.Path(
+			"episodes", tq.Slice(-3, 0), tq.Each("airDate"),
 		))
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
@@ -109,8 +109,8 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur1", func(t *testing.T) {
-		v, err := query.Eval(val, query.Path(
-			"episodes", query.Recur("guestNames", 0), query.Slice(0, 3),
+		v, err := tq.Eval(val, tq.Path(
+			"episodes", tq.Recur("guestNames", 0), tq.Slice(0, 3),
 		))
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -126,9 +126,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur2", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes", query.Recur("title")),
-			query.Slice(0, 4),
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Path("episodes", tq.Recur("title")),
+			tq.Slice(0, 4),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -144,16 +144,16 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur3", func(t *testing.T) {
-		v, err := query.Eval(val, query.Recur("nonesuch"))
+		v, err := tq.Eval(val, tq.Recur("nonesuch"))
 		if err == nil {
 			t.Fatalf("Eval: got %T, wanted error", v)
 		}
 	})
 
 	t.Run("Count", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes", query.Recur("url")),
-			query.Len(),
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Path("episodes", tq.Recur("url")),
+			tq.Len(),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -166,7 +166,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Glob", func(t *testing.T) {
 		// The number of fields in the first object of the episodes array.
-		v, err := query.Eval(val, query.Path("episodes", 0, query.Glob(), query.Len()))
+		v, err := tq.Eval(val, tq.Path("episodes", 0, tq.Glob(), tq.Len()))
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
 		}
@@ -178,10 +178,10 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("RecurGlob", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Recur("links", -1),    // the last link object of each set
-			query.Each(query.Glob(), 0), // the first field of each such object
-			query.Path(-5),              // the fifth from the end
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Recur("links", -1), // the last link object of each set
+			tq.Each(tq.Glob(), 0), // the first field of each such object
+			tq.Path(-5),           // the fifth from the end
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -193,9 +193,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Pick", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Recur("episode"),
-			query.Pick(0, -1, 5, -3),
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Recur("episode"),
+			tq.Pick(0, -1, 5, -3),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -207,9 +207,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Each", func(t *testing.T) {
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes", query.Each("airDate")),
-			query.Slice(-5, 0),
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Path("episodes", tq.Each("airDate")),
+			tq.Slice(-5, 0),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -221,9 +221,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Object", func(t *testing.T) {
-		v, err := query.Eval(val, query.Object{
-			"first":  query.Path("episodes", 0, "airDate"),
-			"length": query.Path("episodes", query.Len()),
+		v, err := tq.Eval(val, tq.Object{
+			"first":  tq.Path("episodes", 0, "airDate"),
+			"length": tq.Path("episodes", tq.Len()),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -245,9 +245,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Array", func(t *testing.T) {
-		v, err := query.Eval(val, query.Array{
-			query.Path("episodes", query.Len()),
-			query.Path("episodes", 0, "hasDetail"),
+		v, err := tq.Eval(val, tq.Array{
+			tq.Path("episodes", tq.Len()),
+			tq.Path("episodes", 0, "hasDetail"),
 		})
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -269,9 +269,9 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
-		v, err := query.Eval(val, query.Seq{
-			query.Path("episodes", query.Slice(0, 5)),
-			query.Each("summary", query.Len()),
+		v, err := tq.Eval(val, tq.Seq{
+			tq.Path("episodes", tq.Slice(0, 5)),
+			tq.Each("summary", tq.Len()),
 		})
 		if err != nil {
 			t.Errorf("Eval failed: %v", err)
@@ -281,8 +281,8 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Select", func(t *testing.T) {
-		v, err := query.Eval(val, query.Path(
-			"episodes", query.Exists("guestNames"), query.Each("guestNames", 0), -1,
+		v, err := tq.Eval(val, tq.Path(
+			"episodes", tq.Exists("guestNames"), tq.Each("guestNames", 0), -1,
 		))
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
@@ -295,14 +295,14 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Mapping", func(t *testing.T) {
 		// Choose numeric values greater than 500.
-		filter := query.Select(func(z ast.Numeric) bool { return z.Int() > 500 })
+		filter := tq.Select(func(z ast.Numeric) bool { return z.Int() > 500 })
 
 		// Multiply numeric values by 11.
-		multiply := query.Map(func(z ast.Numeric) ast.Int { return z.Int() * 11 })
+		multiply := tq.Map(func(z ast.Numeric) ast.Int { return z.Int() * 11 })
 
-		v, err := query.Eval(val, query.Path(
-			query.Recur("episode"),
-			filter, multiply, query.Slice(-3, 0), 0,
+		v, err := tq.Eval(val, tq.Path(
+			tq.Recur("episode"),
+			filter, multiply, tq.Slice(-3, 0), 0,
 		))
 		if err != nil {
 			t.Fatalf("Eval failed: %v", err)
