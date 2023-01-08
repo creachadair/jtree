@@ -126,6 +126,9 @@ func Len() Query { return lenQuery{} }
 // Seq is a sequential composition of queries. An empty sequence selects the
 // input value; otherwise, each query is applied to the result produced by the
 // previous query in the sequence.
+//
+// Parameters defined during evaluation of a sequence are visible to later
+// queries in the sequence. Notably, Set and Func queries can do this.
 type Seq []Query
 
 func (q Seq) eval(qs *qstate, v ast.Value) (ast.Value, error) {
@@ -248,14 +251,12 @@ func (e Env) Get(name string) ast.Value {
 func (e Env) Set(name string, value ast.Value) { e.qstate.bind(name, value) }
 
 // Eval evaluates the specified query starting from v.
-func (e Env) Eval(v ast.Value, q Query) (ast.Value, error) {
-	return q.eval(e.qstate, v)
-}
+func (e Env) Eval(v ast.Value, q Query) (ast.Value, error) { return q.eval(e.qstate, v) }
 
 // Func is a user-defined Query implementation. Evaluating the query calls the
 // function with the current namespace environment and input value.
 type Func func(Env, ast.Value) (ast.Value, error)
 
 func (f Func) eval(qs *qstate, v ast.Value) (ast.Value, error) {
-	return f(Env{qstate: qs.push()}, v)
+	return f(Env{qstate: qs}, v)
 }

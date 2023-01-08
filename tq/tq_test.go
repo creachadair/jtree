@@ -315,8 +315,11 @@ func TestQuery(t *testing.T) {
 				e.Set("e10", e10)
 
 				// Ignore the input and do something else.
-				return e.Eval(root, tq.Path("$e10", "episode"))
+				return ast.Bool(true), nil
 			}),
+
+			// Verify that the environment changes from the Func are visible here.
+			tq.Path("$e10", "episode"),
 		})
 
 		const wantOut = 547
