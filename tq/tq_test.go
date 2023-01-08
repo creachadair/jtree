@@ -2,6 +2,7 @@ package tq_test
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"testing"
 
@@ -284,6 +285,43 @@ func TestQuery(t *testing.T) {
 		const wantJSON = `{"count":468,"name":"Shane Harris","number":554}`
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		v := mustEval(t, tq.Seq{
+			tq.Path("episodes", 1),
+
+			// The input is the first episode.
+			tq.Func(func(e tq.Env, in ast.Value) (ast.Value, error) {
+				// Verify that we got the right input.
+				const wantFirst = 556
+				n := in.(ast.Object).Find("episode").Value.(ast.Numeric).Int()
+				if n != wantFirst {
+					t.Errorf("Wrong input: got %v, want %v", n, wantFirst)
+				}
+
+				// Look up the root of the original input from e.
+				root := e.Get("$")
+				if root == nil {
+					return nil, errors.New("missing root")
+				}
+
+				// Put some stuff in the environment.
+				e10, err := e.Eval(root, tq.Path("episodes", 10))
+				if err != nil {
+					return nil, err
+				}
+				e.Set("e10", e10)
+
+				// Ignore the input and do something else.
+				return e.Eval(root, tq.Path("$e10", "episode"))
+			}),
+		})
+
+		const wantOut = 547
+		if got := v.(ast.Numeric).Int(); got != wantOut {
+			t.Errorf("Result: got %v, want %v", v, wantOut)
 		}
 	})
 }

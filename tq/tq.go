@@ -226,3 +226,32 @@ func (b Let) In(keys ...any) Query { return letQuery{binds: b, next: Path(keys..
 // A Get query ignores its input and instead returns the value associated with
 // the specified parameter name. The query fails if the name is not defined.
 func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }
+
+// Env is the namespace environment for a query.
+type Env struct{ *qstate }
+
+// Get returns the value associated with name in environment, or nil if the
+// name is not bound.
+func (e Env) Get(name string) ast.Value {
+	if v, ok := e.qstate.lookup(name); ok {
+		return v
+	}
+	return nil
+}
+
+// Set adds a binding to the environment for the given name. If the name
+// already exists, the new definition shadows the previous one.
+func (e Env) Set(name string, value ast.Value) { e.qstate.bind(name, value) }
+
+// Eval evaluates the specified query starting from v.
+func (e Env) Eval(v ast.Value, q Query) (ast.Value, error) {
+	return q.eval(e.qstate, v)
+}
+
+// Func is a user-defined Query implementation. Evaluating the query calls the
+// function with the current namespace environment and input value.
+type Func func(Env, ast.Value) (ast.Value, error)
+
+func (f Func) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+	return f(Env{qstate: qs.push()}, v)
+}
