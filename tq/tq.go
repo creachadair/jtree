@@ -19,19 +19,29 @@
 //
 // # Bindings
 //
-// A query can use the Let form to bind names to certain parts of the input
-// structure. These names can be looked up using a Get query to recover the
-// value previously bound. For example, in this query:
+// Queries can save intermediate results in named bindings. This is done using
+// the Set query, which stores its input under the given name:
+//
+//   tq.Path(0, "b", tq.Set("Q"))
+//
+// Another part of the query can recover this value using a Get query:
+//
+//   tq.Get("Q")
+//
+// Path constructors support the shorthand "$q" for a query like tq.Get("x").
+// You can escape this if you want the literal string "$x" by writing "$$x".
+//
+// Bindings are ordinarily visible to the rest of the query after a Set.  The
+// Let form can be used to bind a name only for the duration of a subquery.
+// For example, this query:
 //
 //	tq.Let{
 //	   {"@", tq.Path(1, "c")},
 //	}.In(tq.Get("@"), "d")
 //
-// yields the value "true".
+// yields the value "true", but "@" is not visible to subsequent subqueries.
 //
-// The special name "$" is pre-bound to the root of the input. Path queries
-// support the shorthand "$x" for a query like tg.Get("x"). You can escape this
-// by writing "$$x" to mean the literal string "$x".
+// The special name "$" is pre-bound to the root of the input.
 package tq
 
 import (
