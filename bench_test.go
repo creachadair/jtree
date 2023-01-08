@@ -7,17 +7,33 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
 )
 
-var inputPath = flag.String("input", "testdata/input.json", "Input JSON file")
+// A local file path or a URL. For example:
+// https://raw.githubusercontent.com/prust/wikipedia-movie-data/master/movies.json
+var inputPath = flag.String("input", "testdata/input.json", "Input JSON file path or URL")
+
+func readInput() ([]byte, error) {
+	if strings.HasPrefix(*inputPath, "http://") || strings.HasPrefix(*inputPath, "https://") {
+		rsp, err := http.Get(*inputPath)
+		if err != nil {
+			return nil, err
+		}
+		defer rsp.Body.Close()
+		return io.ReadAll(rsp.Body)
+	}
+	return os.ReadFile(*inputPath)
+}
 
 func BenchmarkScanner(b *testing.B) {
-	input, err := os.ReadFile(*inputPath)
+	input, err := readInput()
 	if err != nil {
 		b.Fatalf("Reading test input: %v", err)
 	}
