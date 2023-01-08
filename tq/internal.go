@@ -20,8 +20,10 @@ func pathElem(key any) Query {
 		return nthQuery(t)
 	case Query:
 		return t
+	case ast.Value:
+		return Value(t)
 	default:
-		panic("invalid path element")
+		panic(fmt.Sprintf("invalid path element %T", key))
 	}
 }
 
@@ -172,6 +174,22 @@ func (globQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	default:
 		return nil, errors.New("no matching values")
 	}
+}
+
+type keysQuery struct{}
+
+func (keysQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+	var out ast.Array
+	if o, ok := v.(ast.Object); ok {
+		for _, m := range o {
+			out = append(out, m.Key)
+		}
+		return out, nil
+	} else if v == ast.Null {
+		return out, nil
+	}
+
+	return nil, fmt.Errorf("cannot list keys of %T", v)
 }
 
 type letQuery struct {

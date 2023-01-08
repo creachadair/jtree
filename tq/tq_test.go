@@ -376,6 +376,31 @@ func TestQuery(t *testing.T) {
 			t.Errorf("Result: got %#q, want %#q", got, want)
 		}
 	})
+
+	t.Run("KeysObj", func(t *testing.T) {
+		v := mustEval(t, tq.Path("episodes", 0, tq.Keys(), -1))
+		const want = "hasDetail"
+		if got := v.String(); got != want {
+			t.Errorf("Result: got %#q, want %q", v, want)
+		}
+	})
+
+	t.Run("KeysNull", func(t *testing.T) {
+		v := mustEval(t, tq.Path(ast.Null, tq.Keys()))
+		const wantJSON = `[]` // empty array
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
+	t.Run("KeysOther", func(t *testing.T) {
+		v, err := tq.Eval(val, tq.Path("episodes", tq.Keys()))
+		if err == nil {
+			t.Errorf("Eval: got %#q, want error", v)
+		} else {
+			t.Logf("Eval: got error: %v (OK)", err)
+		}
+	})
 }
 
 func failq(tq.Env, ast.Value) (ast.Value, error) { return nil, errors.New("gratuitous failure") }

@@ -219,9 +219,13 @@ func (a Array) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 func Value(v any) Query { return constQuery{ast.ToValue(v)} }
 
 // A Glob query returns an array of its inputs. If the input is an array, the
-// array is returned unchanged. if the input is an object, the result is an
+// array is returned unchanged. If the input is an object, the result is an
 // array of all the object values.
 func Glob() Query { return globQuery{} }
+
+// A Keys query returns an array of the keys of an object value. It is an error
+// if the input is not an object or null.
+func Keys() Query { return keysQuery{} }
 
 // Let defines a set of name to query bindings. These bindings can be applied
 // to a query q using the In method, to evaluate q with the names bound to the
