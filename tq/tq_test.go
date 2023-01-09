@@ -37,7 +37,7 @@ func TestValues(t *testing.T) {
 		{"False", tq.Value(false), `false`},
 		{"Null", tq.Value(nil), `null`},
 		{"Obj", tq.Value(ast.Object{
-			ast.Field("ok", ast.Bool(true)),
+			ast.Field("ok", true),
 		}), `{"ok":true}`},
 	}
 	for _, test := range tests {

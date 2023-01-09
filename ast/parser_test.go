@@ -187,12 +187,12 @@ func TestString(t *testing.T) {
 
 		{ast.Object{}, `{}`},
 		{ast.Object{
-			ast.Field("xs", ast.Null),
+			ast.Field("xs", nil),
 		}, `{"xs":null}`},
 		{ast.Object{
-			ast.Field("name", ast.String("Dennis")),
-			ast.Field("age", ast.Int(37)),
-			ast.Field("isOld", ast.Bool(false)),
+			ast.Field("name", "Dennis"),
+			ast.Field("age", 37),
+			ast.Field("isOld", false),
 		}, `{"name":"Dennis","age":37,"isOld":false}`},
 
 		{ast.Object{
@@ -202,8 +202,8 @@ func TestString(t *testing.T) {
 				ast.Bool(true),
 			}),
 			ast.Field("page", ast.Object{
-				ast.Field("token", ast.String("xyz-pdq-zvm")),
-				ast.Field("count", ast.Int(100)),
+				ast.Field("token", "xyz-pdq-zvm"),
+				ast.Field("count", 100),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
 
