@@ -31,7 +31,7 @@ type Keyer interface {
 	Value
 
 	// Key returns the string that is used to represent the receiver in an
-	// object key. The string should be quoted.
+	// object key. The string should be unquoted (abc, not "abc").
 	Key() string
 }
 
