@@ -10,6 +10,19 @@ import (
 	"github.com/creachadair/jtree/tq"
 )
 
+func mustParse(t *testing.T, path string) ast.Value {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("Read input: %v", err)
+	}
+	val, err := ast.ParseSingle(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("Parse input: %v", err)
+	}
+	return val
+}
+
 func TestValues(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -41,15 +54,7 @@ func TestValues(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	input, err := os.ReadFile("../testdata/input.json")
-	if err != nil {
-		t.Fatalf("Reading test input: %v", err)
-	}
-
-	val, err := ast.ParseSingle(bytes.NewReader(input))
-	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
+	val := mustParse(t, "../testdata/input.json")
 	mustEval := func(t *testing.T, q tq.Query) ast.Value {
 		t.Helper()
 		v, err := tq.Eval(val, q)

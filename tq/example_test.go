@@ -9,7 +9,7 @@ import (
 	"github.com/creachadair/jtree/tq"
 )
 
-func mustParse(s string) ast.Value {
+func mustParseString(s string) ast.Value {
 	val, err := ast.ParseSingle(strings.NewReader(s))
 	if err != nil {
 		log.Fatalf("Parse: %v", err)
@@ -18,7 +18,7 @@ func mustParse(s string) ast.Value {
 }
 
 func Example_simple() {
-	root := mustParse(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
 	v, err := tq.Eval(root, tq.Path(1, "c", "d"))
 
@@ -31,7 +31,7 @@ func Example_simple() {
 }
 
 func Example_small() {
-	root := mustParse(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
 	v, err := tq.Eval(root, tq.Let{
 		{"@", tq.Path(1, "c")},
@@ -46,7 +46,7 @@ func Example_small() {
 }
 
 func Example_medium() {
-	root := mustParse(`{
+	root := mustParseString(`{
   "plaintiff": "Inigo Montoya",
   "complaint": {
      "defendant": "you",
