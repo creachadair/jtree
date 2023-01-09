@@ -28,7 +28,7 @@
 //
 //	tq.Get("Q")
 //
-// Path constructors support the shorthand "$q" for a query like tq.Get("x").
+// Path constructors support the shorthand "$x" for a query like tq.Get("x").
 // You can escape this if you want the literal string "$x" by writing "$$x".
 //
 // Bindings are ordinarily visible to the rest of the query after a Set.  The
