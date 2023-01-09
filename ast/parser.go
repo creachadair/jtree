@@ -205,7 +205,7 @@ func (h *parseHandler) EndOfInput(loc jtree.Anchor) {}
 // additional values after the first one.
 var ErrExtraInput = errors.New("extra data after value")
 
-// A noMoreInput is a jtree.Hanlder that reports an error for any input.
+// A noMoreInput is a jtree.Handler that reports an error for any input.
 type noMoreInput struct{}
 
 func (noMoreInput) BeginObject(jtree.Anchor) error { return ErrExtraInput }
