@@ -10,6 +10,36 @@ import (
 	"github.com/creachadair/jtree/tq"
 )
 
+func TestValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		query tq.Query
+		want  string
+	}{
+		{"String", tq.Value("foo"), `"foo"`},
+		{"Quoted", tq.Value(ast.String("bar").Quote()), `"bar"`},
+		{"Float", tq.Value(-3.1), `-3.1`},
+		{"Integer", tq.Value(17), `17`},
+		{"True", tq.Value(true), `true`},
+		{"False", tq.Value(false), `false`},
+		{"Null", tq.Value(nil), `null`},
+		{"Obj", tq.Value(ast.Object{
+			ast.Field("ok", ast.Bool(true)),
+		}), `{"ok":true}`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v, err := tq.Eval(nil, test.query)
+			if err != nil {
+				t.Fatalf("Eval failed: %v", err)
+			}
+			if got := v.JSON(); got != test.want {
+				t.Errorf("Result: got %#q, want %#q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestQuery(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.json")
 	if err != nil {
@@ -31,33 +61,6 @@ func TestQuery(t *testing.T) {
 
 	const wantString = "2021-11-30"
 	const wantLength = 563
-
-	t.Run("Value", func(t *testing.T) {
-		tests := []struct {
-			name  string
-			query tq.Query
-			want  string
-		}{
-			{"String", tq.Value("foo"), `"foo"`},
-			{"Quoted", tq.Value(ast.String("bar").Quote()), `"bar"`},
-			{"Float", tq.Value(-3.1), `-3.1`},
-			{"Integer", tq.Value(17), `17`},
-			{"True", tq.Value(true), `true`},
-			{"False", tq.Value(false), `false`},
-			{"Null", tq.Value(nil), `null`},
-			{"Obj", tq.Value(ast.Object{
-				ast.Field("ok", ast.Bool(true)),
-			}), `{"ok":true}`},
-		}
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
-				v := mustEval(t, test.query)
-				if got := v.JSON(); got != test.want {
-					t.Errorf("Result: got %#q, want %#q", got, test.want)
-				}
-			})
-		}
-	})
 
 	t.Run("Seq", func(t *testing.T) {
 		v := mustEval(t, tq.Path("episodes", 0, "airDate"))
