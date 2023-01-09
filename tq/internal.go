@@ -133,7 +133,11 @@ func (q recQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 		stk = stk[:len(stk)-1]
 
 		if r, err := q.Query.eval(qs, next); err == nil {
-			out = append(out, r)
+			if a, ok := r.(ast.Array); ok {
+				out = append(out, a...)
+			} else {
+				out = append(out, r)
+			}
 		}
 
 		// N.B. Push in reverse order, so we visit in lexical order.
