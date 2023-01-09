@@ -119,7 +119,7 @@ func TestParseSingle(t *testing.T) {
 		const input = ` [ 1, 2, 3 ]  `
 		v, err := ast.ParseSingle(strings.NewReader(input))
 		if err != nil {
-			t.Errorf("ParseOne: unexpected error: %v", err)
+			t.Errorf("ParseSingle: unexpected error: %v", err)
 		}
 		const wantJSON = `[1,2,3]`
 		if got := v.JSON(); got != wantJSON {
@@ -131,11 +131,21 @@ func TestParseSingle(t *testing.T) {
 		const input = ` {"a" : 1 } {"b: 2} 3`
 		v, err := ast.ParseSingle(strings.NewReader(input))
 		if !errors.Is(err, ast.ErrExtraInput) {
-			t.Errorf("ParseOne: got err=%v, want %v", err, ast.ErrExtraInput)
+			t.Errorf("ParseSingle: got err=%v, want %v", err, ast.ErrExtraInput)
 		}
 		const wantJSON = `{"a":1}`
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
+	t.Run("Broken", func(t *testing.T) {
+		const input = `{"x"`
+		v, err := ast.ParseSingle(strings.NewReader(input))
+		if err == nil {
+			t.Errorf("ParseSingle: got %+q, want error", v.JSON())
+		} else if errors.Is(err, ast.ErrExtraInput) {
+			t.Errorf("ParseSingle: error should not be %v", err)
 		}
 	})
 }
