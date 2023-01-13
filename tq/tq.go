@@ -102,20 +102,6 @@ func (q Selection) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	})
 }
 
-// Mapping constructs an array in which each value is replaced by the result of
-// calling the specified function on the corresponding input value.
-type Mapping func(ast.Value) ast.Value
-
-func (q Mapping) eval(_ *qstate, v ast.Value) (ast.Value, error) {
-	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
-		out := make(ast.Array, len(a))
-		for i, elt := range a {
-			out[i] = q(elt)
-		}
-		return out, nil
-	})
-}
-
 // Slice selects a slice of an array from offsets lo to hi.  The range includes
 // lo but excludes hi. Negative offsets select from the end of the array.
 // If hi == 0, the length of the array is used.

@@ -22,17 +22,6 @@ func IsNot[T ast.Value]() Selection {
 	return func(v ast.Value) bool { _, ok := v.(T); return !ok }
 }
 
-// Map constructs a mapping from the given function. The resulting mapping will
-// return unmodified any value whose type does not match T.
-func Map[T, U ast.Value](f func(T) U) Mapping {
-	return func(v ast.Value) ast.Value {
-		if w, ok := v.(T); ok {
-			return f(w)
-		}
-		return v
-	}
-}
-
 // Select constructs a selection from the given function. The resulting
 // selection will discard any value whose type does not match T.
 func Select[T ast.Value](f func(T) bool) Selection {

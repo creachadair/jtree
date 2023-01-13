@@ -257,23 +257,6 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Mapping", func(t *testing.T) {
-		// Choose numeric values greater than 500.
-		filter := tq.Select(func(z ast.Numeric) bool { return z.Int() > 500 })
-
-		// Multiply numeric values by 11.
-		multiply := tq.Map(func(z ast.Numeric) ast.Int { return z.Int() * 11 })
-
-		v := mustEval(t, tq.Path(
-			tq.Recur("episode"),
-			filter, multiply, tq.Slice(-3, 0), 0,
-		))
-		const want = 5533
-		if got := v.(ast.Int); got != want {
-			t.Errorf("Result: got %#q, want %#q", v, want)
-		}
-	})
-
 	t.Run("LetGet", func(t *testing.T) {
 		v := mustEval(t, tq.Let{
 			// Let g be all the episode objects that define guestNames.
