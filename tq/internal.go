@@ -257,6 +257,20 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 	return nil, fmt.Errorf("value %T is not a valid reference", w)
 }
 
+type selectQuery struct{ Query }
+
+func (q selectQuery) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
+		var out ast.Array
+		for _, elt := range a {
+			if _, err := q.Query.eval(qs, elt); err == nil {
+				out = append(out, elt)
+			}
+		}
+		return out, nil
+	})
+}
+
 func with[T ast.Value](v ast.Value, f func(T) (ast.Value, error)) (ast.Value, error) {
 	if v, ok := v.(T); ok {
 		return f(v)

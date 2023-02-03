@@ -168,6 +168,11 @@ func Recur(keys ...any) Query { return recQuery{Path(keys...)} }
 // the same constraints as Path.
 func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 
+// Select applies a query to each element of an array and returns an array of
+// the elements for which the query matches. The arguments have the same
+// constraints as Path.
+func Select(keys ...any) Query { return selectQuery{Path(keys...)} }
+
 // Object constructs an object with the given keys mapped to the results of
 // matching the query values against its input.
 type Object map[string]Query

@@ -257,6 +257,16 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Select", func(t *testing.T) {
+		v := mustEval(t, tq.Path(
+			"episodes", tq.Select("guestNames"), tq.Slice(-1, 0), tq.Each("guestNames", 0),
+		))
+		const wantJSON = `["Danielle Citron"]`
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		}
+	})
+
 	t.Run("LetGet", func(t *testing.T) {
 		v := mustEval(t, tq.Let{
 			// Let g be all the episode objects that define guestNames.
