@@ -1,29 +1,32 @@
 package tq
 
-import "github.com/creachadair/jtree/ast"
+import (
+	"errors"
 
-// Exists returns a filter that reports true if its argument satisfies the
-// specified query. The arguments have the same constraints as Path.
-func Exists(keys ...any) FilterFunc {
-	q := Path(keys...)
-	return func(v ast.Value) bool {
-		_, err := q.eval(nil, v)
-		return err == nil
-	}
+	"github.com/creachadair/jtree/ast"
+)
+
+// Is returns its input if it has type T; otherwise it fails.
+func Is[T ast.Value]() Query { return Match[T](func(T) bool { return true }) }
+
+// IsNot returns its input if it does not have type T; otherwise it fails.
+func IsNot[T ast.Value]() Query {
+	return Func(func(_ Env, v ast.Value) (ast.Value, error) {
+		if _, ok := v.(T); ok {
+			return nil, errors.New("value type does not match")
+		}
+		return v, nil
+	})
 }
 
-// Is returns a filter that reports true if its argument is of type T.
-func Is[T ast.Value]() FilterFunc {
-	return func(v ast.Value) bool { _, ok := v.(T); return ok }
-}
-
-// IsNot returns a selection that reports true if its argument is not of type T
-func IsNot[T ast.Value]() FilterFunc {
-	return func(v ast.Value) bool { _, ok := v.(T); return !ok }
-}
-
-// Filter constructs a filter from the given function. The resulting filter
-// will discard any value whose type does not match T.
-func Filter[T ast.Value](f func(T) bool) FilterFunc {
-	return func(v ast.Value) bool { w, ok := v.(T); return ok && f(w) }
+// Match returns its input if it has the specified type and f reports true for
+// its value. Otherwise, the query fails.
+func Match[T ast.Value](f func(T) bool) Query {
+	return Func(func(_ Env, v ast.Value) (ast.Value, error) {
+		w, ok := v.(T)
+		if ok && f(w) {
+			return v, nil
+		}
+		return nil, errors.New("value does not match")
+	})
 }
