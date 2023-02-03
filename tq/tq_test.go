@@ -249,7 +249,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Filter", func(t *testing.T) {
 		v := mustEval(t, tq.Path(
-			"episodes", tq.Exists("guestNames"), tq.Each("guestNames", 0), -1,
+			"episodes", tq.Select("guestNames"), tq.Each("guestNames", 0), -1,
 		))
 		const want = "Danielle Citron"
 		if got := v.String(); got != want {
@@ -270,7 +270,7 @@ func TestQuery(t *testing.T) {
 	t.Run("LetGet", func(t *testing.T) {
 		v := mustEval(t, tq.Let{
 			// Let g be all the episode objects that define guestNames.
-			{"g", tq.Path("episodes", tq.Exists("guestNames"))},
+			{"g", tq.Path("episodes", tq.Select("guestNames"))},
 			// Let f be the third such episode.
 			{"f", tq.Path("$g", 2)},
 		}.In(tq.Object{

@@ -86,21 +86,10 @@ func Path(keys ...any) Query {
 	return pq
 }
 
-// A FilterFunc constructs an array of the elements of its input array for
-// which the specified function returns true.
-type FilterFunc func(ast.Value) bool
-
-func (q FilterFunc) eval(_ *qstate, v ast.Value) (ast.Value, error) {
-	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
-		var out ast.Array
-		for _, elt := range a {
-			if q(elt) {
-				out = append(out, elt)
-			}
-		}
-		return out, nil
-	})
-}
+// Select constructs an array of elements from its input array whose values
+// match the query. Values in the input array whose types do not match T are
+// considered not to match.  The arguments have the same constraints as Path.
+func Select(keys ...any) Query { return selectQuery{Path(keys...)} }
 
 // Slice selects a slice of an array from offsets lo to hi.  The range includes
 // lo but excludes hi. Negative offsets select from the end of the array.
@@ -167,11 +156,6 @@ func Recur(keys ...any) Query { return recQuery{Path(keys...)} }
 // resulting values. It fails if the input is not an array.  The arguments have
 // the same constraints as Path.
 func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
-
-// Select applies a query to each element of an array and returns an array of
-// the elements for which the query matches. The arguments have the same
-// constraints as Path.
-func Select(keys ...any) Query { return selectQuery{Path(keys...)} }
 
 // Object constructs an object with the given keys mapped to the results of
 // matching the query values against its input.
