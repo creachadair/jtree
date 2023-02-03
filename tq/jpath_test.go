@@ -80,7 +80,7 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"FilterISBN", "$..book[?(@.isbn)]",
-			tq.Recur("book", tq.Select[ast.Object](func(v ast.Object) bool {
+			tq.Recur("book", tq.Filter[ast.Object](func(v ast.Object) bool {
 				return v.Find("isbn") != nil
 			})),
 
@@ -88,7 +88,7 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"CheapBooks", "$..book[?(@.price<10)]",
-			tq.Recur("book", tq.Select[ast.Object](func(v ast.Object) bool {
+			tq.Recur("book", tq.Filter[ast.Object](func(v ast.Object) bool {
 				return v.Find("price").Value.(ast.Numeric).Float() < 10
 			})),
 

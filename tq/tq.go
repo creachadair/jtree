@@ -86,11 +86,11 @@ func Path(keys ...any) Query {
 	return pq
 }
 
-// Selection constructs an array of the elements of its input array for which
-// the specified function returns true.
-type Selection func(ast.Value) bool
+// A FilterFunc constructs an array of the elements of its input array for
+// which the specified function returns true.
+type FilterFunc func(ast.Value) bool
 
-func (q Selection) eval(_ *qstate, v ast.Value) (ast.Value, error) {
+func (q FilterFunc) eval(_ *qstate, v ast.Value) (ast.Value, error) {
 	return with[ast.Array](v, func(a ast.Array) (ast.Value, error) {
 		var out ast.Array
 		for _, elt := range a {

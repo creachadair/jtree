@@ -247,7 +247,7 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Select", func(t *testing.T) {
+	t.Run("Filter", func(t *testing.T) {
 		v := mustEval(t, tq.Path(
 			"episodes", tq.Exists("guestNames"), tq.Each("guestNames", 0), -1,
 		))

@@ -2,9 +2,9 @@ package tq
 
 import "github.com/creachadair/jtree/ast"
 
-// Exists returns a selection that reports true if its argument satisfies the
+// Exists returns a filter that reports true if its argument satisfies the
 // specified query. The arguments have the same constraints as Path.
-func Exists(keys ...any) Selection {
+func Exists(keys ...any) FilterFunc {
 	q := Path(keys...)
 	return func(v ast.Value) bool {
 		_, err := q.eval(nil, v)
@@ -12,18 +12,18 @@ func Exists(keys ...any) Selection {
 	}
 }
 
-// Is returns a selection that reports true if its argument is of type T.
-func Is[T ast.Value]() Selection {
+// Is returns a filter that reports true if its argument is of type T.
+func Is[T ast.Value]() FilterFunc {
 	return func(v ast.Value) bool { _, ok := v.(T); return ok }
 }
 
 // IsNot returns a selection that reports true if its argument is not of type T
-func IsNot[T ast.Value]() Selection {
+func IsNot[T ast.Value]() FilterFunc {
 	return func(v ast.Value) bool { _, ok := v.(T); return !ok }
 }
 
-// Select constructs a selection from the given function. The resulting
-// selection will discard any value whose type does not match T.
-func Select[T ast.Value](f func(T) bool) Selection {
+// Filter constructs a filter from the given function. The resulting filter
+// will discard any value whose type does not match T.
+func Filter[T ast.Value](f func(T) bool) FilterFunc {
 	return func(v ast.Value) bool { w, ok := v.(T); return ok && f(w) }
 }
