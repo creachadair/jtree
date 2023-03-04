@@ -87,8 +87,7 @@ func Path(keys ...any) Query {
 }
 
 // Select constructs an array of elements from its input array whose values
-// match the query. Values in the input array whose types do not match T are
-// considered not to match.  The arguments have the same constraints as Path.
+// match the query. The arguments have the same constraints as Path.
 func Select(keys ...any) Query { return selectQuery{Path(keys...)} }
 
 // Slice selects a slice of an array from offsets lo to hi.  The range includes
