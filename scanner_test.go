@@ -148,3 +148,43 @@ func TestQuote(t *testing.T) {
 		}
 	}
 }
+
+func TestUnquote(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+		fail  bool
+	}{
+		{``, ``, true},                        // missing quotes
+		{`"missing quote`, ``, true},          // missing quotes
+		{`missing quote"`, ``, true},          // missing quotes
+		{`""`, ``, false},                     // ok
+		{`"ok go"`, "ok go", false},           // ok
+		{`"abc\ndef"`, "abc\ndef", false},     // C escapes
+		{`"\tabc\n"`, "\tabc\n", false},       // C escapes
+		{`"\b\f\n\r\t"`, "\b\f\n\r\t", false}, // C escapes
+		{`"a \u0026 b"`, "a & b", false},      // short Unicode escape
+		{`"\u"`, ``, true},                    // incomplete Unicode escape
+		{`"\u00"`, ``, true},                  // incomplete Unicode escape
+		{`"\u00x9"`, "\ufffd", false},         // invalid Unicode escape
+		{`"\u019 "`, "\ufffd", false},         // invalid Unicode escape
+		{`"a\"b"`, `a"b`, false},              // ok
+		{`"a\\b\\cd"`, `a\b\cd`, false},       // ok
+	}
+
+	for _, test := range tests {
+		got, err := jtree.Unquote(test.input)
+		if err != nil {
+			if !test.fail {
+				t.Errorf("Unquote(%#q): got %v, want no error", test.input, err)
+			} else {
+				t.Logf("Unquote(%#q): got expected error: %v", test.input, err)
+			}
+		} else if err == nil && test.fail {
+			t.Errorf("Unquote(%#q): got nil, want error", test.input)
+		}
+		if cmp := string(got); cmp != test.want {
+			t.Errorf("Unquote(%#q): got %#q, want %#q", test.input, cmp, test.want)
+		}
+	}
+}
