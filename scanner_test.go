@@ -118,7 +118,7 @@ func TestScanner_decodeAs(t *testing.T) {
 		if got := string(text); got != wantText {
 			t.Errorf("Text: got %#q, want %#q", got, wantText)
 		}
-		if u, err := jtree.Unquote(string(text)); err != nil {
+		if u, err := jtree.Unquote(text); err != nil {
 			t.Errorf("Unquote failed: %v", err)
 		} else if got := string(u); got != wantDec {
 			t.Errorf("Unquote: got %#q, want %#q", got, wantDec)
@@ -173,7 +173,7 @@ func TestUnquote(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := jtree.Unquote(test.input)
+		got, err := jtree.Unquote([]byte(test.input))
 		if err != nil {
 			if !test.fail {
 				t.Errorf("Unquote(%#q): got %v, want no error", test.input, err)
