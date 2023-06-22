@@ -33,10 +33,10 @@ func Example_simple() {
 func Example_small() {
 	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
-	v, err := tq.Eval(root, tq.Let{
-		{"@", tq.Path(1, "c")},
-	}.In("$@", "d"))
-
+	v, err := tq.Eval(root, tq.Seq{
+		tq.As("@", 1, "c"),
+		tq.Path("$@", "d"),
+	})
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
@@ -59,29 +59,30 @@ func Example_medium() {
   }
 }`)
 
-	v, err := tq.Eval(root, tq.Let{
+	v, err := tq.Eval(root, tq.Seq{
 		// Bind c to the "complaint" object.
-		{"c", tq.Path("complaint")},
+		tq.As("c", "complaint"),
 
 		// Bindings can refer back to previous bindings in the frame.
-		{"t", tq.Path("$c", "target")},
+		tq.As("t", "$c", "target"),
 
 		// Use tq.Ref to use a query result as part of another query.
-		{"@", tq.Path("relatedPersons", tq.Ref("$t"), "id")},
-	}.In(tq.Object{
+		tq.As("@", "relatedPersons", tq.Ref("$t"), "id"),
+
 		// Construct an object with field values pulled from other places.
+		tq.Object{
+			"name": tq.Path("plaintiff"),
 
-		"name": tq.Path("plaintiff"),
+			"act": tq.Array{
+				tq.Path("$c", "defendant"),
+				tq.Path("$c", "action"),
+				tq.Value("my"), // a constant value
+				tq.Get("@"),
+			},
 
-		"act": tq.Array{
-			tq.Path("$c", "defendant"),
-			tq.Path("$c", "action"),
-			tq.Value("my"), // a constant value
-			tq.Get("@"),
+			"req": tq.Path("requestedRelief", 0),
 		},
-
-		"req": tq.Path("requestedRelief", 0),
-	}))
+	})
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}

@@ -267,17 +267,20 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("LetGet", func(t *testing.T) {
-		v := mustEval(t, tq.Let{
+	t.Run("BindGet", func(t *testing.T) {
+		v := mustEval(t, tq.Seq{
 			// Let g be all the episode objects that define guestNames.
-			{"g", tq.Path("episodes", tq.Select("guestNames"))},
+			tq.Path("episodes", tq.Select("guestNames"), tq.As("g")),
+
 			// Let f be the third such episode.
-			{"f", tq.Path("$g", 2)},
-		}.In(tq.Object{
-			"count":  tq.Path("$g", tq.Len()),
-			"number": tq.Path("$f", "episode"),
-			"name":   tq.Path(tq.Get("$f"), "guestNames", 0),
-		}))
+			tq.Path("$g", 2, tq.As("f")),
+
+			tq.Object{
+				"count":  tq.Path("$g", tq.Len()),
+				"number": tq.Path("$f", "episode"),
+				"name":   tq.Path(tq.Get("$f"), "guestNames", 0),
+			},
+		})
 		o := v.(ast.Object)
 		o.Sort()
 		const wantJSON = `{"count":468,"name":"Shane Harris","number":554}`
@@ -291,7 +294,7 @@ func TestQuery(t *testing.T) {
 			tq.Path("episodes", 1),
 
 			// The input is the first episode.
-			tq.Func(func(e tq.Env, in ast.Value) (ast.Value, error) {
+			tq.Func(func(e tq.Env, in ast.Value) (tq.Env, ast.Value, error) {
 				// Verify that we got the right input.
 				const wantFirst = 556
 				n := in.(ast.Object).Find("episode").Value.(ast.Numeric).Int()
@@ -302,18 +305,17 @@ func TestQuery(t *testing.T) {
 				// Look up the root of the original input from e.
 				root := e.Get("$")
 				if root == nil {
-					return nil, errors.New("missing root")
+					return e, nil, errors.New("missing root")
 				}
 
 				// Put some stuff in the environment.
-				e10, err := e.Eval(root, tq.Path("episodes", 10))
+				_, e10, err := e.Eval(root, tq.Path("episodes", 10))
 				if err != nil {
-					return nil, err
+					return e, nil, err
 				}
-				e.Set("e10", e10) // this is visible to the rest of the query
 
 				// Ignore the input and do something else.
-				return ast.Bool(true), nil
+				return e.Bind("e10", e10), ast.Bool(true), nil
 			}),
 
 			// Verify that the environment changes from the Func are visible here.
@@ -326,31 +328,14 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("CleanFunc", func(t *testing.T) {
-		v, err := tq.Eval(val, tq.Seq{
-			tq.Path("episodes", 0),
-			tq.Func(func(e tq.Env, in ast.Value) (ast.Value, error) {
-				// When a function evaluates in a clean environment, the changes
-				// from the subquery should not be visible outside.
-				return e.New().Eval(in, tq.Path("airDate", tq.Set("@")))
-			}),
-			tq.Get("@"), // this should fail
-		})
-		if err == nil {
-			t.Errorf("Eval: got %#q, want error", v)
-		} else {
-			t.Logf("Eval: got error: %v (OK)", err)
-		}
-	})
-
 	t.Run("Set", func(t *testing.T) {
 		v := mustEval(t, tq.Seq{
-			tq.Path(tq.Value(true), tq.Set("x")),
+			tq.Path(tq.Value(true), tq.As("x")),
 			tq.Alt{
 				tq.Get("y"), // fails (y is not bound)
 
 				// This query fails, so its set of x does not take effect.
-				tq.Path(tq.Value(nil), tq.Set("x"), tq.Func(failq)),
+				tq.Path(tq.Value(nil), tq.As("x"), tq.Func(failq)),
 
 				tq.Get("x"),     // succeeds (x is true)
 				tq.Value(false), // not reached (previous alternative succeeded)
@@ -363,12 +348,11 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Ref", func(t *testing.T) {
-		v := mustEval(t, tq.Let{
-			{"x", tq.Value("airDate")},
-			{"p", tq.Value(25)},
-		}.In(
-			"episodes", tq.Ref("$p"), tq.Ref("$x"),
-		))
+		v := mustEval(t, tq.Seq{
+			tq.As("x", tq.Value("airDate")),
+			tq.As("p", tq.Value(25)),
+			tq.Path("episodes", tq.Ref("$p"), tq.Ref("$x")),
+		})
 		const want = `2021-10-19`
 		if got := v.String(); got != want {
 			t.Errorf("Result: got %#q, want %#q", got, want)
@@ -416,4 +400,6 @@ func TestQuery(t *testing.T) {
 	})
 }
 
-func failq(tq.Env, ast.Value) (ast.Value, error) { return nil, errors.New("gratuitous failure") }
+func failq(e tq.Env, _ ast.Value) (tq.Env, ast.Value, error) {
+	return e, nil, errors.New("gratuitous failure")
+}

@@ -20,9 +20,9 @@
 // # Bindings
 //
 // Queries can save intermediate results in named bindings. This is done using
-// the Set query, which stores its input under the given name:
+// the As query, which stores its input under the given name:
 //
-//	tq.Path(0, "b", tq.Set("Q"))
+//	tq.Path(0, "b", tq.As("Q"))
 //
 // Another part of the query can recover this value using a Get query:
 //
@@ -31,15 +31,15 @@
 // Path constructors support the shorthand "$x" for a query like tq.Get("x").
 // You can escape this if you want the literal string "$x" by writing "$$x".
 //
-// Bindings are ordinarily visible to the rest of the query after a Set.  The
-// Let form can be used to bind a name only for the duration of a subquery.
-// For example, this query:
+// The As query returns its input. To bind a subquery based on the input, put
+// that subquery into the As query:
 //
-//	tq.Let{
-//	   {"@", tq.Path(1, "c")},
-//	}.In(tq.Get("@"), "d")
+//	tq.Seq{
+//	  tq.As("@", 1, "c"),
+//	  tq.Path("$@", "d"),
+//	}
 //
-// yields the value "true", but "@" is not visible to subsequent subqueries.
+// yields the value "true".
 //
 // The special name "$" is pre-bound to the root of the input.
 package tq
@@ -54,14 +54,16 @@ import (
 // Eval evaluates the given query beginning from root, returning the resulting
 // value or an error.
 func Eval(root ast.Value, q Query) (ast.Value, error) {
-	return q.eval(new(qstate).bind("$", root), root)
+	var empty *qstate
+	_, w, err := q.eval(empty.bind("$", root), root)
+	return w, err
 }
 
 // A Query describes a traversal of a JSON value. The behavior of a query is
 // defined in terms of how it maps its input to an output. Both the input and
 // the output are JSON structures.
 type Query interface {
-	eval(*qstate, ast.Value) (ast.Value, error)
+	eval(*qstate, ast.Value) (*qstate, ast.Value, error)
 }
 
 // Path traverses a sequence of nested object keys or array indices from the
@@ -111,20 +113,20 @@ func Len() Query { return lenQuery{} }
 // input value; otherwise, each query is applied to the result produced by the
 // previous query in the sequence.
 //
-// Parameters defined during evaluation of a sequence are visible to later
-// queries in the sequence. Notably, Set and Func queries can do this.
+// Parameters bound by As and Func queries evaluated in a sequence are visible
+// to later queries in the sequence.
 type Seq []Query
 
-func (q Seq) eval(qs *qstate, v ast.Value) (ast.Value, error) {
-	cur := v
+func (q Seq) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	cs, cur := qs, v
 	for _, sq := range q {
-		next, err := sq.eval(qs, cur)
+		ns, next, err := sq.eval(cs, cur)
 		if err != nil {
-			return nil, err
+			return cs, nil, err
 		}
-		cur = next
+		cs, cur = ns, next
 	}
-	return cur, nil
+	return cs, cur, nil
 }
 
 // Alt is a query that selects among a sequence of alternatives.  It returns
@@ -132,18 +134,16 @@ func (q Seq) eval(qs *qstate, v ast.Value) (ast.Value, error) {
 // are no such alternatives, the query fails. An empty All fails on all inputs.
 type Alt []Query
 
-func (q Alt) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (q Alt) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	for _, alt := range q {
-		// When evaluating alternatives, don't let failed branches contribute to
-		// the namespace. Once we find one that succeeds we can copy any bindings
-		// it produced.
-		ns := qs.push()
-		if w, err := alt.eval(ns, v); err == nil {
-			qs.bindings = append(qs.bindings, ns.bindings...)
-			return w, nil
+		// N.B. Evaluate each alternative in qs, so previous attempts do not
+		// affect the environment of the next.
+		rs, w, err := alt.eval(qs, v)
+		if err == nil {
+			return rs, w, nil
 		}
 	}
-	return nil, errors.New("no matching alternatives")
+	return qs, nil, errors.New("no matching alternatives")
 }
 
 // Recur applies a query to each recursive descendant of its input and returns
@@ -160,32 +160,32 @@ func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 // matching the query values against its input.
 type Object map[string]Query
 
-func (o Object) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (o Object) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	var out ast.Object
 	for key, q := range o {
-		val, err := q.eval(qs, v)
+		_, val, err := q.eval(qs, v)
 		if err != nil {
-			return nil, fmt.Errorf("match %q: %w", key, err)
+			return qs, nil, fmt.Errorf("match %q: %w", key, err)
 		}
 		out = append(out, ast.Field(key, val))
 	}
-	return out, nil
+	return qs, out, nil
 }
 
 // Array constructs an array containing the values produced by matching the
 // given queries against its input.
 type Array []Query
 
-func (a Array) eval(qs *qstate, v ast.Value) (ast.Value, error) {
+func (a Array) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	out := make(ast.Array, len(a))
 	for i, q := range a {
-		val, err := q.eval(qs, v)
+		_, val, err := q.eval(qs, v)
 		if err != nil {
-			return nil, fmt.Errorf("index %d: %w", i, err)
+			return qs, nil, fmt.Errorf("index %d: %w", i, err)
 		}
 		out[i] = val
 	}
-	return out, nil
+	return qs, out, nil
 }
 
 // A Value query ignores its input and returns the given value.  The value must
@@ -201,31 +201,16 @@ func Glob() Query { return globQuery{} }
 // if the input is not an object or null.
 func Keys() Query { return keysQuery{} }
 
-// Let defines a set of name to query bindings. These bindings can be applied
-// to a query q using the In method, to evaluate q with the names bound to the
-// values defined.
-//
-// Bindings in a Let are ordered: Each query can see the names of the queries
-// prior to it in the sequence.
-type Let []Bind
-
-// A Bind associates a name with a query.
-type Bind struct {
-	Name  string
-	Query Query
-}
-
-// In applies b to the specified query. The arguments have the same constraints
-// as Path.
-func (b Let) In(keys ...any) Query { return letQuery{binds: b, next: Path(keys...)} }
-
 // A Get query ignores its input and instead returns the value associated with
 // the specified parameter name. The query fails if the name is not defined.
 func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }
 
-// A Set query copies its input to its output, and as a side-effect updates the
-// specified parameter name with the input vaoue.
-func Set(name string) Query { base, _ := isMarked(name); return setQuery{base} }
+// As evaluates the given path on its input, then returns its input in an
+// environment where name is bound to the result from that path.
+func As(name string, keys ...any) Query {
+	base, _ := isMarked(name)
+	return asQuery{base, Path(keys...)}
+}
 
 // Env is the namespace environment for a query.
 type Env struct{ *qstate }
@@ -239,25 +224,25 @@ func (e Env) Get(name string) ast.Value {
 	return nil
 }
 
-// Set adds a binding to the environment for the given name. If the name
-// already exists, the new definition shadows the previous one.
-func (e Env) Set(name string, value ast.Value) { e.qstate.bind(name, value) }
-
-// New derives a new empty environment frame from e. Ordinarily when Func
-// evaluates a subquery, any modifications it makes to the environment are
-// preserved when the Func completes. A new frame isolates such changes to the
-// subquery.
-func (e Env) New() Env { return Env{qstate: e.qstate.push()} }
+// Bind extends e with a binding for the given name and value.  If the name
+// already exists in e, the new definition shadows the previous one.
+func (e Env) Bind(name string, value ast.Value) Env {
+	return Env{e.qstate.bind(name, value)}
+}
 
 // Eval evaluates the specified query starting from v.
-func (e Env) Eval(v ast.Value, q Query) (ast.Value, error) { return q.eval(e.qstate, v) }
+func (e Env) Eval(v ast.Value, q Query) (Env, ast.Value, error) {
+	rs, w, err := q.eval(e.qstate, v)
+	return Env{qstate: rs}, w, err
+}
 
 // Func is a user-defined Query implementation. Evaluating the query calls the
 // function with the current namespace environment and input value.
-type Func func(Env, ast.Value) (ast.Value, error)
+type Func func(Env, ast.Value) (Env, ast.Value, error)
 
-func (f Func) eval(qs *qstate, v ast.Value) (ast.Value, error) {
-	return f(Env{qstate: qs}, v)
+func (f Func) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	e, w, err := f(Env{qstate: qs}, v)
+	return e.qstate, w, err
 }
 
 // Ref returns a query that looks up the string or integer value returned by q
