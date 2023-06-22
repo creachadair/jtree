@@ -205,8 +205,9 @@ func Keys() Query { return keysQuery{} }
 // the specified parameter name. The query fails if the name is not defined.
 func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }
 
-// As evaluates the given path on its input, then returns its input in an
-// environment where name is bound to the result from that path.
+// As evaluates the given subquery on its input, then returns its input in an
+// environment where name is bound to the result from the subquery. If the
+// subquery is empty, the name is bound to the input itself.
 func As(name string, keys ...any) Query {
 	base, _ := isMarked(name)
 	return asQuery{base, Path(keys...)}
