@@ -188,6 +188,11 @@ func (a Array) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return qs, out, nil
 }
 
+// A Delete query removes the specified key from its input object and returns
+// the resulting object. It is an error if the input is not an object, but no
+// error is reported if the input lacks that key.
+func Delete(name string) Query { return delQuery{name} }
+
 // A Value query ignores its input and returns the given value.  The value must
 // be a string, int, float, bool, nil, or ast.Value.
 func Value(v any) Query { return constQuery{ast.ToValue(v)} }

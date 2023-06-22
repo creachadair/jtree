@@ -14,7 +14,7 @@ import (
 // evaluate the expression, and copy the desired output out of the right pane.
 // For the tests I used jq -c to remove whitespace from the want values.
 func TestJSONPathInputs(t *testing.T) {
-	val := mustParse(t, "../testdata/jsonpath.json")
+	val := mustParseFile(t, "../testdata/jsonpath.json")
 
 	tests := []struct {
 		name  string

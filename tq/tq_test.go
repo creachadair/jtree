@@ -10,12 +10,17 @@ import (
 	"github.com/creachadair/jtree/tq"
 )
 
-func mustParse(t *testing.T, path string) ast.Value {
+func mustParseFile(t *testing.T, path string) ast.Value {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("Read input: %v", err)
 	}
+	return mustParse(t, data)
+}
+
+func mustParse(t *testing.T, data []byte) ast.Value {
+	t.Helper()
 	val, err := ast.ParseSingle(bytes.NewReader(data))
 	if err != nil {
 		t.Fatalf("Parse input: %v", err)
@@ -54,7 +59,7 @@ func TestValues(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	val := mustParse(t, "../testdata/input.json")
+	val := mustParseFile(t, "../testdata/input.json")
 	mustEval := func(t *testing.T, q tq.Query) ast.Value {
 		t.Helper()
 		v, err := tq.Eval(val, q)
@@ -233,6 +238,41 @@ func TestQuery(t *testing.T) {
 		}
 		if hasDetail := arr[1].(ast.Bool); hasDetail {
 			t.Errorf("Entry 1: got hasDetail %v, want false", hasDetail)
+		}
+	})
+
+	t.Run("Delete0", func(t *testing.T) {
+		// Deleting from a non-object reports an error.
+		val := mustParse(t, []byte(`["not an object"]`))
+		v, err := tq.Eval(val, tq.Delete("x"))
+		if err == nil {
+			t.Errorf("Eval: got %v, wanted error", v)
+		}
+	})
+
+	t.Run("Delete1", func(t *testing.T) {
+		// Delete a key that exists in the object without error.
+		val := mustParse(t, []byte(`{"a":1, "b":2}`))
+		const wantJSON = `{"a":1}`
+		v, err := tq.Eval(val, tq.Delete("b"))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
+		}
+	})
+
+	t.Run("Delete2", func(t *testing.T) {
+		// Delete a key that does not exist in the object without error.
+		val := mustParse(t, []byte(`{"a":1, "b":2}`))
+		const wantJSON = `{"a":1,"b":2}`
+		v, err := tq.Eval(val, tq.Delete("c"))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
 		}
 	})
 

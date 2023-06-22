@@ -31,7 +31,7 @@ func pathElem(key any) Query {
 type objKey string
 
 func (o objKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Object](qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
+	return with(qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
 		mem := obj.Find(string(o))
 		if mem == nil {
 			return qs, nil, fmt.Errorf("key %q not found", o)
@@ -43,7 +43,7 @@ func (o objKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type nthQuery int
 
 func (nq nthQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Array](qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
+	return with(qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
 		idx := int(nq)
 		if idx < 0 {
 			idx += len(a)
@@ -58,7 +58,7 @@ func (nq nthQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type sliceQuery struct{ lo, hi int }
 
 func (q sliceQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Array](qs, v, func(arr ast.Array) (*qstate, ast.Value, error) {
+	return with(qs, v, func(arr ast.Array) (*qstate, ast.Value, error) {
 		lox := q.lo
 		if lox < 0 {
 			lox += len(arr)
@@ -81,7 +81,7 @@ func (q sliceQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type pickQuery []int
 
 func (q pickQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Array](qs, v, func(arr ast.Array) (*qstate, ast.Value, error) {
+	return with(qs, v, func(arr ast.Array) (*qstate, ast.Value, error) {
 		var out ast.Array
 		for _, off := range q {
 			if off < 0 {
@@ -99,7 +99,7 @@ func (q pickQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type eachQuery struct{ Query }
 
 func (q eachQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Array](qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
+	return with(qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
 		var out ast.Array
 		for i, elt := range a {
 			_, v, err := q.Query.eval(qs, elt)
@@ -163,6 +163,25 @@ func (q recQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 		return qs, nil, errors.New("no matches")
 	}
 	return qs, out, nil
+}
+
+type delQuery struct{ name string }
+
+func (d delQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	return with(qs, v, func(o ast.Object) (*qstate, ast.Value, error) {
+		found := o.Find(d.name)
+		if found == nil {
+			return qs, o, nil
+		}
+		res := make(ast.Object, 0, o.Len()-1)
+		for _, m := range o {
+			if m == found {
+				continue
+			}
+			res = append(res, m)
+		}
+		return qs, res, nil
+	})
 }
 
 type constQuery struct{ ast.Value }
@@ -257,7 +276,7 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type selectQuery struct{ Query }
 
 func (q selectQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
-	return with[ast.Array](qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
+	return with(qs, v, func(a ast.Array) (*qstate, ast.Value, error) {
 		var out ast.Array
 		for _, elt := range a {
 			if _, _, err := q.Query.eval(qs, elt); err == nil {
