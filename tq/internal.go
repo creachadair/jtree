@@ -168,6 +168,10 @@ func (q recQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 type delQuery struct{ name string }
 
 func (d delQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	// As a special case, treat null as equivalent to an empty object.
+	if v == ast.Null {
+		return qs, v, nil
+	}
 	return with(qs, v, func(o ast.Object) (*qstate, ast.Value, error) {
 		found := o.Find(d.name)
 		if found == nil {

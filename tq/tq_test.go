@@ -276,6 +276,19 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Delete3", func(t *testing.T) {
+		// Deleting a key from null succeeds without error.
+		val := mustParse(t, []byte(`null`))
+		const wantJSON = `null`
+		v, err := tq.Eval(val, tq.Delete("x"))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
+		}
+	})
+
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
 		v := mustEval(t, tq.Seq{
