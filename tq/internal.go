@@ -188,6 +188,39 @@ func (d delQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	})
 }
 
+type setQuery struct {
+	name string
+	q    Query
+}
+
+func (s setQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	_, t, err := s.q.eval(qs, v)
+	if err != nil {
+		return qs, nil, err
+	}
+	if v == ast.Null {
+		v = ast.Object{}
+	}
+	return with(qs, v, func(o ast.Object) (*qstate, ast.Value, error) {
+		found := o.Find(s.name)
+		if found == nil {
+			return qs, append(o, &ast.Member{
+				Key:   ast.String(s.name),
+				Value: t,
+			}), nil
+		}
+		out := make(ast.Object, len(o))
+		for i, m := range o {
+			if m == found {
+				out[i] = &ast.Member{Key: ast.String(s.name), Value: t}
+			} else {
+				out[i] = m
+			}
+		}
+		return qs, out, nil
+	})
+}
+
 type constQuery struct{ ast.Value }
 
 func (c constQuery) eval(qs *qstate, _ ast.Value) (*qstate, ast.Value, error) {

@@ -194,6 +194,12 @@ func (a Array) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 // as an empty object for purposes of this query.
 func Delete(name string) Query { return delQuery{name} }
 
+// A Set query adds the specified key to a copy of its input object and returns
+// the resulting object. If the key already exists in the input, its value is
+// replaced in the output. It is an error if the input is not an object.  A
+// JSON null value is treated as an empty object for purposes of this query.
+func Set(name string, keys ...any) Query { return setQuery{name, Path(keys...)} }
+
 // A Value query ignores its input and returns the given value.  The value must
 // be a string, int, float, bool, nil, or ast.Value.
 func Value(v any) Query { return constQuery{ast.ToValue(v)} }

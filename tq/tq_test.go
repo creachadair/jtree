@@ -289,6 +289,54 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Set0", func(t *testing.T) {
+		// Setting a key in a non-object is an error.
+		val := mustParse(t, []byte(`["not an object"]`))
+		v, err := tq.Eval(val, tq.Set("x", ast.Null))
+		if err == nil {
+			t.Errorf("Eval: got %v, wanted error", v)
+		}
+	})
+
+	t.Run("Set1", func(t *testing.T) {
+		// Replace a key that exists in the object without error.
+		val := mustParse(t, []byte(`{"a":1, "b":2}`))
+		const wantJSON = `{"a":3,"b":2}`
+		v, err := tq.Eval(val, tq.Set("a", ast.ToValue(3)))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
+		}
+	})
+
+	t.Run("Set2", func(t *testing.T) {
+		// Add a key that does not exist in the object without error.
+		val := mustParse(t, []byte(`{"a":1, "b":2}`))
+		const wantJSON = `{"a":1,"b":2,"c":3}`
+		v, err := tq.Eval(val, tq.Set("c", ast.ToValue(3)))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
+		}
+	})
+
+	t.Run("Set3", func(t *testing.T) {
+		// Add a key to null to give an object containing that key.
+		val := mustParse(t, []byte(`null`))
+		const wantJSON = `{"a":1}`
+		v, err := tq.Eval(val, tq.Set("a", ast.ToValue(1)))
+		if err != nil {
+			t.Fatalf("Eval failed: %v", err)
+		}
+		if got := v.JSON(); got != wantJSON {
+			t.Errorf("Result: got %q, want %q", got, wantJSON)
+		}
+	})
+
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
 		v := mustEval(t, tq.Seq{
@@ -381,7 +429,7 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Set", func(t *testing.T) {
+	t.Run("As", func(t *testing.T) {
 		v := mustEval(t, tq.Seq{
 			tq.Path(tq.Value(true), tq.As("x")),
 			tq.Alt{
