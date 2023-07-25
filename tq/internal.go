@@ -306,7 +306,6 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	case ast.Keyer:
 		return objKey(t.Key()).eval(qs, v)
 	}
-	log.Printf("MJF :: v=%[1]T %[1]v", v)
 	return qs, nil, fmt.Errorf("value %T is not a valid reference", w)
 }
 
