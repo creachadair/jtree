@@ -19,7 +19,8 @@ type Parser struct {
 
 // NewParser constructs a parser that consumes input from r.
 func NewParser(r io.Reader) *Parser {
-	return &Parser{h: new(parseHandler), st: jtree.NewStream(r)}
+	h := &parseHandler{ic: make(map[string]string)}
+	return &Parser{h: h, st: jtree.NewStream(r)}
 }
 
 // Parse parses and returns the next JSON value from its input.
@@ -75,17 +76,33 @@ func ParseSingle(r io.Reader) (Value, error) {
 type parseHandler struct {
 	stk  []Value
 	tbuf [][]byte
+	ic   map[string]string
 }
 
-// copyOf returns a copy of text.  Allocations are batched to reduce overhead.
-func (h *parseHandler) copyOf(text []byte) []byte {
-	const minBlockSlop = 16
+// intern returns an interned copy of text.
+func (h *parseHandler) intern(text []byte) string {
+	s, ok := h.ic[string(text)]
+	if ok {
+		return s
+	}
+	s = string(text)
+	h.ic[s] = s
+	return s
+}
+
+// copyOf returns a copy of text.  Small allocations are batched to reduce overhead.
+func (h *parseHandler) copyOf(text []byte) mem.RO {
+	const minBlockSlop = 4
+	const smallSizeFraction = 8
 	const bufBlockBytes = 16384
 
-	if len(text) >= bufBlockBytes {
-		return append([]byte(nil), text...)
+	// For values bigger than smallSizeFraction of the block size, don't bother
+	// batching, make an outright copy.
+	if len(text) >= bufBlockBytes/smallSizeFraction {
+		return mem.B(append([]byte(nil), text...))
 	}
 
+	// Look for a block with space enough to hold a copy of text.
 	i := 0
 	for i < len(h.tbuf) {
 		if n := len(h.tbuf[i]) + len(text); n < cap(h.tbuf[i]) {
@@ -106,7 +123,7 @@ func (h *parseHandler) copyOf(text []byte) []byte {
 	}
 	s := len(h.tbuf[i])
 	h.tbuf[i] = append(h.tbuf[i], text...)
-	return h.tbuf[i][s : s+len(text)]
+	return mem.B(h.tbuf[i][s : s+len(text)])
 }
 
 func (h *parseHandler) mergeTop(v Value) {
@@ -170,7 +187,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// the new member into its collection eagerly, so that when reducing the
 	// stack after the value is known, we don't have to reduce multiple times.
 
-	mem := &Member{Key: Quoted{text: mem.B(h.copyOf(loc.Text()))}}
+	mem := &Member{Key: Quoted{text: mem.S(h.intern(loc.Text()))}}
 	top := &h.stk[len(h.stk)-1]
 	obj := (*top).(Object)
 	*top = append(obj, mem)
@@ -183,11 +200,11 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(Quoted{text: mem.B(h.copyOf(loc.Text()))})
+		return h.reduceValue(Quoted{text: h.copyOf(loc.Text())})
 	case jtree.Integer:
-		return h.reduceValue(Number{text: mem.B(h.copyOf(loc.Text())), isInt: true})
+		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: true})
 	case jtree.Number:
-		return h.reduceValue(Number{text: mem.B(h.copyOf(loc.Text())), isInt: false})
+		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: false})
 	case jtree.True, jtree.False:
 		return h.reduceValue(Bool(loc.Token() == jtree.True))
 	case jtree.Null:
