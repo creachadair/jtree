@@ -185,9 +185,9 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	case jtree.String:
 		return h.reduceValue(Quoted{text: mem.B(h.copyOf(loc.Text()))})
 	case jtree.Integer:
-		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: true})
+		return h.reduceValue(Number{text: mem.B(h.copyOf(loc.Text())), isInt: true})
 	case jtree.Number:
-		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: false})
+		return h.reduceValue(Number{text: mem.B(h.copyOf(loc.Text())), isInt: false})
 	case jtree.True, jtree.False:
 		return h.reduceValue(Bool(loc.Token() == jtree.True))
 	case jtree.Null:
