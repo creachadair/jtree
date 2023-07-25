@@ -1,0 +1,23 @@
+/*
+  An example HuJSON (JWCC) for testing.
+*/
+{
+    "array": [
+        "value 1",   // comment on value 1
+        true,        // comment on value 2
+        null,
+        "ok",        // note trailing comma
+    ],
+    "bool": true,
+    "null" : null,
+
+    // Random comment in the middle of things.
+
+    "object": {
+        "x": {"ok":true},
+        "y": {"ok":false},
+        "z": [],
+    },
+}  // end of the object
+
+// Additional comments

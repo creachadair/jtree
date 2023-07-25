@@ -51,14 +51,35 @@ type Handler interface {
 	EndOfInput(loc Anchor)
 }
 
+// CommentHandler is an optional interface that a Handler may implement to
+// handle comment tokens. If a handler implements this method and comments are
+// enabled in the scanner, Comment will be called for each comment token that
+// occurs in the input. If the handler does not provide this method, comments
+// will be silently discarded.
+type CommentHandler interface {
+	// Process the line or block comment at the specified location.
+	// Line comments include their leading "//" and trailing newline (if present).
+	// Block comments include their leading "/*" and trailing "*/".
+	Comment(loc Anchor)
+}
+
 // Stream is a stream parser that consumes input and delivers events to a
 // Handler corresponding with the structure of the input.
 type Stream struct {
-	s *Scanner
+	s      *Scanner
+	tcomma bool // allow trailing commas in objects and arrays
 }
 
 // NewStream constructs a new Stream that consumes input from r.
 func NewStream(r io.Reader) *Stream { return &Stream{s: NewScanner(r)} }
+
+// AllowComments configures the scanner associated with s to report (true) or
+// reject (false) comment tokens.
+func (s *Stream) AllowComments(ok bool) { s.s.AllowComments(ok) }
+
+// AllowTrailingCommas configures the parser to allow (true) or reject (false)
+// trailing comments in objects and arrays.
+func (s *Stream) AllowTrailingCommas(ok bool) { s.tcomma = ok }
 
 func (s *Stream) recoverParseError(errp *error) {
 	if serr := recover(); serr != nil {
@@ -73,12 +94,12 @@ func (s *Stream) Parse(h Handler) (err error) {
 	defer s.recoverParseError(&err)
 
 	for {
-		err := s.s.Next()
+		err := s.nextToken(h)
 		if err == io.EOF {
 			h.EndOfInput(s.s)
 			return nil
 		} else if err != nil {
-			s.syntaxError(err, "invalid input")
+			s.syntaxError(err, err.Error())
 		}
 
 		s.parseElement(h)
@@ -92,11 +113,11 @@ func (s *Stream) Parse(h Handler) (err error) {
 func (s *Stream) ParseOne(h Handler) (err error) {
 	defer s.recoverParseError(&err)
 
-	if err := s.s.Next(); err == io.EOF {
+	if err := s.nextToken(h); err == io.EOF {
 		h.EndOfInput(s.s)
 		return err
 	} else if err != nil {
-		s.syntaxError(err, "invalid input")
+		s.syntaxError(err, err.Error())
 	}
 	s.parseElement(h)
 	return nil
@@ -142,12 +163,20 @@ func (s *Stream) parseMembers(h Handler) {
 
 		// Check whether we have more members (",") or are done ("}").
 		tok := s.advance(h, RBrace, Comma)
-		if tok == RBrace {
-			s.checkError(h.EndMember(s.s))
-			return // end of object
-		}
 		s.checkError(h.EndMember(s.s))
-		s.advance(h, String) // advance to next key
+		if tok == RBrace {
+			return // end of object
+		} else if s.tcomma {
+			// If trailing commas are allowed and the next token is a close
+			// bracket, consider this a valid end of the object. Otherwise, it
+			// must be a key for a subsequent element.
+			next := s.advance(h, String, RBrace)
+			if next == RBrace {
+				return // end of object with trailing comma
+			}
+		} else {
+			s.advance(h, String) // advance to next key
+		}
 	}
 }
 
@@ -164,13 +193,38 @@ func (s *Stream) parseElements(h Handler) {
 		if tok == RSquare {
 			return // end of array
 		}
-		s.advance(h)
+
+		// If trailing commas are allowed and the next token is a close bracket,
+		// consider this a valid end of the array; otherwise it will fail on the
+		// next element
+		if next := s.advance(h); s.tcomma && next == RSquare {
+			return // end of array with trailing comma
+		}
 		s.parseElement(h)
 	}
 }
 
+func (s *Stream) nextToken(h Handler) error {
+	for {
+		if err := s.s.Next(); err != nil {
+			return err
+		}
+
+		// If we see a comment token, pass it to the handler if it implements
+		// CommentHandler. Either way, discard the comment and fetch the next
+		// available comment for the rest of the parser.
+		if tok := s.s.Token(); tok == LineComment || tok == BlockComment {
+			if ch, ok := h.(CommentHandler); ok {
+				ch.Comment(s.s)
+			}
+			continue // skip to the next token for the parser
+		}
+		return nil
+	}
+}
+
 func (s *Stream) advance(h Handler, tokens ...Token) Token {
-	if err := s.s.Next(); err != nil {
+	if err := s.nextToken(h); err != nil {
 		s.syntaxError(err, "expected %v, got error: %v", tokLabel(tokens), err)
 	}
 	tok := s.s.Token()

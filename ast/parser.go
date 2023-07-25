@@ -17,6 +17,13 @@ type Parser struct {
 	st *jtree.Stream
 }
 
+// AllowJWCC configures p to accept (true) or reject (false) JWCC extensions
+// supporting comments and trailing commas.
+func (p *Parser) AllowJWCC(ok bool) {
+	p.st.AllowComments(ok)
+	p.st.AllowTrailingCommas(ok)
+}
+
 // NewParser constructs a parser that consumes input from r.
 func NewParser(r io.Reader) *Parser {
 	h := &parseHandler{ic: make(map[string]string)}
