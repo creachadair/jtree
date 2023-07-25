@@ -3,7 +3,6 @@ package tq
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/creachadair/jtree/ast"
