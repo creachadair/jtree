@@ -29,7 +29,7 @@ func (t testValue) String() string { return fmt.Sprintf("z=%d", t) }
 func (t testValue) Key() string    { return fmt.Sprintf("key=%d", t) }
 
 func TestParse_JWCC(t *testing.T) {
-	input, err := os.ReadFile("../testdata/input.hujson")
+	input, err := os.ReadFile("../testdata/input.jwcc")
 	if err != nil {
 		t.Fatalf("Reading test input: %v", err)
 	}
