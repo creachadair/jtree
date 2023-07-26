@@ -70,11 +70,11 @@ func (t Token) String() string {
 // A Scanner reads lexical tokens from an input stream.  Each call to Next
 // advances the scanner to the next token, or reports an error.
 type Scanner struct {
-	r   *bufio.Reader
-	com bool // allow comments
-	buf bytes.Buffer
-	tok Token
-	err error
+	r        *bufio.Reader
+	comments bool // allow comments
+	buf      bytes.Buffer
+	tok      Token
+	err      error
 
 	pos, end int // start and end offsets of current token
 	last     int // size in bytes of last-read input rune
@@ -94,8 +94,10 @@ func NewScanner(r io.Reader) *Scanner {
 }
 
 // AllowComments configures the scanner to report (true) or reject (false)
-// comment tokens.
-func (s *Scanner) AllowComments(ok bool) { s.com = ok }
+// comment tokens. Comments are a non-standard exension of the JSON spec.  If
+// enabled, C++ style block comments (/* ... */) and line comments (// ...)
+// are recognized and emitted as tokens.
+func (s *Scanner) AllowComments(ok bool) { s.comments = ok }
 
 // Next advances s to the next token of the input, or reports an error.
 // At the end of the input, Next returns io.EOF.
@@ -141,7 +143,7 @@ func (s *Scanner) Next() error {
 		}
 
 		// Handle comments, if enabled.
-		if ch == '/' && s.com {
+		if ch == '/' && s.comments {
 			return s.scanComment(ch)
 		}
 
