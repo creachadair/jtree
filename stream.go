@@ -83,7 +83,14 @@ func (s *Stream) AllowTrailingCommas(ok bool) { s.tcomma = ok }
 
 func (s *Stream) recoverParseError(errp *error) {
 	if serr := recover(); serr != nil {
-		*errp = serr.(error)
+		switch err := serr.(type) {
+		case *SyntaxError:
+			*errp = err
+		case handlerError:
+			*errp = err.error
+		default:
+			panic(serr)
+		}
 	}
 }
 
@@ -250,9 +257,13 @@ func (s *Stream) syntaxError(err error, msg string, args ...any) {
 
 func (s *Stream) checkError(err error) {
 	if err != nil {
-		panic(err)
+		panic(handlerError{err})
 	}
 }
+
+type handlerError struct{ error }
+
+func (h handlerError) Unwrap() error { return h.error }
 
 // tokLabel makes a human-readable summary string for the given token types.
 func tokLabel(tokens []Token, got any) string {
