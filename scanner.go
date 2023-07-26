@@ -33,6 +33,9 @@ const (
 	False                // constant: false
 	Null                 // constant: null
 
+	BlockComment // comment: /* ... */
+	LineComment  // comment: // ... <LF>
+
 	// Do not modify the order of these constants without updating the
 	// self-delimiting token check below.
 )
@@ -51,6 +54,9 @@ var tokenStr = [...]string{
 	True:    "true",
 	False:   "false",
 	Null:    "null",
+
+	BlockComment: "block commment",
+	LineComment:  "line comment",
 }
 
 func (t Token) String() string {
@@ -64,10 +70,11 @@ func (t Token) String() string {
 // A Scanner reads lexical tokens from an input stream.  Each call to Next
 // advances the scanner to the next token, or reports an error.
 type Scanner struct {
-	r   *bufio.Reader
-	buf bytes.Buffer
-	tok Token
-	err error
+	r        *bufio.Reader
+	comments bool // allow comments
+	buf      bytes.Buffer
+	tok      Token
+	err      error
 
 	pos, end int // start and end offsets of current token
 	last     int // size in bytes of last-read input rune
@@ -85,6 +92,12 @@ func NewScanner(r io.Reader) *Scanner {
 	}
 	return &Scanner{r: br}
 }
+
+// AllowComments configures the scanner to report (true) or reject (false)
+// comment tokens. Comments are a non-standard exension of the JSON spec.  If
+// enabled, C++ style block comments (/* ... */) and line comments (// ...)
+// are recognized and emitted as tokens.
+func (s *Scanner) AllowComments(ok bool) { s.comments = ok }
 
 // Next advances s to the next token of the input, or reports an error.
 // At the end of the input, Next returns io.EOF.
@@ -129,6 +142,11 @@ func (s *Scanner) Next() error {
 			return s.scanString(ch)
 		}
 
+		// Handle comments, if enabled.
+		if ch == '/' && s.comments {
+			return s.scanComment(ch)
+		}
+
 		// Handle constants: true, false, null
 		var want mem.RO
 		switch ch {
@@ -150,7 +168,7 @@ func (s *Scanner) Next() error {
 		if err != nil {
 			return err
 		} else if got := mem.B(s.buf.Bytes()); !got.Equal(want) {
-			return s.failf("unknown constant %q", got)
+			return s.failf("unknown constant %q", got.StringCopy())
 		}
 		return nil // OK, token is already set
 	}
@@ -308,6 +326,53 @@ func (s *Scanner) scanNumber(start rune) error {
 	return nil
 }
 
+func (s *Scanner) scanComment(first rune) error {
+	s.buf.WriteRune(first)
+	ch, err := s.rune()
+	if err != nil {
+		return err
+	}
+	switch ch {
+	case '/': // line comment to LF
+		s.buf.WriteRune(ch)
+		end, err := s.readWhile(isNotLF)
+		if err == nil {
+			s.buf.WriteRune(end)
+		} else if err != io.EOF {
+			return err
+		}
+		s.tok = LineComment
+		return nil
+
+	case '*': // block comment
+		s.buf.WriteRune(ch)
+		for {
+			end, err := s.readWhile(isNotStar)
+			if err != nil {
+				return err
+			}
+			s.buf.WriteRune(end) // end == '*'
+
+			// Check whether we have "*/", which would end the comment.
+			next, err := s.rune()
+			if err != nil {
+				return err
+			}
+			s.buf.WriteRune(next)
+			if next == '/' {
+				s.tok = BlockComment
+				return nil
+			}
+
+			// We saw "*" but not "/", so keep scanning for the end of the block.
+		}
+
+	default:
+		s.unrune()
+		return s.failf("invalid %q in comment", ch)
+	}
+}
+
 func (s *Scanner) scanName(first rune) error {
 	s.buf.WriteRune(first)
 	_, err := s.readWhile(isNameRune)
@@ -394,6 +459,8 @@ func isSpace(ch rune) bool {
 	return ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t'
 }
 
+func isNotStar(ch rune) bool  { return ch != '*' }
+func isNotLF(ch rune) bool    { return ch != '\n' }
 func isNumStart(ch rune) bool { return ch == '-' || isDigit(ch) }
 func isExpStart(ch rune) bool { return ch == '-' || ch == '+' || isDigit(ch) }
 func isDigit(ch rune) bool    { return '0' <= ch && ch <= '9' }

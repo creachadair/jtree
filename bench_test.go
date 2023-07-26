@@ -14,6 +14,7 @@ import (
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
+	"github.com/tailscale/hujson"
 )
 
 // A local file path or a URL. For example:
@@ -68,6 +69,26 @@ func BenchmarkScanner(b *testing.B) {
 				dec := json.NewDecoder(bytes.NewReader(input))
 				var ignore any
 				if err := dec.Decode(&ignore); err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	})
+
+	b.Run("HuJSON", func(b *testing.B) {
+		b.Run("Parse", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := hujson.Parse(input)
+				if err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+
+		b.Run("Standardize", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := hujson.Standardize(input)
+				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
 			}

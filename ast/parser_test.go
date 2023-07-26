@@ -28,6 +28,25 @@ func (t testValue) JSON() string   { return strconv.Itoa(int(t)) }
 func (t testValue) String() string { return fmt.Sprintf("z=%d", t) }
 func (t testValue) Key() string    { return fmt.Sprintf("key=%d", t) }
 
+func TestParse_JWCC(t *testing.T) {
+	input, err := os.ReadFile("../testdata/input.jwcc")
+	if err != nil {
+		t.Fatalf("Reading test input: %v", err)
+	}
+
+	p := ast.NewParser(bytes.NewReader(input))
+	p.AllowJWCC(true)
+
+	v, err := p.Parse()
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	// TODO(creachadair): Add tests for comment preservation, once the AST
+	// supports it.
+	t.Log(v.JSON())
+}
+
 func TestParse(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.json")
 	if err != nil {

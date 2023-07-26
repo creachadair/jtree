@@ -78,6 +78,46 @@ func TestScanner(t *testing.T) {
 	}
 }
 
+func TestScanner_withComments(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []jtree.Token
+	}{
+		{"/* block comment */\n\n\n", []jtree.Token{jtree.BlockComment}},
+		{"// line 1\n\n// line 2\n", []jtree.Token{jtree.LineComment, jtree.LineComment}},
+		{"// line at EOF", []jtree.Token{jtree.LineComment}},
+		{`{
+ "x": 1, // howdy do
+ "y" /* hide me */ : 2.0 }`, []jtree.Token{
+			jtree.LBrace, jtree.String, jtree.Colon, jtree.Integer, jtree.Comma, jtree.LineComment,
+			jtree.String, jtree.BlockComment, jtree.Colon, jtree.Number, jtree.RBrace,
+		}},
+
+		{`"a" // line
+false /*
+  this is a comment
+*/ 1 null [ {} ]`, []jtree.Token{
+			jtree.String, jtree.LineComment, jtree.False, jtree.BlockComment,
+			jtree.Integer, jtree.Null, jtree.LSquare, jtree.LBrace, jtree.RBrace, jtree.RSquare,
+		}},
+	}
+
+	for _, test := range tests {
+		var got []jtree.Token
+		s := jtree.NewScanner(strings.NewReader(test.input))
+		s.AllowComments(true)
+		for s.Next() == nil {
+			got = append(got, s.Token())
+		}
+		if s.Err() != io.EOF {
+			t.Errorf("Next failed: %v", s.Err())
+		}
+		if diff := cmp.Diff(test.want, got); diff != "" {
+			t.Errorf("Input: %#q\nTokens: (-want, +got)\n%s", test.input, diff)
+		}
+	}
+}
+
 func TestScanner_decodeAs(t *testing.T) {
 	mustScan := func(t *testing.T, input string, want jtree.Token) *jtree.Scanner {
 		t.Helper()

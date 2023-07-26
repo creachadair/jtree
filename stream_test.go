@@ -80,6 +80,47 @@ EndObject
 	}
 }
 
+func TestStreamJWCC(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{`/*
+  One day, lad, all this will be yours.
+*/ [
+  1,   // what, the curtains?
+  2,   // no, not the curtains lad
+  { "x": 5,
+    // ok dad
+  },
+] /* all you can see */ // everything
+`, `
+BeginArray
+Value integer <1>
+Value integer <2>
+BeginObject
+BeginMember <"x">
+Value integer <5>
+EndMember ","
+EndObject
+EndArray
+.`},
+	}
+	for _, test := range tests {
+		st := jtree.NewStream(strings.NewReader(test.input))
+		st.AllowComments(true)
+		st.AllowTrailingCommas(true)
+		th := new(testHandler)
+		if err := st.Parse(th); err != nil {
+			t.Errorf("Parse failed: %v", err)
+		}
+
+		if diff := diffStrings(test.want, th.output()); diff != "" {
+			t.Errorf("Input: %#q\nOutput: (-want, +got)\n%s", test.input, diff)
+		}
+	}
+}
+
 func TestStreamErrors(t *testing.T) {
 	tests := []struct {
 		input string
@@ -120,9 +161,9 @@ Value integer <15>`,
 		{`1 2.0 forthright`, `
 Value integer <1>
 Value number <2.0>`,
-			`at 1:6: invalid input`},
+			`at 1:6: offset 16: unknown constant "forthright"`},
 		{`"what did you`, ``,
-			`at 1:0: invalid input`},
+			`at 1:0: offset 13: unexpected error: EOF`},
 	}
 
 	for _, test := range tests {
