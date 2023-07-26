@@ -336,10 +336,11 @@ func (s *Scanner) scanComment(first rune) error {
 	case '/': // line comment to LF
 		s.buf.WriteRune(ch)
 		end, err := s.readWhile(isNotLF)
-		if err != nil && err != io.EOF {
+		if err == nil {
+			s.buf.WriteRune(end)
+		} else if err != io.EOF {
 			return err
 		}
-		s.buf.WriteRune(end)
 		s.tok = LineComment
 		return nil
 
