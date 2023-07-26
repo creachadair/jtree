@@ -47,12 +47,16 @@ func (p *Parser) Parse() (Value, error) {
 
 // Parse parses and returns the JSON values from r. In case of error, any
 // complete values already parsed are returned along with the error.
+// It reports ErrEmptyInput if the input is entirely empty.
 func Parse(r io.Reader) ([]Value, error) {
 	p := NewParser(r)
 	var vs []Value
 	for {
 		v, err := p.Parse()
 		if err == io.EOF {
+			if len(vs) == 0 {
+				return nil, ErrEmptyInput
+			}
 			return vs, nil
 		} else if err != nil {
 			return vs, err
@@ -68,7 +72,7 @@ func ParseSingle(r io.Reader) (Value, error) {
 	p := NewParser(r)
 	v, err := p.Parse()
 	if err == io.EOF {
-		return v, nil
+		return v, ErrEmptyInput
 	} else if err != nil {
 		return nil, err
 	}
@@ -226,6 +230,9 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 func (h *parseHandler) SyntaxError(loc jtree.Anchor, err error) error { return err }
 
 func (h *parseHandler) EndOfInput(loc jtree.Anchor) {}
+
+// ErrEmptyInput is a sentinel error reported by Parse if the input is empty.
+var ErrEmptyInput = errors.New("empty input")
 
 // ErrExtraInput is a sentinel error reported by ParseOne if the input contains
 // additional values after the first one.

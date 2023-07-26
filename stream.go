@@ -225,11 +225,11 @@ func (s *Stream) nextToken(h Handler) error {
 
 func (s *Stream) advance(h Handler, tokens ...Token) Token {
 	if err := s.nextToken(h); err != nil {
-		s.syntaxError(err, "expected %v, got error: %v", tokLabel(tokens), err)
+		s.syntaxError(err, tokLabel(tokens, err))
 	}
 	tok := s.s.Token()
 	if len(tokens) != 0 && !tokOneOf(tok, tokens) {
-		s.syntaxError(nil, "expected %v, got %v", tokLabel(tokens), tok)
+		s.syntaxError(nil, tokLabel(tokens, tok))
 	}
 	return tok
 }
@@ -255,18 +255,22 @@ func (s *Stream) checkError(err error) {
 }
 
 // tokLabel makes a human-readable summary string for the given token types.
-func tokLabel(tokens []Token) string {
+func tokLabel(tokens []Token, got any) string {
 	if len(tokens) == 0 {
-		return "more input"
-	} else if len(tokens) == 1 {
-		return tokens[0].String()
+		return fmt.Sprint(got)
 	}
-	last := len(tokens) - 1
-	ss := make([]string, len(tokens)-1)
-	for i, tok := range tokens[:last] {
-		ss[i] = tok.String()
+	var exp string
+	if len(tokens) == 1 {
+		exp = tokens[0].String()
+	} else {
+		last := len(tokens) - 1
+		ss := make([]string, len(tokens)-1)
+		for i, tok := range tokens[:last] {
+			ss[i] = tok.String()
+		}
+		exp = strings.Join(ss, ", ") + " or " + tokens[last].String()
 	}
-	return strings.Join(ss, ", ") + " or " + tokens[last].String()
+	return fmt.Sprintf("expected %s, got %v", exp, got)
 }
 
 // tokOneOf reports whether cur is an element of tokens.
