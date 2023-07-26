@@ -259,10 +259,6 @@ func (s *Scanner) scanString(open rune) error {
 func (s *Scanner) scanNumber(start rune) error {
 	s.buf.WriteRune(start)
 
-	// N.B. This implementation deviates slightly from the JSON spec, which
-	// disallows multi-digit integers with a leading zero (e.g., "013").  This
-	// implementation accepts and ignores extra leading zeroes.
-
 	if start == '-' {
 		// If there is a leading sign, we need at least one digit.
 		// Otherwise, we already have one in start.
@@ -274,7 +270,7 @@ func (s *Scanner) scanNumber(start rune) error {
 	}
 
 	// Consume the remainder of an integer.
-	ch, err := s.readWhile(isDigit)
+	_, ch, err := s.readWhile(isDigit)
 	if err != nil {
 		if err == io.EOF {
 			s.tok = Integer
@@ -283,17 +279,24 @@ func (s *Scanner) scanNumber(start rune) error {
 		return err
 	}
 
+	// Check for extra leading zeroes, which are disallowed by the JSON spec.
+	// That is: 0.12 is OK, 01.2 is not.
+	if hasExtraLeadingZeroes(s.buf.Bytes()) {
+		return s.failf("extra leading zeroes")
+	}
+
 	// If a decimal point follows, consume a fractional part.
 	var isFloat bool
 	if ch == '.' {
 		s.buf.WriteRune(ch)
-		ch, err = s.readWhile(isDigit)
-		if err == io.EOF {
-			s.tok = Number
-			return nil
-		} else if err != nil {
+		var nr int
+		nr, ch, err = s.readWhile(isDigit)
+		if err != nil && err != io.EOF {
 			return s.fail(err)
+		} else if nr == 0 {
+			return s.failf("no digits after decimal point")
 		}
+		s.tok = Number
 		isFloat = true
 	}
 
@@ -314,8 +317,12 @@ func (s *Scanner) scanNumber(start rune) error {
 		return err
 	}
 	s.buf.WriteRune(ch)
-	_, err = s.readWhile(isDigit)
-	if err == io.EOF {
+	nr, _, err := s.readWhile(isDigit)
+	if nr == 0 && (ch == '-' || ch == '+') {
+		// It's OK to have no digits if the previous rune was not a sign,
+		// otherwise we have to have at least one.
+		return s.failf("missing exponent digits")
+	} else if err == io.EOF {
 		s.tok = Number
 		return nil
 	} else if err != nil {
@@ -335,7 +342,7 @@ func (s *Scanner) scanComment(first rune) error {
 	switch ch {
 	case '/': // line comment to LF
 		s.buf.WriteRune(ch)
-		end, err := s.readWhile(isNotLF)
+		_, end, err := s.readWhile(isNotLF)
 		if err == nil {
 			s.buf.WriteRune(end)
 		} else if err != io.EOF {
@@ -347,7 +354,7 @@ func (s *Scanner) scanComment(first rune) error {
 	case '*': // block comment
 		s.buf.WriteRune(ch)
 		for {
-			end, err := s.readWhile(isNotStar)
+			_, end, err := s.readWhile(isNotStar)
 			if err != nil {
 				return err
 			}
@@ -375,7 +382,7 @@ func (s *Scanner) scanComment(first rune) error {
 
 func (s *Scanner) scanName(first rune) error {
 	s.buf.WriteRune(first)
-	_, err := s.readWhile(isNameRune)
+	_, _, err := s.readWhile(isNameRune)
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
@@ -416,15 +423,18 @@ func (s *Scanner) require(f func(rune) bool, label string) (rune, error) {
 // readWhile consumes runes matching f from the input until EOF or until a rune
 // not matching f is found. The first non-matching rune (if any) is returned.
 // It is the caller's responsibility to unread this rune, if desired.
-func (s *Scanner) readWhile(f func(rune) bool) (rune, error) {
+// The int reports the number of runes consumed.
+func (s *Scanner) readWhile(f func(rune) bool) (int, rune, error) {
+	var nr int
 	for {
 		ch, err := s.rune()
 		if err != nil {
-			return 0, err
+			return nr, 0, err
 		} else if !f(ch) {
-			return ch, nil
+			return nr, ch, nil
 		}
 		s.buf.WriteRune(ch)
+		nr++
 	}
 }
 
@@ -442,17 +452,28 @@ func (s *Scanner) readHex4() error {
 	return nil
 }
 
+type posError struct {
+	pos int
+	err error
+}
+
+func (p posError) Error() string {
+	return fmt.Sprintf("%s (offset %d)", p.err.Error(), p.pos)
+}
+
+func (p posError) Unwrap() error { return p.err }
+
 func (s *Scanner) setErr(err error) error {
 	s.err = err
 	return err
 }
 
 func (s *Scanner) fail(err error) error {
-	return s.setErr(fmt.Errorf("offset %d: unexpected error: %w", s.end, err))
+	return s.setErr(posError{s.end, err})
 }
 
 func (s *Scanner) failf(msg string, args ...any) error {
-	return s.setErr(fmt.Errorf("offset %d: "+msg, append([]any{s.end}, args...)...))
+	return s.setErr(posError{s.end, fmt.Errorf(msg, args...)})
 }
 
 func isSpace(ch rune) bool {
@@ -468,6 +489,22 @@ func isNameRune(ch rune) bool { return ch >= 'a' && ch <= 'z' }
 
 func isHexDigit(ch rune) bool {
 	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')
+}
+
+// hasExtraLeadingZeroes reports whether the representation of an integer in
+// buf has redundant leading zeroes, disallowed by the spec.
+//
+// OK: 0, 0.1, -1.0, -0.1 are all OK.
+// Bad: -01, 01.2, -01.0, 00.1.
+func hasExtraLeadingZeroes(buf []byte) bool {
+	if buf[0] == '-' {
+		buf = buf[1:] // skip leading sign
+	}
+	if buf[0] == '0' {
+		// A leading zero is OK if it's the only digit.
+		return len(buf) > 1
+	}
+	return false
 }
 
 var self = [...]Token{LBrace, RBrace, LSquare, RSquare, Comma, Colon}

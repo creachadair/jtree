@@ -129,7 +129,7 @@ func TestStreamErrors(t *testing.T) {
 	}{
 		// Various kinds of unbalanced object bits.
 		{`{`, `BeginObject`,
-			`at 1:1: expected "}" or string, got error: EOF`},
+			`at 1:1: expected "}" or string, got EOF`},
 		{`}`, ``, `at 1:0: unexpected "}"`},
 		{`{false:1}`, `BeginObject`,
 			`at 1:1: expected "}" or string, got false`},
@@ -142,16 +142,16 @@ BeginObject
 BeginMember <"true">
 Value integer <1>
 EndMember ","`,
-			`at 1:10: expected string, got error: EOF`},
+			`at 1:10: expected string, got EOF`},
 
 		// Unbalanced array bits.
 		{`[`, `BeginArray`,
-			`at 1:1: expected more input, got error: EOF`},
+			`at 1:1: EOF`},
 		{`]`, ``, `at 1:0: unexpected "]"`},
 		{`[15,`, `
 BeginArray
 Value integer <15>`,
-			`at 1:4: expected more input, got error: EOF`},
+			`at 1:4: EOF`},
 		{`[15,]`, `
 BeginArray
 Value integer <15>`,
@@ -161,9 +161,9 @@ Value integer <15>`,
 		{`1 2.0 forthright`, `
 Value integer <1>
 Value number <2.0>`,
-			`at 1:6: offset 16: unknown constant "forthright"`},
+			`at 1:6: unknown constant "forthright" (offset 16)`},
 		{`"what did you`, ``,
-			`at 1:0: offset 13: unexpected error: EOF`},
+			`at 1:0: EOF (offset 13)`},
 	}
 
 	for _, test := range tests {
