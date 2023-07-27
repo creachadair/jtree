@@ -87,9 +87,8 @@ func ParseSingle(r io.Reader) (Value, error) {
 // A parseHandler implements the jtree.Handler interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
-	stk  []Value
-	tbuf [][]byte
-	ic   map[string]string
+	stk []Value
+	ic  map[string]string
 }
 
 // intern returns an interned copy of text.
@@ -101,42 +100,6 @@ func (h *parseHandler) intern(text []byte) string {
 	s = string(text)
 	h.ic[s] = s
 	return s
-}
-
-// copyOf returns a copy of text.  Small allocations are batched to reduce overhead.
-func (h *parseHandler) copyOf(text []byte) mem.RO {
-	const minBlockSlop = 4
-	const smallSizeFraction = 16
-	const bufBlockBytes = 16384
-
-	// For values bigger than smallSizeFraction of the block size, don't bother
-	// batching, make an outright copy.
-	if len(text) >= bufBlockBytes/smallSizeFraction {
-		return mem.B(append([]byte(nil), text...))
-	}
-
-	// Look for a block with space enough to hold a copy of text.
-	i := 0
-	for i < len(h.tbuf) {
-		if n := len(h.tbuf[i]) + len(text); n < cap(h.tbuf[i]) {
-			// There is room in this block.
-			break
-		} else if cap(h.tbuf[i])-len(text) < minBlockSlop {
-			// There is no room in this block, but it is nearly-enough full.
-			// Allocate a fresh block at this location and release the old one.
-			// The old block will be retained until all its tokens are released.
-			h.tbuf[i] = make([]byte, 0, bufBlockBytes)
-			break
-		}
-		i++
-	}
-	if i == len(h.tbuf) {
-		// No block had room; add a new empty one to the arena.
-		h.tbuf = append(h.tbuf, make([]byte, 0, bufBlockBytes))
-	}
-	s := len(h.tbuf[i])
-	h.tbuf[i] = append(h.tbuf[i], text...)
-	return mem.B(h.tbuf[i][s : s+len(text)])
 }
 
 func (h *parseHandler) reduceValue(v Value) error {
@@ -203,11 +166,11 @@ func (h *parseHandler) EndMember(loc jtree.Anchor) error { return nil }
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(Quoted{text: h.copyOf(loc.Text())})
+		return h.reduceValue(Quoted{text: mem.B(loc.Copy())})
 	case jtree.Integer:
-		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: true})
+		return h.reduceValue(Number{text: mem.B(loc.Copy()), isInt: true})
 	case jtree.Number:
-		return h.reduceValue(Number{text: h.copyOf(loc.Text()), isInt: false})
+		return h.reduceValue(Number{text: mem.B(loc.Copy()), isInt: false})
 	case jtree.True, jtree.False:
 		return h.reduceValue(Bool(loc.Token() == jtree.True))
 	case jtree.Null:

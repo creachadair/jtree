@@ -11,9 +11,9 @@ import (
 // An Anchor represents a location in source text. The methods of an Anchor
 // will report the location, token type, and contents of the anchor.
 type Anchor interface {
-	Span() Span         // Returns the source span of the anchor
 	Token() Token       // Returns the token type of the anchor
-	Text() []byte       // Returns the raw (undecoded) text of the anchor
+	Text() []byte       // Returns a view of the raw (undecoded) text of the anchor
+	Copy() []byte       // Returns a copy of the raw text of the anchor
 	Location() Location // Returns the full location of the anchor
 }
 

@@ -71,8 +71,9 @@ func (t Token) String() string {
 // advances the scanner to the next token, or reports an error.
 type Scanner struct {
 	r        *bufio.Reader
-	comments bool // allow comments
-	buf      bytes.Buffer
+	comments bool         // allow comments
+	buf      bytes.Buffer // current token
+	tbuf     [][]byte     // allocation pool
 	tok      Token
 	err      error
 
@@ -184,6 +185,9 @@ func (s *Scanner) Err() error { return s.err }
 // only valid until the next call of Next. The caller must copy the contents of
 // the returned slice if it is needed beyond that.
 func (s *Scanner) Text() []byte { return s.buf.Bytes() }
+
+// Copy returns a copy of the undecoded text of the current token.
+func (s *Scanner) Copy() []byte { return s.copyOf(s.buf.Bytes()) }
 
 // Span returns the location span of the current token.
 func (s *Scanner) Span() Span { return Span{Pos: s.pos, End: s.end} }
@@ -515,4 +519,39 @@ func selfDelim(ch rune) (Token, bool) {
 		return self[i], true
 	}
 	return Invalid, false
+}
+
+func (s *Scanner) copyOf(text []byte) []byte {
+	const minBlockSlop = 4
+	const smallSizeFraction = 16
+	const bufBlockBytes = 16384
+
+	// For values bigger than smallSizeFraction of the block size, don't bother
+	// batching, make an outright copy.
+	if len(text) >= bufBlockBytes/smallSizeFraction {
+		return append([]byte(nil), text...)
+	}
+
+	// Look for a block with space enough to hold a copy of text.
+	i := 0
+	for i < len(s.tbuf) {
+		if n := len(s.tbuf[i]) + len(text); n < cap(s.tbuf[i]) {
+			// There is room in this block.
+			break
+		} else if cap(s.tbuf[i])-len(text) < minBlockSlop {
+			// There is no room in this block, but it is nearly-enough full.
+			// Allocate a fresh block at this location and release the old one.
+			// The old block will be retained until all its tokens are released.
+			s.tbuf[i] = make([]byte, 0, bufBlockBytes)
+			break
+		}
+		i++
+	}
+	if i == len(s.tbuf) {
+		// No block had room; add a new empty one to the arena.
+		s.tbuf = append(s.tbuf, make([]byte, 0, bufBlockBytes))
+	}
+	p := len(s.tbuf[i])
+	s.tbuf[i] = append(s.tbuf[i], text...)
+	return s.tbuf[i][p : p+len(text)]
 }
