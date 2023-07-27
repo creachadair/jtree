@@ -110,6 +110,7 @@ func TestCompliance(t *testing.T) {
 		if !ok || filepath.Ext(tail) != ".json" {
 			return nil
 		}
+		tail = strings.TrimSuffix(tail, filepath.Ext(tail))
 		tag, _, _ := strings.Cut(tail, "_")
 		switch tag {
 		case "y":
