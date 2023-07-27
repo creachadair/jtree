@@ -106,7 +106,7 @@ func (h *parseHandler) intern(text []byte) string {
 // copyOf returns a copy of text.  Small allocations are batched to reduce overhead.
 func (h *parseHandler) copyOf(text []byte) mem.RO {
 	const minBlockSlop = 4
-	const smallSizeFraction = 8
+	const smallSizeFraction = 16
 	const bufBlockBytes = 16384
 
 	// For values bigger than smallSizeFraction of the block size, don't bother
@@ -139,76 +139,66 @@ func (h *parseHandler) copyOf(text []byte) mem.RO {
 	return mem.B(h.tbuf[i][s : s+len(text)])
 }
 
-func (h *parseHandler) mergeTop(v Value) {
-	old := &h.stk[len(h.stk)-1]
-	switch t := (*old).(type) {
-	case *Member:
-		t.Value = v
-	case Object:
-		// already in the object
-	case Array:
-		*old = append(t, v)
-	default:
-		h.push(v)
-	}
-}
-
-func (h *parseHandler) reduce() error {
-	if len(h.stk) > 1 {
-		h.mergeTop(h.pop())
-	}
-	return nil
-}
-
 func (h *parseHandler) reduceValue(v Value) error {
-	if len(h.stk) > 0 {
-		h.mergeTop(v)
-	} else {
-		h.push(v)
+	// If there is an incomplete object member waiting for a value, populate the
+	// value directly.
+	if n := len(h.stk); n > 0 {
+		m, ok := h.stk[n-1].(*Member)
+		if ok {
+			m.Value = v
+			return nil
+		}
 	}
+	// Otherwise, accumulate the value normally.
+	h.push(v)
 	return nil
-}
-
-func (h *parseHandler) pop() Value {
-	last := h.stk[len(h.stk)-1]
-	h.stk = h.stk[:len(h.stk)-1]
-	return last
 }
 
 func (h *parseHandler) push(v Value) { h.stk = append(h.stk, v) }
 
 func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
-	h.push(Object(nil))
+	h.push(objectStub{})
 	return nil
 }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
-	return h.reduce()
+	for i := len(h.stk) - 1; i >= 0; i-- {
+		if _, ok := h.stk[i].(objectStub); ok {
+			o := make(Object, 0, len(h.stk)-i-1)
+			for j := i + 1; j < len(h.stk); j++ {
+				o = append(o, h.stk[j].(*Member))
+			}
+			h.stk = h.stk[:i]
+			return h.reduceValue(o)
+		}
+	}
+	panic("unbalanced EndObject")
 }
 
 func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
-	h.push(Array(nil))
+	h.push(arrayStub{})
 	return nil
 }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
-	return h.reduce()
+	for i := len(h.stk) - 1; i >= 0; i-- {
+		if _, ok := h.stk[i].(arrayStub); ok {
+			a := make(Array, len(h.stk)-i-1)
+			copy(a, h.stk[i+1:])
+			h.stk = h.stk[:i]
+			return h.reduceValue(a)
+		}
+	}
+	panic("unbalanced EndArray")
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	// The object this member belongs to is atop the stack.  Add a pointer to
-	// the new member into its collection eagerly, so that when reducing the
-	// stack after the value is known, we don't have to reduce multiple times.
-
-	mem := &Member{Key: Quoted{text: mem.S(h.intern(loc.Text()))}}
-	top := &h.stk[len(h.stk)-1]
-	obj := (*top).(Object)
-	*top = append(obj, mem)
-	h.push(mem)
+	key := Quoted{text: mem.S(h.intern(loc.Text()))}
+	h.push(&Member{Key: key})
 	return nil
 }
 
-func (h *parseHandler) EndMember(loc jtree.Anchor) error { return h.reduce() }
+func (h *parseHandler) EndMember(loc jtree.Anchor) error { return nil }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
 	switch loc.Token() {
@@ -249,3 +239,7 @@ func (noMoreInput) BeginMember(jtree.Anchor) error { return ErrExtraInput }
 func (noMoreInput) EndMember(jtree.Anchor) error   { return ErrExtraInput }
 func (noMoreInput) Value(jtree.Anchor) error       { return ErrExtraInput }
 func (noMoreInput) EndOfInput(jtree.Anchor)        {}
+
+type arrayStub struct{ Value }
+
+type objectStub struct{ Value }
