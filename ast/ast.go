@@ -184,6 +184,13 @@ func (n Number) Float() Float {
 // fractional parts, the fractions are truncated; otherwise Int panics if n is
 // not representable as a number.
 func (n Number) Int() Int {
+	if n.isInt {
+		v, err := mem.ParseInt(n.text, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		return Int(v)
+	}
 	v, err := mem.ParseFloat(n.text, 64)
 	if err != nil {
 		panic(err)
