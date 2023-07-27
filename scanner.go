@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math"
 	"strings"
 	"unicode"
 
@@ -199,28 +198,6 @@ func (s *Scanner) Location() Location {
 		First: LineCol{Line: s.pline + 1, Column: s.pcol},
 		Last:  LineCol{Line: s.eline + 1, Column: s.ecol},
 	}
-}
-
-// Int64 returns the text of the current token as an int64, or 0 if the text
-// cannot be parsed as an integer. If the current token is Integer this will
-// always succeed.
-func (s *Scanner) Int64() int64 {
-	v, err := mem.ParseInt(mem.B(s.buf.Bytes()), 10, 64)
-	if err == nil {
-		return v
-	}
-	return 0
-}
-
-// Float64 returns the text of the current token as a float64, or math.NaN if
-// the text cannot be parsed as a float. If the current token is Integer or
-// Number this will always succeed.
-func (s *Scanner) Float64() float64 {
-	v, err := mem.ParseFloat(mem.B(s.buf.Bytes()), 64)
-	if err == nil {
-		return v
-	}
-	return math.NaN()
 }
 
 func (s *Scanner) scanString(open rune) error {

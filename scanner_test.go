@@ -131,19 +131,10 @@ func TestScanner_decodeAs(t *testing.T) {
 	}
 
 	t.Run("Integer", func(t *testing.T) {
-		s := mustScan(t, `-15`, jtree.Integer)
-		if got := s.Int64(); got != -15 {
-			t.Errorf("Decode int64: got %v, want -15", got)
-		}
-		if got := s.Float64(); got != -15 {
-			t.Errorf("Decode float64: got %v, want -15", got)
-		}
+		mustScan(t, `-15`, jtree.Integer)
 	})
 	t.Run("Number", func(t *testing.T) {
-		s := mustScan(t, `3.25e-5`, jtree.Number)
-		if got := s.Float64(); got != 3.25e-5 {
-			t.Errorf("Decode float64: got %v, want 3.25e-5", got)
-		}
+		mustScan(t, `3.25e-5`, jtree.Number)
 	})
 	t.Run("Constants", func(t *testing.T) {
 		mustScan(t, `true`, jtree.True)
