@@ -50,3 +50,13 @@ func (n Interner) Intern(text []byte) string {
 	}
 	return s
 }
+
+// ParseInt behaves as strconv.ParseInt, but does not copy its argument.
+func ParseInt(text []byte, base, bitSize int) (int64, error) {
+	return mem.ParseInt(mem.B(text), base, bitSize)
+}
+
+// ParseFloat behaves as strconv.ParseFloat, but does not copy its argument.
+func ParseFloat(text []byte, bitSize int) (float64, error) {
+	return mem.ParseFloat(mem.B(text), bitSize)
+}
