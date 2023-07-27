@@ -28,7 +28,7 @@ func (p *Parser) AllowJWCC(ok bool) {
 
 // NewParser constructs a parser that consumes input from r.
 func NewParser(r io.Reader) *Parser {
-	h := &parseHandler{ic: make(map[string]string)}
+	h := &parseHandler{ic: make(jtree.Interner)}
 	return &Parser{h: h, st: jtree.NewStream(r)}
 }
 
@@ -88,18 +88,7 @@ func ParseSingle(r io.Reader) (Value, error) {
 // syntax trees for JSON values.
 type parseHandler struct {
 	stk []Value
-	ic  map[string]string
-}
-
-// intern returns an interned copy of text.
-func (h *parseHandler) intern(text []byte) string {
-	s, ok := h.ic[string(text)]
-	if ok {
-		return s
-	}
-	s = string(text)
-	h.ic[s] = s
-	return s
+	ic  jtree.Interner
 }
 
 func (h *parseHandler) reduceValue(v Value) error {
@@ -156,7 +145,7 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	key := Quoted{text: mem.S(h.intern(loc.Text()))}
+	key := Quoted{text: mem.S(h.ic.Intern(loc.Text()))}
 	h.push(&Member{Key: key})
 	return nil
 }
