@@ -158,14 +158,14 @@ func (a Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a)) }
 
 // A Number is a numeric literal.
 type Number struct {
-	text  mem.RO
+	text  []byte
 	isInt bool // whether the value was lexed as an integer
 }
 
 // JSON renders n as JSON text.
-func (n Number) JSON() string { return n.text.StringCopy() }
+func (n Number) JSON() string { return string(n.text) }
 
-func (n Number) String() string { return n.text.StringCopy() }
+func (n Number) String() string { return string(n.text) }
 
 // IsInt reports whether n is representable as an integer.
 func (n Number) IsInt() bool { return n.isInt }
@@ -173,7 +173,7 @@ func (n Number) IsInt() bool { return n.isInt }
 // Float returns a representation of n as a Float. It panics if n is not
 // representable as a floating-point value.
 func (n Number) Float() Float {
-	v, err := mem.ParseFloat(n.text, 64)
+	v, err := jtree.ParseFloat(n.text, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -185,13 +185,13 @@ func (n Number) Float() Float {
 // not representable as a number.
 func (n Number) Int() Int {
 	if n.isInt {
-		v, err := mem.ParseInt(n.text, 10, 64)
+		v, err := jtree.ParseInt(n.text, 10, 64)
 		if err != nil {
 			panic(err)
 		}
 		return Int(v)
 	}
-	v, err := mem.ParseFloat(n.text, 64)
+	v, err := jtree.ParseFloat(n.text, 64)
 	if err != nil {
 		panic(err)
 	}
