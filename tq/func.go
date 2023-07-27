@@ -30,3 +30,16 @@ func Match[T ast.Value](f func(T) bool) Query {
 		return e, nil, errors.New("value does not match")
 	})
 }
+
+// Map calls f on its input if it has the specified type; otherwise the query
+// fails.
+func Map[T, U ast.Value](f func(T) (U, error)) Query {
+	return Func(func(e Env, v ast.Value) (Env, ast.Value, error) {
+		w, ok := v.(T)
+		if ok {
+			u, err := f(w)
+			return e, u, err
+		}
+		return e, nil, errors.New("value does not match")
+	})
+}

@@ -60,8 +60,8 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"LastBook2", "$..book[(@.length-1)]",
-			tq.Recur("book", tq.Ref(tq.Func(func(e tq.Env, v ast.Value) (tq.Env, ast.Value, error) {
-				return e, ast.Int(v.(ast.Array).Len() - 1), nil
+			tq.Recur("book", tq.Ref(tq.Map(func(v ast.Array) (ast.Int, error) {
+				return ast.Int(v.Len() - 1), nil
 			}))),
 
 			`[{"category":"fiction","author":"J. R. R. Tolkien","title":"The Lord of the Rings","isbn":"0-395-19395-8","price":22.99}]`,
@@ -80,7 +80,7 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"FilterISBN", "$..book[?(@.isbn)]",
-			tq.Recur("book", tq.Select(tq.Match[ast.Object](func(v ast.Object) bool {
+			tq.Recur("book", tq.Select(tq.Match(func(v ast.Object) bool {
 				return v.Find("isbn") != nil
 			}))),
 
@@ -88,7 +88,7 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"CheapBooks", "$..book[?(@.price<10)]",
-			tq.Recur("book", tq.Select(tq.Match[ast.Object](func(v ast.Object) bool {
+			tq.Recur("book", tq.Select(tq.Match(func(v ast.Object) bool {
 				return v.Find("price").Value.(ast.Numeric).Float() < 10
 			}))),
 
