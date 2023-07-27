@@ -22,6 +22,12 @@ var (
 		"Run full compliance test")
 	hardTestURL = flag.String("compliance-test-repo", "https://github.com/nst/JSONTestSuite",
 		"Compliance test repository URL")
+
+	// The tests exercised here are those described by the article "Parsing JSON
+	// is a Minefield", https://seriot.ch/projects/parsing_json.html.
+	//
+	// The test explicitly checks the affirmative (y_*) and negative (n_*)
+	// cases, but does not exercise the indeterminate (i_*) cases.
 )
 
 func mustGetArchive(t *testing.T, zipFile string) *zip.Reader {
