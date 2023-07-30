@@ -145,7 +145,7 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	key := Quoted{text: mem.S(h.ic.Intern(loc.Text()))}
+	key := Quoted{Data: mem.S(h.ic.Intern(loc.Text()))}
 	h.push(&Member{Key: key})
 	return nil
 }
@@ -166,7 +166,7 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 func AnchorValue(loc jtree.Anchor) (Value, error) {
 	switch loc.Token() {
 	case jtree.String:
-		return Quoted{text: mem.B(loc.Copy())}, nil
+		return Quoted{Data: mem.B(loc.Copy())}, nil
 	case jtree.Integer:
 		return Number{text: loc.Copy(), isInt: true}, nil
 	case jtree.Number:

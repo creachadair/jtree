@@ -240,15 +240,15 @@ func (b Bool) JSON() string {
 func (b Bool) String() string { return b.JSON() }
 
 // A Quoted is a quoted string value.
-type Quoted struct{ text mem.RO }
+type Quoted struct{ Data mem.RO }
 
 // Unquote returns the unescaped text of the string.
 func (q Quoted) Unquote() String {
-	n := q.text.Len()
+	n := q.Data.Len()
 	if n == 0 {
 		return ""
 	}
-	dec, err := escape.Unquote(q.text.Slice(1, n-1))
+	dec, err := escape.Unquote(q.Data.Slice(1, n-1))
 	if err != nil {
 		panic(err)
 	}
@@ -259,7 +259,7 @@ func (q Quoted) Unquote() String {
 func (q Quoted) Len() int { return q.Unquote().Len() }
 
 // JSON returns the JSON encoding of q.
-func (q Quoted) JSON() string { return q.text.StringCopy() }
+func (q Quoted) JSON() string { return q.Data.StringCopy() }
 
 // Key returns the unescaped text of the string.
 func (q Quoted) Key() string { return string(q.Unquote()) }
@@ -273,7 +273,7 @@ type String string
 func (s String) Len() int { return len(s) }
 
 // Quote converts s into its quoted representation.
-func (s String) Quote() Quoted { return Quoted{text: escape.Quote(mem.S(string(s)))} }
+func (s String) Quote() Quoted { return Quoted{Data: escape.Quote(mem.S(string(s)))} }
 
 // JSON renders s as JSON text.
 func (s String) JSON() string { return string(jtree.Quote(string(s))) }
