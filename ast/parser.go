@@ -153,19 +153,30 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 func (h *parseHandler) EndMember(loc jtree.Anchor) error { return nil }
 
 func (h *parseHandler) Value(loc jtree.Anchor) error {
+	v, err := AnchorValue(loc)
+	if err != nil {
+		return err
+	}
+	h.reduceValue(v)
+	return nil
+}
+
+// AnchorValue constructs a Value from the specified anchor, or reports an
+// error if the anchor does not record a value.
+func AnchorValue(loc jtree.Anchor) (Value, error) {
 	switch loc.Token() {
 	case jtree.String:
-		return h.reduceValue(Quoted{text: mem.B(loc.Copy())})
+		return Quoted{text: mem.B(loc.Copy())}, nil
 	case jtree.Integer:
-		return h.reduceValue(Number{text: loc.Copy(), isInt: true})
+		return Number{text: loc.Copy(), isInt: true}, nil
 	case jtree.Number:
-		return h.reduceValue(Number{text: loc.Copy(), isInt: false})
+		return Number{text: loc.Copy(), isInt: false}, nil
 	case jtree.True, jtree.False:
-		return h.reduceValue(Bool(loc.Token() == jtree.True))
+		return Bool(loc.Token() == jtree.True), nil
 	case jtree.Null:
-		return h.reduceValue(Null)
+		return Null, nil
 	default:
-		return fmt.Errorf("unknown value %v", loc.Token())
+		return nil, fmt.Errorf("unknown value %v", loc.Token())
 	}
 }
 
