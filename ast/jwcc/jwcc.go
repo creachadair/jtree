@@ -154,46 +154,37 @@ func (h *parseHandler) Comment(loc jtree.Anchor) { h.pushComment(loc) }
 /*
   Attachment rules for comments:
 
-  Each token and grammar phrase is identified by its source span.
+  Comments are associated with each grammar phrase based on source location.
 
   The BEFORE comments of a phrase are all those ending before the start of its
-  span and starting after the end of the previous token.
+  span and starting at or after the end of the previous token.
 
-  The LINE comment of a phrase is a line-ending ("//") comment starting on the
-  same line as the end of the phrase.
+  The LINE comment of a phrase, if it exists, is the unique line-ending ("//")
+  comment starting on the same line as the end of the phrase.
 
   The END comments of a phrase are comments that occur at the end of the phrase
   that were not claimed by any other substructure of the phrase. This applies
-  to arrays, objects, and object members.
+  to arrays, objects, object members, and documents.
 
   When the parser encounters a comment token:
 
-  - If the top of the stack is a complete grammar phrase (not a comment, not an
-    object or array stub) and the new token is a line comment on the same line
-    a the end of that phrase, the new token is attached to the phrase as its
-    line comment.
+  - If the top of the stack is a complete grammar phrase (not a comment, object
+    stub, array stub, or incomplete object member) and the new token is a line
+    comment on the same line a the end of that phrase, the new token is
+    attached to the phrase as its line comment.
 
   - Otherwise, the comment is shifted.
 
-  When a non-comment token is shifted:
+  When a non-comment token is about to be shifted, the parser pops off all the
+  comments atop the stack, joins them into a group, and records this group as
+  the BEFORE comments of the token being shifted.
 
-  - The parser pops off all the comments atop the stack and joins them into a
-    group.
+  When an complete array, object, or object member is about to be reduced, the
+  parser pops of all the comments atop the stack, joins them into a group, and
+  records this group as the END comments of the phrase being reduced.
 
-  - If a grammar phrase remains atop the stack, and that phrase is not a
-    complete array or object, the parser records that this group is AFTER that
-    phrase.
-
-  - It records that the group is BEFORE the phrase beginning with the token
-    being shifted.
-
-  The subtleties about array and object phrases is to deal with comments that
-  occur alone at the end of an object or array body. When rendering, the AFTER
-  comments of an array should be rendered inside the value, before its closing
-  brace.
-
-  Similarly, we want a line comment after the END of the array or object to be
-  its line comment, not one just inside its opening brace.
+  Any trailing unconsumed comments remaining in the input after parsing the
+  value for a document are attached as its END comments.
 */
 
 // consumeComments removes all comments from the top of the stack to form a
