@@ -326,6 +326,8 @@ func (s *Scanner) scanComment(first rune) error {
 		_, end, err := s.readWhile(isNotLF)
 		if err == nil {
 			s.buf.WriteRune(end)
+			s.eline++
+			s.ecol = 0
 		} else if err != io.EOF {
 			return err
 		}
@@ -349,6 +351,14 @@ func (s *Scanner) scanComment(first rune) error {
 			s.buf.WriteRune(next)
 			if next == '/' {
 				s.tok = BlockComment
+				for _, b := range s.buf.Bytes() {
+					if b == '\n' {
+						s.eline++
+						s.ecol = 0
+					} else {
+						s.ecol++
+					}
+				}
 				return nil
 			}
 
