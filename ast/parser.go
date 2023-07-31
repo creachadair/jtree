@@ -147,8 +147,9 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	key := Quoted{data: mem.S(h.ic.Intern(loc.Text()))}
-	h.push(&Member{Key: key})
+	h.push(&Member{
+		Key: Quoted{data: mem.S(h.ic.Intern(loc.Text()))},
+	})
 	return nil
 }
 
