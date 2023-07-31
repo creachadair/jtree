@@ -18,7 +18,9 @@ type Parser struct {
 }
 
 // AllowJWCC configures p to accept (true) or reject (false) JWCC extensions
-// supporting comments and trailing commas.
+// supporting comments and trailing commas.  Setting this option to true does
+// not include comments in the result; it only instructs the parser to accept
+// input that includes comments and trailing commas.
 //
 // See: https://nigeltao.github.io/blog/2021/json-with-commas-comments.html
 func (p *Parser) AllowJWCC(ok bool) {
