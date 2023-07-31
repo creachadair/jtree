@@ -240,15 +240,28 @@ func (b Bool) JSON() string {
 func (b Bool) String() string { return b.JSON() }
 
 // A Quoted is a quoted string value.
-type Quoted struct{ Data mem.RO }
+type Quoted struct{ data mem.RO }
+
+// NewQuoted constructs a new Quoted value from the given string or byte slice.
+// It will panic if v is not of a suitable type.
+func NewQuoted(v any) Quoted {
+	switch t := v.(type) {
+	case string:
+		return Quoted{data: mem.S(t)}
+	case []byte:
+		return Quoted{data: mem.B(t)}
+	default:
+		panic("invalid value for Quoted")
+	}
+}
 
 // Unquote returns the unescaped text of the string.
 func (q Quoted) Unquote() String {
-	n := q.Data.Len()
+	n := q.data.Len()
 	if n == 0 {
 		return ""
 	}
-	dec, err := escape.Unquote(q.Data.Slice(1, n-1))
+	dec, err := escape.Unquote(q.data.Slice(1, n-1))
 	if err != nil {
 		panic(err)
 	}
@@ -259,7 +272,7 @@ func (q Quoted) Unquote() String {
 func (q Quoted) Len() int { return q.Unquote().Len() }
 
 // JSON returns the JSON encoding of q.
-func (q Quoted) JSON() string { return q.Data.StringCopy() }
+func (q Quoted) JSON() string { return q.data.StringCopy() }
 
 // Key returns the unescaped text of the string.
 func (q Quoted) Key() string { return string(q.Unquote()) }
@@ -273,7 +286,7 @@ type String string
 func (s String) Len() int { return len(s) }
 
 // Quote converts s into its quoted representation.
-func (s String) Quote() Quoted { return Quoted{Data: escape.Quote(mem.S(string(s)))} }
+func (s String) Quote() Quoted { return Quoted{data: escape.Quote(mem.S(string(s)))} }
 
 // JSON renders s as JSON text.
 func (s String) JSON() string { return string(jtree.Quote(string(s))) }
