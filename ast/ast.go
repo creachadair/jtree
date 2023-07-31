@@ -120,7 +120,7 @@ func ToValue(v any) Value {
 }
 
 // JSON renders the member as JSON text.
-func (m *Member) JSON() string {
+func (m Member) JSON() string {
 	k := jtree.Quote(m.Key.Key()) // render as a JSON string even if it's not
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
@@ -130,7 +130,7 @@ func (m *Member) JSON() string {
 	return string(buf)
 }
 
-func (m *Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
+func (m Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
 
 // An Array is a sequence of values.
 type Array []Value
