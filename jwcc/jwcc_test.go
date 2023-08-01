@@ -1,6 +1,7 @@
 package jwcc_test
 
 import (
+	"errors"
 	"flag"
 	"io"
 	"os"
@@ -122,6 +123,10 @@ func TestPath(t *testing.T) {
 			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
 			false,
 		},
+
+		{"FuncArray", []any{"o", testPathFunc}, jwcc.ToValue(2), false},
+		{"FuncObj", []any{"xyz", testPathFunc}, jwcc.ToValue(3), false},
+		{"FuncWrong", []any{"xyz", "d", testPathFunc}, doc.Value, true},
 	}
 	opt := cmp.AllowUnexported(
 		ast.Quoted{},
@@ -149,5 +154,16 @@ func TestPath(t *testing.T) {
 				t.Logf("Found %s OK", got.JSON())
 			}
 		})
+	}
+}
+
+func testPathFunc(v jwcc.Value) (jwcc.Value, error) {
+	switch t := v.(type) {
+	case *jwcc.Array:
+		return jwcc.ToValue(len(t.Values)), nil
+	case *jwcc.Object:
+		return jwcc.ToValue(len(t.Members)), nil
+	default:
+		return nil, errors.New("not a thing with length")
 	}
 }

@@ -16,6 +16,13 @@ import (
 // If a path element is an integer, the corresponding value must be an array,
 // and the integer resolves to an index in the array. Negative indices count
 // backward from the end of the array (-1 is last, -2 second last, etc.).
+//
+// If a path element is a function, the function is executed and its result
+// becomes the next object in the sequence. The function must have a signature
+//
+//	func(jwcc.Value) (jwcc.Value, error)
+//
+// If the function fails, the traversal reports its error.
 func Path(v Value, path ...any) (Value, error) {
 	cur := v
 	for _, elt := range path {
@@ -42,6 +49,12 @@ func Path(v Value, path ...any) (Value, error) {
 			default:
 				return v, fmt.Errorf("cannot traverse %T with %v", cur, elt)
 			}
+		case func(Value) (Value, error):
+			next, err := t(cur)
+			if err != nil {
+				return v, err
+			}
+			cur = next
 		default:
 			return nil, fmt.Errorf("invalid path element %T", elt)
 		}
