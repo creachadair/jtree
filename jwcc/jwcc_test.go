@@ -91,6 +91,17 @@ func TestBasic(t *testing.T) {
 		t.Errorf("Incorrect JSON (-want, +got):\n%s", diff)
 	}
 
+	p, err := jwcc.Path(d.Value, "p")
+	if err != nil {
+		t.Errorf("Path: %v", err)
+	} else {
+		p.Comments().Before = []string{
+			"// All you are about to do",
+			"// has come true",
+			"// in your dreams",
+		}
+	}
+
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
 	}
@@ -122,7 +133,7 @@ func TestPath(t *testing.T) {
 		},
 		{"ArrayRange", []any{"o", 25}, doc.Value, true},
 		{"ObjPath", []any{"xyz", "d"},
-			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
+			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d"),
 			false,
 		},
 
@@ -140,7 +151,6 @@ func TestPath(t *testing.T) {
 		jwcc.Object{},
 	)
 	for _, tc := range tests {
-
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := jwcc.Path(doc.Value, tc.path...)
 			if err != nil {
@@ -160,6 +170,7 @@ func TestPath(t *testing.T) {
 }
 
 func testPathFunc(v jwcc.Value) (jwcc.Value, error) {
+
 	switch t := v.(type) {
 	case *jwcc.Array:
 		return jwcc.ToValue(len(t.Values)), nil

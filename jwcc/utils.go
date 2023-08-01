@@ -28,6 +28,9 @@ import (
 func Path(v Value, path ...any) (Value, error) {
 	cur := v
 	for _, elt := range path {
+		if m, ok := cur.(*Member); ok {
+			cur = m.Value
+		}
 		switch t := elt.(type) {
 		case string:
 			switch c := cur.(type) {
@@ -36,7 +39,7 @@ func Path(v Value, path ...any) (Value, error) {
 				if m == nil {
 					return v, fmt.Errorf("key %q not found", t)
 				}
-				cur = m.Value
+				cur = m
 			default:
 				return v, fmt.Errorf("cannot traverse %T with %q", cur, elt)
 			}
