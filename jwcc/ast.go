@@ -17,6 +17,14 @@ type Array struct {
 
 func (a *Array) Comments() *Comments { return &a.com }
 
+func (a *Array) Undecorate() ast.Value {
+	out := make(ast.Array, len(a.Values))
+	for i, v := range a.Values {
+		out[i] = v.Undecorate()
+	}
+	return out
+}
+
 func (a Array) JSON() string {
 	if len(a.Values) == 0 {
 		return "[]"
@@ -43,6 +51,8 @@ type Datum struct {
 
 func (d *Datum) Comments() *Comments { return &d.com }
 
+func (d *Datum) Undecorate() ast.Value { return d.Value }
+
 // A Document is a single value with optional trailing comments.
 type Document struct {
 	Value
@@ -51,6 +61,8 @@ type Document struct {
 }
 
 func (d *Document) Comments() *Comments { return &d.com }
+
+func (d *Document) Undecorate() ast.Value { return d.Value.Undecorate() }
 
 // A Member is a key-value pair in an object.
 type Member struct {
@@ -61,6 +73,10 @@ type Member struct {
 }
 
 func (m *Member) Comments() *Comments { return &m.com }
+
+func (m *Member) Undecorate() ast.Value {
+	return &ast.Member{Key: m.Key, Value: m.Value.Undecorate()}
+}
 
 func (m Member) JSON() string {
 	k := jtree.Quote(m.Key.Key())
@@ -82,6 +98,14 @@ type Object struct {
 }
 
 func (o *Object) Comments() *Comments { return &o.com }
+
+func (o *Object) Undecorate() ast.Value {
+	out := make(ast.Object, len(o.Members))
+	for i, m := range o.Members {
+		out[i] = m.Undecorate().(*ast.Member)
+	}
+	return out
+}
 
 func (o *Object) Find(key string) *Member {
 	for _, m := range o.Members {

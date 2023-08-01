@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree/jwcc"
+	"github.com/google/go-cmp/cmp"
 )
 
 var outputFile = flag.String("output", "", "Write formatted output to this file")
@@ -71,6 +72,14 @@ func TestBasic(t *testing.T) {
 	d, err := jwcc.Parse(input)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
+	}
+	u := d.Undecorate()
+	djson := d.JSON()
+	t.Logf("Plain JSON: %s", djson)
+
+	ujson := u.JSON()
+	if diff := cmp.Diff(djson, ujson); diff != "" {
+		t.Errorf("Incorrect JSON (-want, +got):\n%s", diff)
 	}
 
 	if err := jwcc.Format(w, d); err != nil {

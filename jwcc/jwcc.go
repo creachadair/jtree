@@ -18,6 +18,9 @@ type Value interface {
 
 	// Comments returns the comments annotating this value.
 	Comments() *Comments
+
+	// Convert this value to an undecorated ast.Value.
+	Undecorate() ast.Value
 }
 
 // Comments records the comments associated with a value.
