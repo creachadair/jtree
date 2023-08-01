@@ -13,6 +13,8 @@ type Formatter struct{}
 
 func (f Formatter) indent() string { return "  " }
 
+func (f Formatter) maxLineItems() int { return 3 }
+
 // Format renders a pretty-printed representation of v to w with default
 // settings.
 func Format(w io.Writer, v Value) error {
@@ -181,7 +183,7 @@ func (f Formatter) isBoring(v Value) bool {
 			return false
 		}
 		for i, v := range t.Values {
-			if !f.isBoring(v) || i >= 3 {
+			if !f.isBoring(v) || i >= f.maxLineItems() {
 				return false
 			}
 		}
@@ -189,13 +191,13 @@ func (f Formatter) isBoring(v Value) bool {
 	case *Datum:
 		return t.Comments().IsEmpty()
 	case *Member:
-		return t.Comments().IsEmpty() && f.isBoring(t.Value)
+		return len(com.Before) == 0 && len(com.End) == 0 && f.isBoring(t.Value)
 	case *Object:
 		if len(com.Before) != 0 || len(com.End) != 0 {
 			return false
 		}
 		if len(t.Members) == 1 {
-			return f.isBoring(t.Members[0])
+			return t.Members[0].Comments().IsEmpty() && f.isBoring(t.Members[0].Value)
 		}
 		return len(t.Members) == 0
 	default:
