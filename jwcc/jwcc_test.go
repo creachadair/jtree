@@ -7,11 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/creachadair/jtree/ast"
 	"github.com/creachadair/jtree/jwcc"
 	"github.com/google/go-cmp/cmp"
+
+	_ "embed"
 )
 
 var outputFile = flag.String("output", "", "Write formatted output to this file")
+
+//go:embed testdata/input.jwcc
+var testJWCC string
 
 const basicInput = `
 
@@ -84,5 +90,64 @@ func TestBasic(t *testing.T) {
 
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
+	}
+}
+
+func TestPath(t *testing.T) {
+	doc, err := jwcc.Parse(strings.NewReader(testJWCC))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		path []any
+		want jwcc.Value
+		fail bool
+	}{
+		{"NilInput", nil, doc.Value, false},
+		{"NoMatch", []any{"nonesuch"}, doc.Value, true},
+		{"WrongType", []any{11}, doc.Value, true},
+
+		{"ArrayPos", []any{"list", 1},
+			doc.Value.(*jwcc.Object).Find("list").Value.(*jwcc.Array).Values[1],
+			false,
+		},
+		{"ArrayNeg", []any{"list", -1},
+			doc.Value.(*jwcc.Object).Find("list").Value.(*jwcc.Array).Values[1],
+			false,
+		},
+		{"ArrayRange", []any{"o", 25}, doc.Value, true},
+		{"ObjPath", []any{"xyz", "d"},
+			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
+			false,
+		},
+	}
+	opt := cmp.AllowUnexported(
+		ast.Quoted{},
+		ast.Number{},
+		jwcc.Array{},
+		jwcc.Comments{},
+		jwcc.Datum{},
+		jwcc.Member{},
+		jwcc.Object{},
+	)
+	for _, tc := range tests {
+
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := jwcc.Path(doc.Value, tc.path...)
+			if err != nil {
+				if tc.fail {
+					t.Logf("Got expected error: %v", err)
+				} else {
+					t.Fatalf("Path: unexpected error: %v", err)
+				}
+			}
+			if diff := cmp.Diff(got, tc.want, opt); diff != "" {
+				t.Errorf("Wrong result (-got, +want):\n%s", diff)
+			} else if err == nil {
+				t.Logf("Found %s OK", got.JSON())
+			}
+		})
 	}
 }

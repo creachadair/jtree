@@ -163,3 +163,7 @@ type objectStub struct {
 }
 
 func (o *objectStub) Comments() *Comments { return &o.com }
+
+// ToValue converts a string, int, float, bool, nil, or ast.Value into a
+// jwcc.Value. It panics if v does not have one of those types.
+func ToValue(v any) Value { return &Datum{Value: ast.ToValue(v)} }

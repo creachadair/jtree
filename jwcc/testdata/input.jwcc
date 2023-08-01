@@ -1,0 +1,27 @@
+/*
+  This is a test input file in JWCC format.
+ */
+{
+  "list": [
+     {"x": 1},  // the first x
+     {"x": 2},  // the second x
+
+     // about the x values
+  ],
+
+  // y hello there
+  "y": {"hello": "there"},
+
+  // o hi yourself
+  "o": ["hi", "yourself"],
+
+  "xyz" : { // is it true
+     "p": true,
+     "d": true, // dammit
+     "q": false,
+  },
+
+  /* yes, trailing commas are fine */
+}
+
+// This comment is after the end of the main object.
