@@ -60,7 +60,7 @@ func TestPath(t *testing.T) {
 		},
 		{"ArrayRange", []any{"o", 25}, v, true},
 		{"ObjPath", []any{"xyz", "d"},
-			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d").Value,
+			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d"),
 			false,
 		},
 
