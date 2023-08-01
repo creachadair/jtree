@@ -2,45 +2,55 @@ package jwcc
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestBasic(t *testing.T) {
-	input := strings.NewReader(`// This is a JWCC document
-{
-  // Hello, I am an object member.
-  "name": ["value"], // and a trailing comment
-  "list": [
-     // whatever else you may think
-     // this is pretty cool
-     true,
-     false,
-     null,
-   ],  // is it me or is this stinky
+	input := strings.NewReader(`
 
-   "num": /* stuff */ 12.5 /* nonsense */,
+// This is a JWCC document
+// everyone loves those
+
+{  // Hello, I am an object member.
+  "name": ["value",
+"village",
+], // and a trailing comment
+ "list": [     // whatever else you may think
+     // this is pretty cool
+    true, // a
+  false, // b
+   null, // c
+ {"pea":"brain", /*fool*/
+},
+  "soup" // nuts
+ ],  // is it me or is this stinky
+// hey all
+ "num":
+ /* stuff */ 12.5 /* nonsense */,
+"p":"q",
+   //"x": 3,
 
    "horse":
        "pucky" // shenanigans
   , // rumpus
    // stuff at the end
-}
-/*
-  Various additional nonsense following the main document
-  which will get bunged on after.
-*/
+}/* Various additional nonsense following the main document
+  which will get bunged on after.*/
+
+
+
 
 `)
 	d, err := Parse(input)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	t.Log(input)
-	walk(t, d, "")
-	t.Log(d.JSON())
+	Format(os.Stdout, d)
 }
 
+//lint:ignore U1000 WIP
 func walk(t *testing.T, v Value, p string) {
 	t.Logf("%s%T", p, v)
 	c := v.Comments()

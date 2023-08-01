@@ -114,18 +114,17 @@ func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o.Mem
 // commentStub is a stack placeholder for a comment seen during parsing.
 // This type does not appear in a completed AST.
 type commentStub struct {
-	ast.Value
+	Value // placeholder, not used
 
-	text string
-	span jtree.Span
+	text        string
+	first, last int
 }
-
-func (commentStub) Comments() *Comments { return nil }
 
 // arrayStub is a stack placeholder for an incomplete array during parsing.
 // This type does not appear in a completed AST.
 type arrayStub struct {
-	ast.Value
+	Value // placeholder, not used
+
 	com Comments
 }
 
@@ -134,7 +133,8 @@ func (a *arrayStub) Comments() *Comments { return &a.com }
 // objectStub is a stack placeholder for an incomplete object during parsing.
 // This type does not appear in a completed AST.
 type objectStub struct {
-	ast.Value
+	Value // placeholder, not used
+
 	com Comments
 }
 

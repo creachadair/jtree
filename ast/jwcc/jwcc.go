@@ -12,6 +12,7 @@ import (
 )
 
 // A Value is a JSON value optionally decorated with comments.
+// The concrete type is one *Array, *Datum, *Document, or *Object.
 type Value interface {
 	ast.Value
 
@@ -20,12 +21,14 @@ type Value interface {
 }
 
 // Comments records the comments associated with a value.
+// All values have a comment record; use IsEmpty to test whether the value has
+// any actual comment text.
 type Comments struct {
 	Before []string
 	Line   string
 	End    []string
 
-	eline int
+	first, last int
 }
 
 // IsEmpty reports whether c is "empty", meaning it has no non-empty comment
@@ -53,7 +56,8 @@ func Parse(r io.Reader) (*Document, error) {
 	h.stk[0] = d
 	if !h.eof {
 		err := st.ParseOne(h)
-		d.Comments().End = h.consumeComments()
+		_, com := h.consumeComments()
+		d.Comments().End = com
 		if err != nil && !errors.Is(err, io.EOF) {
 			return d, errors.Join(ast.ErrExtraInput, err)
 		}
@@ -74,7 +78,7 @@ func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
-	com := h.consumeComments() // trailing comments at the end of the object
+	_, com := h.consumeComments() // trailing comments at the end of the object
 	for i := len(h.stk) - 1; i >= 0; i-- {
 		if stub, ok := h.stk[i].(*objectStub); ok {
 			stub.Comments().End = com
@@ -100,7 +104,7 @@ func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
-	com := h.consumeComments()
+	_, com := h.consumeComments()
 	for i := len(h.stk) - 1; i >= 0; i-- {
 		if stub, ok := h.stk[i].(*arrayStub); ok {
 			stub.Comments().End = com
@@ -120,7 +124,10 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	// Note: Comments between the key and the colon are offset to above the key.
+	// Note: Because we have not shifted the key, the stack already has all the
+	// comments that occurred in the input before the colon separator.
+	// We move them all above the key when recording.
+
 	h.pushValue(loc, &Member{
 		Key: ast.NewQuoted(h.ic.Intern(loc.Text())),
 	})
@@ -128,13 +135,15 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) EndMember(loc jtree.Anchor) error {
-	com := h.consumeComments()
+	// Stack: ... [incomplete-member] [value] [comment...]
+	_, com := h.consumeComments()
 	n := len(h.stk)
 	m := h.stk[n-2].(*Member)
 	m.Comments().End = com
-	m.Comments().eline = loc.Location().Last.Line
+	m.Comments().last = loc.Location().Last.Line
 	m.Value = h.stk[n-1]
 	h.stk = h.stk[:n-1]
+	// Stack: ... [complete-member: value]
 	return nil
 }
 
@@ -188,26 +197,51 @@ func (h *parseHandler) Comment(loc jtree.Anchor) { h.pushComment(loc) }
 */
 
 // consumeComments removes all comments from the top of the stack to form a
-// group. It returns nil if no comments were found atop the stack.
-func (h *parseHandler) consumeComments() []string {
+// group. It returns nil if no comments were found atop the stack, otherwise
+// it returns the last line of the group.
+func (h *parseHandler) consumeComments() (int, []string) {
 	var grp []string
 
-	i := len(h.stk) - 1
+	// As we scan comments, keep track of gaps between runs of comment lines and
+	// inject blanks to preserve them.
+	//
+	// For example:
+	//
+	//    // one
+	//    // two
+	//
+	//    // three
+	//
+	// returns ["// one", "// two", "", "// three"].
+
+	i, prev, last := len(h.stk)-1, -1, 0
 	for i >= 0 {
 		c, ok := h.stk[i].(commentStub)
 		if !ok {
 			break
 		}
+
+		// Record the last line of the topmost comment.
+		if len(grp) == 0 {
+			last = c.last
+		}
+
+		// If there is a gap, inject a blank..
+		if c.last < prev {
+			grp = append(grp, "")
+		}
+		prev = c.first
+
 		grp = append(grp, c.text)
 		i--
 	}
 	if len(grp) == 0 {
-		return nil // no comments found
+		return 0, nil // no comments found
 	}
 
 	h.stk = h.stk[:i+1] // pop
 	slices.Reverse(grp)
-	return grp
+	return last, grp
 }
 
 // pushComment handles a comment token by either adjoining it to the grammar
@@ -215,14 +249,25 @@ func (h *parseHandler) consumeComments() []string {
 func (h *parseHandler) pushComment(loc jtree.Anchor) {
 	if i := len(h.stk) - 1; i >= 0 && loc.Token() == jtree.LineComment {
 		switch h.stk[i].(type) {
-		case *arrayStub, *objectStub:
-			// skip; we don't attach line comments to these
-		case commentStub:
-			// not a commentable value
+		case *arrayStub, *objectStub, commentStub:
+			// skip; we don't attach line comments to internal stubs
 		default:
-			if t, ok := h.stk[i].(*Member); !ok || t.Value != nil {
-				c := h.stk[i].Comments()
-				if c.eline == loc.Location().First.Line { // same line
+			c := h.stk[i].Comments()
+			if c.last == loc.Location().First.Line { // same line
+				if m, ok := h.stk[i].(*Member); ok {
+					if m.Value == nil {
+						// The member is not complete, don't claim this comment.
+					} else if mvc := m.Value.Comments(); mvc.Line != "" {
+						// The member value already has a line comment; move that
+						// comment to the member instead, and stack the new comment.
+						c.Line = mvc.Line
+						mvc.Line = ""
+					} else {
+						c.Line = string(loc.Text())
+						return
+					}
+					// fall through and shift the comment
+				} else {
 					// Attach this as the line comment of the phrase.
 					c.Line = string(loc.Text())
 					return
@@ -230,18 +275,25 @@ func (h *parseHandler) pushComment(loc jtree.Anchor) {
 			}
 		}
 	}
+	com := loc.Location()
 	h.stk = append(h.stk, commentStub{
-		text: string(loc.Text()),
-		span: loc.Location().Span,
+		text:  string(loc.Text()),
+		first: com.First.Line,
+		last:  com.Last.Line,
 	})
 }
 
 // pushValue pushes v atop the stack after handling any pending comments.
 func (h *parseHandler) pushValue(loc jtree.Anchor, v Value) {
-	com := h.consumeComments() // do this first, it may update the stack
+	last, com := h.consumeComments() // do this first, it may update the stack
 	c := v.Comments()
+	vp := loc.Location()
+	if len(com) != 0 && last < vp.First.Line {
+		com = append(com, "")
+	}
 	c.Before = com
-	c.eline = loc.Location().Last.Line
+	c.first = vp.First.Line
+	c.last = vp.Last.Line
 
 	// Otherwise, accumulate the value normally.
 	h.stk = append(h.stk, v)
