@@ -1,3 +1,5 @@
+// Copyright (C) 2023 Michael J. Fromberger. All Rights Reserved.
+
 package tq
 
 import (

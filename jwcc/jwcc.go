@@ -1,3 +1,5 @@
+// Copyright (C) 2023 Michael J. Fromberger. All Rights Reserved.
+
 // Package jwcc implements a parser for JSON With Commas and Comments (JWCC) as
 // defined by https://nigeltao.github.io/blog/2021/json-with-commas-comments.html
 package jwcc

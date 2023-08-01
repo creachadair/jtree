@@ -1,3 +1,5 @@
+// Copyright (C) 2023 Michael J. Fromberger. All Rights Reserved.
+
 // Package tq implements structural traversal queries over JSON values.
 //
 // A query describes a syntactic substructure of a JSON document, such as an
