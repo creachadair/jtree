@@ -14,6 +14,7 @@ import (
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/jtree/jwcc"
 	"github.com/tailscale/hujson"
 )
 
@@ -122,6 +123,17 @@ func BenchmarkScanner(b *testing.B) {
 		b.Run("ParseAST", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_, err := ast.Parse(bytes.NewReader(input))
+				if err != nil {
+					b.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	})
+
+	b.Run("JWCC", func(b *testing.B) {
+		b.Run("Parse", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := jwcc.Parse(bytes.NewReader(input))
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
 				}
