@@ -5,6 +5,8 @@ package jwcc
 import (
 	"fmt"
 	"strings"
+
+	"github.com/creachadair/jtree/ast"
 )
 
 // Path traverses a sequential path through the structure of a value starting
@@ -89,4 +91,27 @@ func CleanComments(coms ...string) []string {
 		}
 	}
 	return out
+}
+
+// Decorate converts an ast.Value into an equivalent jwcc.Value.
+func Decorate(v ast.Value) Value {
+	if v == nil {
+		return nil
+	}
+	switch t := v.(type) {
+	case ast.Object:
+		o := &Object{Members: make([]*Member, len(t))}
+		for i, m := range t {
+			o.Members[i] = &Member{Key: m.Key, Value: Decorate(m.Value)}
+		}
+		return o
+	case ast.Array:
+		a := &Array{Values: make([]Value, len(t))}
+		for i, v := range t {
+			a.Values[i] = Decorate(v)
+		}
+		return a
+	default:
+		return &Datum{Value: v}
+	}
 }

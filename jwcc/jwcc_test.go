@@ -3,8 +3,10 @@
 package jwcc_test
 
 import (
+	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -195,4 +197,26 @@ func TestCleanComments(t *testing.T) {
 			t.Errorf("CleanComments %+q (-got, +want):%s", tc.input, diff)
 		}
 	}
+}
+
+func TestDecorate(t *testing.T) {
+	in := ast.Array{
+		ast.ToValue("foo"),
+		ast.ToValue(1),
+		ast.ToValue(true),
+		ast.ToValue(nil),
+	}
+	out, ok := jwcc.Decorate(in).(*jwcc.Array)
+	if !ok {
+		t.Fatalf("Incorrect type: %T", out)
+	}
+	if got, want := out.JSON(), in.JSON(); got != want {
+		t.Errorf("Decorated JSON: got %q, want %q", got, want)
+	}
+	for i, v := range out.Values {
+		v.Comments().Line = fmt.Sprintf("comment %d", i+1)
+	}
+	var buf bytes.Buffer
+	jwcc.Format(&buf, out)
+	t.Logf("Result:\n%s", buf.String())
 }
