@@ -129,9 +129,14 @@ func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) 
 		}
 
 		f.indentComments(w, m.Comments().Before, mdent, false)
-
 		fmt.Fprint(w, mdent, m.Key.JSON(), f.objSep(m.Value))
-		f.formatValue(w, m.Value, "", mdent, false)
+
+		if len(m.Value.Comments().Before) == 0 {
+			f.formatValue(w, m.Value, "", mdent, false)
+		} else {
+			io.WriteString(w, "\n")
+			f.formatValue(w, m.Value, mdent, mdent, false)
+		}
 
 		// Render a line comment (if there is one) outside the comma.
 		if ln := m.Comments().Line; ln != "" {

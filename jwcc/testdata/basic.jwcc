@@ -32,6 +32,13 @@
    }, // the cat
    //"x": 3,
 
+   "peevish":
+     /* poptarts
+         */
+     [ 1, 3,
+       // b'bye
+     ], // hark
+
    "horse":
        "pucky" // shenanigans
   , // rumpus

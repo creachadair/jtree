@@ -7,6 +7,7 @@ package jwcc
 import (
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
@@ -251,6 +252,9 @@ func (h *parseHandler) consumeComments() (int, []string) {
 	if len(grp) == 0 {
 		return 0, nil // no comments found
 	}
+	if strings.HasSuffix(grp[len(grp)-1], "\n") {
+		last-- // compensate for the newline at the end of a line comment
+	}
 
 	h.stk = h.stk[:i+1] // pop
 	slices.Reverse(grp)
@@ -301,7 +305,7 @@ func (h *parseHandler) pushValue(loc jtree.Anchor, v Value) {
 	last, com := h.consumeComments() // do this first, it may update the stack
 	c := v.Comments()
 	vp := loc.Location()
-	if len(com) != 0 && last < vp.First.Line {
+	if len(com) != 0 && last+1 < vp.First.Line {
 		com = append(com, "")
 	}
 	c.Before = com
