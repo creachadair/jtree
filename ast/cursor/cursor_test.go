@@ -78,7 +78,7 @@ func TestCursor(t *testing.T) {
 			true,
 		},
 	}
-	opt := cmp.AllowUnexported(ast.Quoted{}, testutil.RawNumberType)
+	opt := cmp.AllowUnexported(ast.String("").Quote(), testutil.RawNumberType)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			c := cursor.New(v).Down(tc.path...)

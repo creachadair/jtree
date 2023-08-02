@@ -142,9 +142,7 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// comments that occurred in the input before the colon separator.
 	// We move them all above the key when recording.
 
-	h.pushValue(loc, &Member{
-		Key: ast.NewQuoted(h.ic.Intern(loc.Text())),
-	})
+	h.pushValue(loc, &Member{Key: ast.Quoted(h.ic.Intern(loc.Text()))})
 	return nil
 }
 

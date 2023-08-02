@@ -304,8 +304,8 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	switch t := w.(type) {
 	case ast.Number:
 		return nthQuery(int(t.Int())).eval(qs, v)
-	case ast.Keyer:
-		return objKey(t.Key()).eval(qs, v)
+	case ast.Text:
+		return objKey(t.String()).eval(qs, v)
 	}
 	return qs, nil, fmt.Errorf("value %T is not a valid reference", w)
 }
