@@ -131,7 +131,22 @@ func BenchmarkScanner(b *testing.B) {
 	})
 
 	b.Run("JWCC", func(b *testing.B) {
-		b.Run("Parse", func(b *testing.B) {
+		b.Run("ParseAST", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				p := ast.NewParser(bytes.NewReader(input))
+				p.AllowJWCC(true)
+				for {
+					_, err := p.Parse()
+					if err == io.EOF {
+						break
+					} else if err != nil {
+						b.Fatalf("Unexpected error: %v", err)
+					}
+				}
+			}
+		})
+
+		b.Run("ParseJWCC", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_, err := jwcc.Parse(bytes.NewReader(input))
 				if err != nil {
