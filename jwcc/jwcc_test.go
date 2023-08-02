@@ -65,6 +65,12 @@ func TestBasic(t *testing.T) {
 		}
 	}
 
+	o := d.Value.(*jwcc.Object)
+	m := jwcc.Field("large", "snakes")
+	m.Comments().Before = []string{"Listen, I have had it up to here\nwith all these"}
+	m.Comments().Line = "/*in this aircraft"
+	o.Members = append(o.Members, m)
+
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
 	}

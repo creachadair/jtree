@@ -94,6 +94,12 @@ func (m Member) JSON() string {
 
 func (m Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
 
+// Field constructs an object member with the given key and value.
+// The value must be a string, int, float, bool, nil, or jwcc.Value.
+func Field(key string, value any) *Member {
+	return &Member{Key: ast.String(key), Value: ToValue(value)}
+}
+
 // An Object is a collection of key-value members.
 type Object struct {
 	Members []*Member
@@ -170,4 +176,9 @@ func (o *objectStub) Comments() *Comments { return &o.com }
 
 // ToValue converts a string, int, float, bool, nil, or ast.Value into a
 // jwcc.Value. It panics if v does not have one of those types.
-func ToValue(v any) Value { return &Datum{Value: ast.ToValue(v)} }
+func ToValue(v any) Value {
+	if t, ok := v.(Value); ok {
+		return t
+	}
+	return &Datum{Value: ast.ToValue(v)}
+}
