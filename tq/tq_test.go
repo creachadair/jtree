@@ -400,7 +400,7 @@ func TestQuery(t *testing.T) {
 			tq.Func(func(e tq.Env, in ast.Value) (tq.Env, ast.Value, error) {
 				// Verify that we got the right input.
 				const wantFirst = 556
-				n := in.(ast.Object).Find("episode").Value.(ast.Numeric).Int()
+				n := in.(ast.Object).Find("episode").Value.(ast.Number).Int()
 				if n != wantFirst {
 					t.Errorf("Wrong input: got %v, want %v", n, wantFirst)
 				}
@@ -426,7 +426,7 @@ func TestQuery(t *testing.T) {
 		})
 
 		const wantOut = 547
-		if got := v.(ast.Numeric).Int(); got != wantOut {
+		if got := v.(ast.Number).Int(); got != wantOut {
 			t.Errorf("Result: got %v, want %v", v, wantOut)
 		}
 	})

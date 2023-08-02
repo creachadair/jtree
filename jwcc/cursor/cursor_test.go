@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/jtree/internal/testutil"
 	"github.com/creachadair/jtree/jwcc"
 	"github.com/creachadair/jtree/jwcc/cursor"
 	"github.com/google/go-cmp/cmp"
@@ -60,7 +61,7 @@ func TestCursor(t *testing.T) {
 	}
 	opt := cmp.AllowUnexported(
 		ast.Quoted{},
-		ast.Number{},
+		testutil.RawNumberType,
 		jwcc.Array{},
 		jwcc.Comments{},
 		jwcc.Datum{},

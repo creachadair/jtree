@@ -17,9 +17,8 @@ import (
 )
 
 var (
-	_ ast.Numeric = ast.Number{}
-	_ ast.Numeric = ast.Int(0)
-	_ ast.Numeric = ast.Float(0)
+	_ ast.Number = ast.Int(0)
+	_ ast.Number = ast.Float(0)
 )
 
 type testValue int

@@ -9,6 +9,7 @@ import (
 
 	"github.com/creachadair/jtree/ast"
 	"github.com/creachadair/jtree/ast/cursor"
+	"github.com/creachadair/jtree/internal/testutil"
 	"github.com/google/go-cmp/cmp"
 
 	_ "embed"
@@ -77,7 +78,7 @@ func TestCursor(t *testing.T) {
 			true,
 		},
 	}
-	opt := cmp.AllowUnexported(ast.Quoted{}, ast.Number{})
+	opt := cmp.AllowUnexported(ast.Quoted{}, testutil.RawNumberType)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			c := cursor.New(v).Down(tc.path...)

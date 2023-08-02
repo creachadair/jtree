@@ -91,7 +91,7 @@ func TestJSONPathInputs(t *testing.T) {
 		{
 			"CheapBooks", "$..book[?(@.price<10)]",
 			tq.Recur("book", tq.Select(tq.Match(func(v ast.Object) bool {
-				return v.Find("price").Value.(ast.Numeric).Float() < 10
+				return v.Find("price").Value.(ast.Number).Float() < 10
 			}))),
 
 			`[{"category":"reference","author":"Nigel Rees","title":"Sayings of the Century","price":8.95},{"category":"fiction","author":"Herman Melville","title":"Moby Dick","isbn":"0-553-21311-3","price":8.99}]`,

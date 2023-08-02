@@ -35,13 +35,14 @@ type Keyer interface {
 	Key() string
 }
 
-// A Numeric is a Value that represents a number. Numeric values have the
+// A Number is a Value that represents a number. Number values have the
 // property that they can be converted into Int or Float.
-type Numeric interface {
+type Number interface {
 	Value
 
-	Int() Int
-	Float() Float
+	IsInt() bool  // reports whether the value is an integer
+	Int() Int     // converts the value to an integer
+	Float() Float // converts the value to floating point
 }
 
 // An Object is a collection of key-value members.
@@ -156,23 +157,23 @@ func (a Array) JSON() string {
 
 func (a Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a)) }
 
-// A Number is a numeric literal.
-type Number struct {
+// A rawNumber is a numeric literal parsed from source txt.
+type rawNumber struct {
 	text  []byte
 	isInt bool // whether the value was lexed as an integer
 }
 
 // JSON renders n as JSON text.
-func (n Number) JSON() string { return string(n.text) }
+func (n rawNumber) JSON() string { return string(n.text) }
 
-func (n Number) String() string { return string(n.text) }
+func (n rawNumber) String() string { return string(n.text) }
 
 // IsInt reports whether n is representable as an integer.
-func (n Number) IsInt() bool { return n.isInt }
+func (n rawNumber) IsInt() bool { return n.isInt }
 
 // Float returns a representation of n as a Float. It panics if n is not
 // representable as a floating-point value.
-func (n Number) Float() Float {
+func (n rawNumber) Float() Float {
 	v, err := jtree.ParseFloat(n.text, 64)
 	if err != nil {
 		panic(err)
@@ -183,7 +184,7 @@ func (n Number) Float() Float {
 // Int returns a representation of n as an Int.  If n is valid but has
 // fractional parts, the fractions are truncated; otherwise Int panics if n is
 // not representable as a number.
-func (n Number) Int() Int {
+func (n rawNumber) Int() Int {
 	if n.isInt {
 		v, err := jtree.ParseInt(n.text, 10, 64)
 		if err != nil {
@@ -204,6 +205,9 @@ type Float float64
 // Float satisfies the Numeric interface. It returns f unmodified.
 func (f Float) Float() Float { return f }
 
+// IsInt reports false for f.
+func (Float) IsInt() bool { return false }
+
 // Int satisfies the numeric interface.
 func (f Float) Int() Int { return Int(f) }
 
@@ -217,6 +221,9 @@ type Int int64
 
 // Int satisfies the Numeric interface. It returns z unmodified.
 func (z Int) Int() Int { return z }
+
+// IsInt reports true for z.
+func (Int) IsInt() bool { return true }
 
 // Float satisfies the Numeric interface.
 func (z Int) Float() Float { return Float(z) }

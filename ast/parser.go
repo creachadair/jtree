@@ -171,9 +171,9 @@ func AnchorValue(loc jtree.Anchor) (Value, error) {
 	case jtree.String:
 		return Quoted{data: mem.B(loc.Copy())}, nil
 	case jtree.Integer:
-		return Number{text: loc.Copy(), isInt: true}, nil
+		return rawNumber{text: loc.Copy(), isInt: true}, nil
 	case jtree.Number:
-		return Number{text: loc.Copy(), isInt: false}, nil
+		return rawNumber{text: loc.Copy(), isInt: false}, nil
 	case jtree.True, jtree.False:
 		return Bool(loc.Token() == jtree.True), nil
 	case jtree.Null:

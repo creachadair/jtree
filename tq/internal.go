@@ -302,7 +302,7 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 		return qs, nil, err
 	}
 	switch t := w.(type) {
-	case ast.Numeric:
+	case ast.Number:
 		return nthQuery(int(t.Int())).eval(qs, v)
 	case ast.Keyer:
 		return objKey(t.Key()).eval(qs, v)
