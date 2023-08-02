@@ -44,6 +44,8 @@ func (a Array) JSON() string {
 
 func (a Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a.Values)) }
 
+func (a Array) Len() int { return len(a.Values) }
+
 // A Datum is a commented base value; a string, number, Boolean, or null.
 type Datum struct {
 	ast.Value
