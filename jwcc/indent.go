@@ -223,28 +223,73 @@ func (f Formatter) indentComments(w writeFlusher, ss []string, indent string, in
 
 // indentComment realigns comment text from s and indents it by indent.
 func indentComment(s, indent string) string {
+	tag, text := classifyComment(s)
+	var lines []string
+
+	if strings.Count(text, "\n") == 0 {
+		// The comment is just one line and is already trimmed.
+		switch tag {
+		case "/*":
+			return indent + "/* " + text + " */"
+		case "//":
+			return indent + "//" + text
+		default:
+			return indent + "// " + text
+		}
+	}
+
+	// The comment has multiple lines, and lines after the first are possibly
+	// indented.
+	lines = strings.Split(text, "\n")
+	outdentCommentLines(lines)
+
+	// Apply the indent and (if necessary) comment markers.
+	all := make([]string, 0, len(lines)+2)
+	if tag == "/*" {
+		all = append(all, indent+"/*")
+	}
+	for _, line := range lines {
+		switch tag {
+		case "/*":
+			all = append(all, indent+" "+line)
+		case "//":
+			all = append(all, indent+"//"+line)
+		default:
+			all = append(all, indent+"// "+line)
+		}
+	}
+	if tag == "/*" {
+		all = append(all, indent+"*/")
+	}
+	return strings.Join(all, "\n")
+}
+
+func classifyComment(s string) (tag, text string) {
 	ns := strings.TrimSpace(s)
 
-	// For single-line comments, just clip off the comment mark, the trailing
-	// newline, and (if present) a single leading space.
-	if strings.HasPrefix(ns, "//") {
-		base := strings.TrimPrefix(ns, "//")
-		return indent + "//" + base
+	if tail, ok := strings.CutPrefix(ns, "//"); ok {
+		return "//", tail
 	}
-
-	// Remove /* ... */ and the leading and trailing space just inside those
-	// markers, but not from interior lines (if any).
-	base := strings.TrimSpace(
-		strings.TrimSuffix(strings.TrimPrefix(ns, "/*"), "*/"))
-	if strings.Count(base, "\n") == 0 {
-		return indent + "/* " + base + " */"
+	if tail, ok := strings.CutPrefix(ns, "/*"); ok {
+		base := strings.TrimSuffix(tail, "*/")
+		return "/*", strings.TrimSpace(base)
 	}
+	return "??", ns
+}
 
-	// Reaching here, the comment has at least two lines.  Find the shortest
-	// common prefix length of horizontal whitespace, trim that from each line,
-	// and rejoin to get a flush alignment.
-	lines, pfx := strings.Split(base, "\n"), -1
-	for i, line := range lines[1:] { // Note, skip first line which is already flush
+// trimSpaceSuffix removes whitespace from the suffix of s.
+func trimSpaceSuffix(s string) string { return strings.TrimSpace("|" + s)[1:] }
+
+// outdentCommentLines modifies lines to remove the shortest prefix of leading
+// indentation that can be removed to leave the text flush left, and any
+// trailing whitespace. It returns the count of indentation characters removed.
+// The first line is assumed to be already cleaned of leading whitespace.
+func outdentCommentLines(lines []string) int {
+	// Find the shortest common prefix of the lines that can be removed to
+	// leave the text flush left. Note the first line is already flush,
+	// because we already trimmed it.
+	pfx := -1
+	for i, line := range lines[1:] {
 		var ns int
 		for _, c := range line {
 			if c != ' ' && c != '\t' {
@@ -257,16 +302,11 @@ func indentComment(s, indent string) string {
 		}
 	}
 
-	// Remove the common prefix and trailing whitespace from each line, then
-	// apply the indent.
-	const inset = "  "
-	lines[0] = indent + inset + trimSpaceSuffix(lines[0])
+	// Remove the common prefix and trailing whitespace from each line.
+	// Note the first line is already flush left, so skip it.
+	lines[0] = trimSpaceSuffix(lines[0])
 	for i, line := range lines[1:] {
-		lines[i+1] = indent + inset + trimSpaceSuffix(line[pfx:])
+		lines[i+1] = trimSpaceSuffix(line[pfx:])
 	}
-	all := append(append([]string{indent + "/*"}, lines...), indent+"*/")
-	return strings.Join(all, "\n")
+	return pfx
 }
-
-// trimSpaceSuffix removes whitespace from the suffix of s.
-func trimSpaceSuffix(s string) string { return strings.TrimSpace("|" + s)[1:] }

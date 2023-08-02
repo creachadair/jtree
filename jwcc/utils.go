@@ -4,6 +4,7 @@ package jwcc
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Path traverses a sequential path through the structure of a value starting
@@ -72,4 +73,20 @@ func fixArrayBound(n, i int) (int, bool) {
 		i += n
 	}
 	return i, i >= 0 && i < n
+}
+
+// CleanComments combines and removes comment markers from the given comments,
+// returning a slice of plain lines of text. Leading and trailing spaces are
+// removed from the lines.
+func CleanComments(coms ...string) []string {
+	var out []string
+	for _, com := range coms {
+		_, text := classifyComment(com)
+		lines := strings.Split(text, "\n")
+		outdentCommentLines(lines)
+		for _, line := range lines {
+			out = append(out, strings.TrimSpace(line))
+		}
+	}
+	return out
 }

@@ -22,44 +22,8 @@ var outputFile = flag.String("output", "", "Write formatted output to this file"
 //go:embed testdata/input.jwcc
 var testJWCC string
 
-const basicInput = `
-
-// This is a JWCC document
-// everyone loves those
-
-{  // Hello, I am an object member.
-  "name": ["value",
-"village",
-], // and a trailing comment
- "list": [     // whatever else you may think
-     // this is pretty cool
-    true, // a
-  false, // b
-   null, // c
- {"pea":"brain", /*fool*/
-},
-  "soup" // nuts
- ],  // is it me or is this stinky
-// hey all
- "num":
- /* stuff */ 12.5 /* nonsense */,
-"p":"q",
-
-   "f": {"zuul":true,
-   }, // the cat
-   //"x": 3,
-
-   "horse":
-       "pucky" // shenanigans
-  , // rumpus
-   // stuff at the end
-}/* Various additional nonsense following the main document
-  which will get bunged on after.*/
-
-
-
-
-`
+//go:embed testdata/basic.jwcc
+var basicInput string
 
 func TestBasic(t *testing.T) {
 	var w io.Writer = os.Stdout
@@ -96,9 +60,9 @@ func TestBasic(t *testing.T) {
 		t.Errorf("Path: %v", err)
 	} else {
 		p.Comments().Before = []string{
-			"// All you are about to do",
-			"// has come true",
-			"// in your dreams",
+			"/* All you are about to do\nin the cathedral of your soul",
+			"has come true\nin your dreams.",
+			"/* time to die",
 		}
 	}
 
@@ -170,7 +134,6 @@ func TestPath(t *testing.T) {
 }
 
 func testPathFunc(v jwcc.Value) (jwcc.Value, error) {
-
 	switch t := v.(type) {
 	case *jwcc.Array:
 		return jwcc.ToValue(len(t.Values)), nil
@@ -178,5 +141,58 @@ func testPathFunc(v jwcc.Value) (jwcc.Value, error) {
 		return jwcc.ToValue(len(t.Members)), nil
 	default:
 		return nil, errors.New("not a thing with length")
+	}
+}
+
+func TestCleanComments(t *testing.T) {
+	tests := []struct {
+		input []string
+		want  []string
+	}{
+		{nil, nil},
+		{[]string{}, nil},
+
+		{[]string{"hocus pocus"}, []string{"hocus pocus"}},
+
+		{[]string{
+			"// a fine mess\nyou have gotten me into", // note multiple lines
+			"// here",
+			"today",
+		}, []string{
+			"a fine mess",
+			"you have gotten me into",
+			"here",
+			"today",
+		}},
+
+		{[]string{
+			"/* I knew you were\ntrouble when you\nwalked in */",
+		}, []string{
+			"I knew you were",
+			"trouble when you",
+			"walked in",
+		}},
+
+		{[]string{
+			"plain text",
+			"// line comment",
+			"// another line\nand more",
+			"/*\n  also a block comment\n  that I found\n  \n*/\n",
+			"more plain text",
+		}, []string{
+			"plain text",
+			"line comment",
+			"another line",
+			"and more",
+			"also a block comment",
+			"that I found",
+			"more plain text",
+		}},
+	}
+	for _, tc := range tests {
+		got := jwcc.CleanComments(tc.input...)
+		if diff := cmp.Diff(got, tc.want); diff != "" {
+			t.Errorf("CleanComments %+q (-got, +want):%s", tc.input, diff)
+		}
 	}
 }

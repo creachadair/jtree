@@ -28,6 +28,14 @@ type Value interface {
 // Comments records the comments associated with a value.
 // All values have a comment record; use IsEmpty to test whether the value has
 // any actual comment text.
+//
+// Comments read during parsing are stored as-seen in the input, including
+// comment markers.  When adding or editing a comment programmatically, comment
+// markers are optional; the text will be decorated when formatting the output.
+//
+// If a comment begins with "//", it will be processed as line comments.
+// If a comment begins with "/*" it will be processed as a block comment.
+// Multiple lines are OK; they will be reformatted as necessary.
 type Comments struct {
 	Before []string
 	Line   string

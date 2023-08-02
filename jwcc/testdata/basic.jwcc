@@ -1,0 +1,44 @@
+
+// This is a JWCC document
+// everyone loves those
+
+{  // Hello, I am an object member.
+  "name": ["value",
+"village",
+], // and a trailing comment
+ "list": [     // whatever else you may think
+     // this is pretty cool
+    true, // a
+  false, // b
+   null, // c
+ {"pea":"brain", /*fool*/
+},
+
+        /*    I am a block comment
+          inside which
+             some stuff is special
+          and some is not.
+            */
+      
+
+  "soup" // nuts
+ ],  // is it me or is this stinky
+// hey all
+ "num":
+ /* stuff */ 12.5 /* nonsense */,
+"p":"q",
+
+   "f": {"zuul":true,
+   }, // the cat
+   //"x": 3,
+
+   "horse":
+       "pucky" // shenanigans
+  , // rumpus
+   // stuff at the end
+}/* Various additional nonsense following the main document
+  which will get bunged on after.*/
+
+
+
+
