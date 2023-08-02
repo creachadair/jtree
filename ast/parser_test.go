@@ -23,9 +23,9 @@ var (
 
 type testValue int
 
-func (t testValue) JSON() string   { return strconv.Itoa(int(t)) }
-func (t testValue) String() string { return fmt.Sprintf("z=%d", t) }
-func (t testValue) Key() string    { return fmt.Sprintf("key=%d", t) }
+func (t testValue) JSON() string    { return strconv.Itoa(int(t)) }
+func (t testValue) String() string  { return fmt.Sprintf("z=%d", t) }
+func (t testValue) Quote() ast.Text { return ast.String(fmt.Sprintf("key=%d", t)).Quote() }
 
 func TestParse_JWCC(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.jwcc")
@@ -100,8 +100,8 @@ func TestParse(t *testing.T) {
 	if !ok {
 		t.Fatalf("Array entry is %T, not object", lst[0])
 	}
-	check[ast.Quoted](t, obj, "summary", func(s ast.Quoted) {
-		t.Logf("String field value: %s", s.Unquote())
+	check[ast.Text](t, obj, "summary", func(s ast.Text) {
+		t.Logf("String field value: %s", s.String())
 	})
 	check[ast.Number](t, obj, "episode", func(v ast.Number) {
 		t.Logf("Number field value: %v", v)

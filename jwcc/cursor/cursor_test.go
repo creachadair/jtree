@@ -60,7 +60,7 @@ func TestCursor(t *testing.T) {
 		},
 	}
 	opt := cmp.AllowUnexported(
-		ast.Quoted{},
+		ast.String("").Quote(),
 		testutil.RawNumberType,
 		jwcc.Array{},
 		jwcc.Comments{},

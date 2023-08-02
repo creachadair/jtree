@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
 )
 
@@ -70,7 +69,7 @@ func (d *Document) Undecorate() ast.Value { return d.Value.Undecorate() }
 
 // A Member is a key-value pair in an object.
 type Member struct {
-	Key   ast.Keyer
+	Key   ast.Text
 	Value Value
 
 	com Comments
@@ -83,7 +82,7 @@ func (m *Member) Undecorate() ast.Value {
 }
 
 func (m Member) JSON() string {
-	k := jtree.Quote(m.Key.Key())
+	k := m.Key.Quote().JSON()
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
 	n := copy(buf, k)
@@ -119,7 +118,7 @@ func (o *Object) Undecorate() ast.Value {
 
 func (o *Object) Find(key string) *Member {
 	for _, m := range o.Members {
-		if m.Key.Key() == key {
+		if m.Key.String() == key {
 			return m
 		}
 	}

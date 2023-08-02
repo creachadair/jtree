@@ -25,16 +25,6 @@ type Value interface {
 	String() string
 }
 
-// A Keyer is a Value with a Key method, allowing it to be used as an object
-// member key.
-type Keyer interface {
-	Value
-
-	// Key returns the string that is used to represent the receiver in an
-	// object key. The string should be unquoted (abc, not "abc").
-	Key() string
-}
-
 // A Number is a Value that represents a number. Number values have the
 // property that they can be converted into Int or Float.
 type Number interface {
@@ -51,7 +41,7 @@ type Object []*Member
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
 	for _, m := range o {
-		if m.Key.Key() == key {
+		if m.Key.String() == key {
 			return m
 		}
 	}
@@ -81,13 +71,13 @@ func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o)) }
 
 // Sort sorts the object in ascending order by key.
 func (o Object) Sort() {
-	sort.Slice(o, func(i, j int) bool { return o[i].Key.Key() < o[j].Key.Key() })
+	sort.Slice(o, func(i, j int) bool { return o[i].Key.String() < o[j].Key.String() })
 }
 
 // A Member is a single key-value pair belonging to an Object. A Key must
-// support being rendered as text, typically an ast.Quoted or ast.String.
+// support being rendered as text, typically an ast.String.
 type Member struct {
-	Key   Keyer
+	Key   Text
 	Value Value
 }
 
@@ -122,7 +112,7 @@ func ToValue(v any) Value {
 
 // JSON renders the member as JSON text.
 func (m Member) JSON() string {
-	k := jtree.Quote(m.Key.Key()) // render as a JSON string even if it's not
+	k := m.Key.Quote().JSON()
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
 	n := copy(buf, k)
@@ -246,24 +236,22 @@ func (b Bool) JSON() string {
 
 func (b Bool) String() string { return b.JSON() }
 
-// A Quoted is a quoted string value.
-type Quoted struct{ data mem.RO }
+// Text represents a value that can be encoded as a JSON string.
+// The String method of a Text value returns the plain string without quotes.
+type Text interface {
+	Value
 
-// NewQuoted constructs a new Quoted value from the given string or byte slice.
-// It will panic if v is not of a suitable type.
-func NewQuoted(v any) Quoted {
-	switch t := v.(type) {
-	case string:
-		return Quoted{data: mem.S(t)}
-	case []byte:
-		return Quoted{data: mem.B(t)}
-	default:
-		panic("invalid value for Quoted")
-	}
+	Quote() Text // returns a quoted representation of the text
 }
 
-// Unquote returns the unescaped text of the string.
-func (q Quoted) Unquote() String {
+// A quotedText is a quoted string value.
+type quotedText struct{ data mem.RO }
+
+// Quote returns q unmodified to satisfy the Text interface.
+func (q quotedText) Quote() Text { return q }
+
+// unquote returns the unescaped text of the string.
+func (q quotedText) unquote() string {
 	n := q.data.Len()
 	if n == 0 {
 		return ""
@@ -272,36 +260,34 @@ func (q Quoted) Unquote() String {
 	if err != nil {
 		panic(err)
 	}
-	return String(dec)
+	return string(dec)
 }
 
+// Quoted constructs a quoted text value for s.
+func Quoted(s string) Text { return quotedText{data: mem.S(s)} }
+
 // Len returns the length in bytes of the unquoted text of q.
-func (q Quoted) Len() int { return q.Unquote().Len() }
+func (q quotedText) Len() int { return len(q.unquote()) }
 
 // JSON returns the JSON encoding of q.
-func (q Quoted) JSON() string { return q.data.StringCopy() }
+func (q quotedText) JSON() string { return q.data.StringCopy() }
 
-// Key returns the unescaped text of the string.
-func (q Quoted) Key() string { return string(q.Unquote()) }
+// String returns the unquoted string represented by q.
+func (q quotedText) String() string { return q.unquote() }
 
-func (q Quoted) String() string { return q.Key() }
-
-// A String is an unquoted string value.
+// A String is an unquoted text value.
 type String string
 
 // Len returns the length in bytes of s.
 func (s String) Len() int { return len(s) }
 
 // Quote converts s into its quoted representation.
-func (s String) Quote() Quoted { return Quoted{data: escape.Quote(mem.S(string(s)))} }
+func (s String) Quote() Text { return quotedText{data: escape.Quote(mem.S(string(s)))} }
 
 // JSON renders s as JSON text.
-func (s String) JSON() string { return string(jtree.Quote(string(s))) }
+func (s String) JSON() string { return jtree.Quote(string(s)) }
 
-// Key returns s as a plain string. It is shorthand for a type conversion.
-func (s String) Key() string { return string(s) }
-
-func (s String) String() string { return s.Key() }
+func (s String) String() string { return string(s) }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
 var Null nullValue
