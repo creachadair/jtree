@@ -1,6 +1,6 @@
 // Copyright (C) 2023 Michael J. Fromberger. All Rights Reserved.
 
-package ast_test
+package cursor_test
 
 import (
 	"errors"
@@ -8,7 +8,10 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/jtree/ast/cursor"
 	"github.com/google/go-cmp/cmp"
+
+	_ "embed"
 )
 
 const testJSON = `{
@@ -34,7 +37,7 @@ const testJSON = `{
   }
 }`
 
-func TestPath(t *testing.T) {
+func TestCursor(t *testing.T) {
 	v, err := ast.ParseSingle(strings.NewReader(testJSON))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
@@ -58,7 +61,10 @@ func TestPath(t *testing.T) {
 			v.(ast.Object).Find("list").Value.(ast.Array)[1],
 			false,
 		},
-		{"ArrayRange", []any{"o", 25}, v, true},
+		{"ArrayRange", []any{"o", 25},
+			v.(ast.Object).Find("o").Value,
+			true,
+		},
 		{"ObjPath", []any{"xyz", "d"},
 			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d"),
 			false,
@@ -66,25 +72,26 @@ func TestPath(t *testing.T) {
 
 		{"FuncArray", []any{"o", testPathFunc}, ast.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, ast.ToValue(3), false},
-		{"FuncWrong", []any{"xyz", "d", testPathFunc}, v, true},
+		{"FuncWrong", []any{"xyz", "d", testPathFunc},
+			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d").Value,
+			true,
+		},
 	}
-	opt := cmp.AllowUnexported(
-		ast.Quoted{},
-		ast.Number{},
-	)
+	opt := cmp.AllowUnexported(ast.Quoted{}, ast.Number{})
 	for _, tc := range tests {
-
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ast.Path(v, tc.path...)
+			c := cursor.New(v).Down(tc.path...)
+			err := c.Err()
 			if err != nil {
 				if tc.fail {
 					t.Logf("Got expected error: %v", err)
 				} else {
-					t.Fatalf("Path: unexpected error: %v", err)
+					t.Fatalf("Down %+v: unexpected error: %v", tc.path, err)
 				}
 			}
+			got := c.Value()
 			if diff := cmp.Diff(got, tc.want, opt); diff != "" {
-				t.Errorf("Wrong result (-got, +want):\n%s", diff)
+				t.Errorf("Down %+v: wrong result (-got, +want):\n%s", tc.path, diff)
 			} else if err == nil {
 				t.Logf("Found %s OK", got.JSON())
 			}
@@ -93,8 +100,12 @@ func TestPath(t *testing.T) {
 }
 
 func testPathFunc(v ast.Value) (ast.Value, error) {
-	if ln, ok := v.(interface{ Len() int }); ok {
-		return ast.ToValue(ln.Len()), nil
+	switch t := v.(type) {
+	case ast.Array:
+		return ast.ToValue(len(t)), nil
+	case ast.Object:
+		return ast.ToValue(len(t)), nil
+	default:
+		return nil, errors.New("not a thing with length")
 	}
-	return nil, errors.New("not a thing with length")
 }
