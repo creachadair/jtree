@@ -54,7 +54,7 @@ func TestBasic(t *testing.T) {
 		t.Errorf("Incorrect JSON (-want, +got):\n%s", diff)
 	}
 
-	p, err := cursor.Path(d.Value, "p")
+	p, err := cursor.Path[*jwcc.Member](d.Value, "p")
 	if err != nil {
 		t.Errorf("Path: %v", err)
 	} else {

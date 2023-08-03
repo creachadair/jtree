@@ -12,9 +12,17 @@ import (
 // Path traverses a sequential path into the structure of v where path elements
 // are as documented for the Cursor.Down method.  This is a convenience wrapper
 // for creating a cursor, applying path, and retrieving its value.
-func Path(v ast.Value, path ...any) (ast.Value, error) {
+func Path[T ast.Value](v ast.Value, path ...any) (T, error) {
 	c := New(v).Down(path...)
-	return c.Value(), c.Err()
+	var result T
+	if err := c.Err(); err != nil {
+		return result, err
+	}
+	v, ok := c.Value().(T)
+	if !ok {
+		return result, fmt.Errorf("wrong value type %T", c.Value())
+	}
+	return v.(T), nil
 }
 
 // A Cursor is a pointer that navigates into the structure of a ast.Value.
