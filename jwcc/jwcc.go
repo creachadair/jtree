@@ -309,7 +309,5 @@ func (h *parseHandler) pushValue(loc jtree.Anchor, v Value) {
 	c.Before = com
 	c.first = vp.First.Line
 	c.last = vp.Last.Line
-
-	// Otherwise, accumulate the value normally.
 	h.stk = append(h.stk, v)
 }
