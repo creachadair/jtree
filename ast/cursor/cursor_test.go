@@ -70,6 +70,10 @@ func TestCursor(t *testing.T) {
 			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d"),
 			false,
 		},
+		{"ObjPathTail", []any{"xyz", "d", nil},
+			ast.ToValue(true),
+			false,
+		},
 
 		{"FuncArray", []any{"o", testPathFunc}, ast.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, ast.ToValue(3), false},

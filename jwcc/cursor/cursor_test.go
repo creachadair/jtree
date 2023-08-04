@@ -51,6 +51,10 @@ func TestCursor(t *testing.T) {
 			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d"),
 			false,
 		},
+		{"ObjPathTail", []any{"xyz", "d", nil},
+			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
+			false,
+		},
 
 		{"FuncArray", []any{"o", testPathFunc}, jwcc.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, jwcc.ToValue(3), false},

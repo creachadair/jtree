@@ -71,13 +71,17 @@ func (c *Cursor) Up() *Cursor {
 func (c *Cursor) Reset() { c.stk = c.stk[:0]; c.err = nil }
 
 // Down traverses a sequential path into the structure of c starting from the
-// current value, where path elements are either strings (denoting object keys)
-// or integers (denoting offsets into arrays).  If the path is valid, the
-// element reached is returned. If the path cannot be completely consumed,
-// traversal stops and an error is recorded. Use Err to recover the error.
+// current value, where path elements are either strings (denoting object
+// keys), integers (denoting offsets into arrays), functions (see below), or
+// nil.  If the path is valid, the element reached is returned. If the path
+// cannot be completely consumed, traversal stops and an error is recorded. Use
+// Err to recover the error.
 //
 // If a path element is a string, the corresponding value must be an object,
-// and the string resolves an object member with that name.
+// and the string resolves an object member with that name. If this is the last
+// element of the path, the member is returned; otherwise, subsequent path
+// elements continue from the value of that member. Use a nil path element to
+// resolve an object member at the end of a path.
 //
 // If a path element is an integer, the corresponding value must be an array or
 // object, and the integer resolves to an index in the array or object.
@@ -138,6 +142,10 @@ func (c *Cursor) Down(path ...any) *Cursor {
 				return c
 			}
 			cur = c.push(next)
+
+		case nil:
+			// Do nothing. This case supports indirecting through a member at the
+			// end of the path.
 
 		default:
 			return c.setErrorf("invalid path element %T", elt)
