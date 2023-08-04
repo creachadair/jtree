@@ -36,10 +36,9 @@
 // The As query returns its input. To bind a subquery based on the input, put
 // that subquery into the As query:
 //
-//	tq.Seq{
-//	  tq.As("@", 1, "c"),
-//	  tq.Path("$@", "d"),
-//	}
+//	tq.Path(
+//	  tq.As("@", 1, "c"), "$@", "d",
+//	)
 //
 // yields the value "true".
 //
@@ -78,10 +77,10 @@ func Path(keys ...any) Query {
 	if len(keys) == 1 {
 		return pathElem(keys[0])
 	}
-	pq := make(Seq, 0, len(keys))
+	pq := make(seqQuery, 0, len(keys))
 	for _, key := range keys {
 		q := pathElem(key)
-		if sq, ok := q.(Seq); ok {
+		if sq, ok := q.(seqQuery); ok {
 			pq = append(pq, sq...)
 		} else {
 			pq = append(pq, q)
@@ -111,15 +110,15 @@ func Pick(offsets ...int) Query { return pickQuery(offsets) }
 // For null, the length is zero.
 func Len() Query { return lenQuery{} }
 
-// Seq is a sequential composition of queries. An empty sequence selects the
-// input value; otherwise, each query is applied to the result produced by the
-// previous query in the sequence.
+// seqQuery is a sequential composition of queries. An empty sequence selects
+// the input value; otherwise, each query is applied to the result produced by
+// the previous query in the sequence.
 //
 // Parameters bound by As and Func queries evaluated in a sequence are visible
 // to later queries in the sequence.
-type Seq []Query
+type seqQuery []Query
 
-func (q Seq) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+func (q seqQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	cs, cur := qs, v
 	for _, sq := range q {
 		ns, next, err := sq.eval(cs, cur)

@@ -35,10 +35,9 @@ func Example_simple() {
 func Example_small() {
 	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
-	v, err := tq.Eval(root, tq.Seq{
-		tq.As("@", 1, "c"),
-		tq.Path("$@", "d"),
-	})
+	v, err := tq.Eval(root, tq.Path(
+		tq.As("@", 1, "c"), "$@", "d",
+	))
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
@@ -61,7 +60,7 @@ func Example_medium() {
   }
 }`)
 
-	v, err := tq.Eval(root, tq.Seq{
+	v, err := tq.Eval(root, tq.Path(
 		// Bind c to the "complaint" object.
 		tq.As("c", "complaint"),
 
@@ -84,7 +83,7 @@ func Example_medium() {
 
 			"req": tq.Path("requestedRelief", 0),
 		},
-	})
+	))
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}

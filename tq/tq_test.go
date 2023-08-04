@@ -74,7 +74,7 @@ func TestQuery(t *testing.T) {
 	const wantString = "2021-11-30"
 	const wantLength = 563
 
-	t.Run("Seq", func(t *testing.T) {
+	t.Run("Path", func(t *testing.T) {
 		v := mustEval(t, tq.Path("episodes", 0, "airDate"))
 		if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
@@ -132,10 +132,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur2", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
-			tq.Path("episodes", tq.Recur("title")),
-			tq.Slice(0, 4),
-		})
+		v := mustEval(t, tq.Path(
+			"episodes", tq.Recur("title"), tq.Slice(0, 4),
+		))
 		a, ok := v.(ast.Array)
 		if !ok {
 			t.Fatalf("Result: got %T, want array", v)
@@ -172,11 +171,11 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("RecurGlob", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
+		v := mustEval(t, tq.Path(
 			tq.Recur("links", -1), // the last link object of each set
 			tq.Each(tq.Glob(), 0), // the first field of each such object
 			tq.Path(-5),           // the fifth from the end
-		})
+		))
 		const want = "New York Times"
 		if got := v.String(); got != want {
 			t.Errorf("Result: got %#q, want %#q", got, want)
@@ -184,10 +183,10 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Pick", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
+		v := mustEval(t, tq.Path(
 			tq.Recur("episode"),
 			tq.Pick(0, -1, 5, -3),
-		})
+		))
 		const wantJSON = `[557,"pilot",552,1]`
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -341,10 +340,10 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
-		v := mustEval(t, tq.Seq{
-			tq.Path("episodes", tq.Slice(0, 5)),
+		v := mustEval(t, tq.Path(
+			"episodes", tq.Slice(0, 5),
 			tq.Each("summary", tq.Len()),
-		})
+		))
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
@@ -371,19 +370,19 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("BindGet", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
+		v := mustEval(t, tq.Path(
 			// Let g be all the episode objects that define guestNames.
-			tq.Path("episodes", tq.Select("guestNames"), tq.As("g")),
+			"episodes", tq.Select("guestNames"), tq.As("g"),
 
 			// Let f be the third such episode.
-			tq.Path("$g", 2, tq.As("f")),
+			"$g", 2, tq.As("f"),
 
 			tq.Object{
 				"count":  tq.Path("$g", tq.Len()),
 				"number": tq.Path("$f", "episode"),
 				"name":   tq.Path(tq.Get("$f"), "guestNames", 0),
 			},
-		})
+		))
 		o := v.(ast.Object)
 		o.Sort()
 		const wantJSON = `{"count":468,"name":"Shane Harris","number":554}`
@@ -393,8 +392,8 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Func", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
-			tq.Path("episodes", 1),
+		v := mustEval(t, tq.Path(
+			"episodes", 1,
 
 			// The input is the first episode.
 			tq.Func(func(e tq.Env, in ast.Value) (tq.Env, ast.Value, error) {
@@ -422,8 +421,8 @@ func TestQuery(t *testing.T) {
 			}),
 
 			// Verify that the environment changes from the Func are visible here.
-			tq.Path("$e10", "episode"),
-		})
+			"$e10", "episode",
+		))
 
 		const wantOut = 547
 		if got := v.(ast.Number).Int(); got != wantOut {
@@ -432,8 +431,8 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("As", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
-			tq.Path(tq.Value(true), tq.As("x")),
+		v := mustEval(t, tq.Path(
+			tq.Value(true), tq.As("x"),
 			tq.Alt{
 				tq.Get("y"), // fails (y is not bound)
 
@@ -443,7 +442,7 @@ func TestQuery(t *testing.T) {
 				tq.Get("x"),     // succeeds (x is true)
 				tq.Value(false), // not reached (previous alternative succeeded)
 			},
-		})
+		))
 
 		if got, ok := v.(ast.Bool); !ok || !bool(got) {
 			t.Errorf("Result: got %#q, want true", v)
@@ -451,11 +450,11 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Ref", func(t *testing.T) {
-		v := mustEval(t, tq.Seq{
+		v := mustEval(t, tq.Path(
 			tq.As("x", tq.Value("airDate")),
 			tq.As("p", tq.Value(25)),
-			tq.Path("episodes", tq.Ref("$p"), tq.Ref("$x")),
-		})
+			"episodes", tq.Ref("$p"), tq.Ref("$x"),
+		))
 		const want = `2021-10-19`
 		if got := v.String(); got != want {
 			t.Errorf("Result: got %#q, want %#q", got, want)
