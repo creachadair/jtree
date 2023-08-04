@@ -99,6 +99,10 @@ func TestCursor(t *testing.T) {
 				t.Errorf("Down %+v: wrong result (-got, +want):\n%s", tc.path, diff)
 			} else if err == nil {
 				t.Logf("Found %s OK", got.JSON())
+				t.Log("Path:")
+				for i, p := range c.Path() {
+					t.Logf("%d: %+v", i+1, p)
+				}
 			}
 		})
 	}
