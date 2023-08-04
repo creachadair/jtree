@@ -132,7 +132,7 @@ func (q seqQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 
 // Alt is a query that selects among a sequence of alternatives.  It returns
 // the value of the first alternative that does not report an error. If there
-// are no such alternatives, the query fails. An empty All fails on all inputs.
+// are no such alternatives, the query fails. An empty Alt fails on all inputs.
 type Alt []Query
 
 func (q Alt) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
