@@ -62,7 +62,7 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"LastBook2", "$..book[(@.length-1)]",
-			tq.Recur("book", tq.Ref(tq.Map(func(v ast.Array) (ast.Int, error) {
+			tq.Recur("book", tq.Ref(tq.Apply(func(v ast.Array) (ast.Int, error) {
 				return ast.Int(v.Len() - 1), nil
 			}))),
 
