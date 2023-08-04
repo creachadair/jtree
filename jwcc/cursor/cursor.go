@@ -49,6 +49,9 @@ func (c *Cursor) Value() jwcc.Value {
 	return c.stk[len(c.stk)-1]
 }
 
+// Get reports the current value under the cursor and the error, if any.
+func (c *Cursor) Get() (jwcc.Value, error) { return c.Value(), c.Err() }
+
 // Path reports the complete sequence of values from the origin to the current
 // location in c.
 func (c *Cursor) Path() []jwcc.Value {
