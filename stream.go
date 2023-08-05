@@ -37,15 +37,17 @@ type Handler interface {
 	// End the most-recently-opened array, whose close bracket is at loc.
 	EndArray(loc Anchor) error
 
-	// Begin a new object member, whose key is at loc. The handler is
-	// responsible for unescaping key values (see jtree.Unquote).
+	// Begin a new object member, whose key is at loc.  The text of the key is
+	// still quoted; the handler is responsible for unescaping key values if the
+	// plain string is required (see jtree.Unquote).
 	BeginMember(loc Anchor) error
 
 	// End the current object member giving the location and type of the token
 	// that terminated the member (either Comma or RBrace).
 	EndMember(loc Anchor) error
 
-	// Report a data value at the given location.
+	// Report a data value at the given location. The type of the value can be
+	// recovered from the token. String tokens are quoted.
 	Value(loc Anchor) error
 
 	// EndOfInput reports the end of the input stream.
