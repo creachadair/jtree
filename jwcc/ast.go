@@ -4,6 +4,7 @@ package jwcc
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/creachadair/jtree/ast"
@@ -152,6 +153,13 @@ func (o Object) JSON() string {
 }
 
 func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o.Members)) }
+
+// Sort sorts the object in ascending order by key.
+func (o Object) Sort() {
+	sort.Slice(o.Members, func(i, j int) bool {
+		return o.Members[i].Key.String() < o.Members[j].Key.String()
+	})
+}
 
 // commentStub is a stack placeholder for a comment seen during parsing.
 // This type does not appear in a completed AST.
