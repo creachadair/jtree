@@ -40,12 +40,20 @@ type Object []*Member
 
 // Find returns the first member of o with the given key, or nil.
 func (o Object) Find(key string) *Member {
-	for _, m := range o {
-		if m.Key.String() == key {
-			return m
-		}
+	if i := o.Index(key); i >= 0 {
+		return o[i]
 	}
 	return nil
+}
+
+// Index returns the index of the first member of o with the given key, or -1.
+func (o Object) Index(key string) int {
+	for i, m := range o {
+		if m.Key.String() == key {
+			return i
+		}
+	}
+	return -1
 }
 
 // Len returns the number of members in the object.
