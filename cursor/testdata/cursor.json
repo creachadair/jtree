@@ -1,0 +1,22 @@
+{
+  "list": [
+    {
+      "x": 1
+    },
+    {
+      "x": 2
+    }
+  ],
+  "y": {
+    "hello": "there"
+  },
+  "o": [
+    "hi",
+    "yourself"
+  ],
+  "xyz": {
+    "p": true,
+    "d": true,
+    "q": false
+  }
+}

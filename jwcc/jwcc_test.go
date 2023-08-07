@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/jtree/cursor"
 	"github.com/creachadair/jtree/jwcc"
-	"github.com/creachadair/jtree/jwcc/cursor"
 	"github.com/google/go-cmp/cmp"
 
 	_ "embed"

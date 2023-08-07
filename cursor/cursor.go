@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/jtree/jwcc"
 )
 
 // Path traverses a sequential path into the structure of v where path elements
@@ -103,7 +104,10 @@ func (c *Cursor) Down(path ...any) *Cursor {
 	for _, elt := range path {
 		// If the previous step ended on an object member, interpret the next
 		// path element relative to the value of that member.
-		if m, ok := cur.(*ast.Member); ok {
+		switch m := cur.(type) {
+		case *ast.Member:
+			cur = c.push(m.Value)
+		case *jwcc.Member:
 			cur = c.push(m.Value)
 		}
 
@@ -111,6 +115,12 @@ func (c *Cursor) Down(path ...any) *Cursor {
 		case string:
 			switch e := cur.(type) {
 			case ast.Object:
+				m := e.Find(t)
+				if m == nil {
+					return c.setErrorf("key %q not found", t)
+				}
+				cur = c.push(m)
+			case *jwcc.Object:
 				m := e.Find(t)
 				if m == nil {
 					return c.setErrorf("key %q not found", t)
@@ -128,12 +138,24 @@ func (c *Cursor) Down(path ...any) *Cursor {
 					return c.setErrorf("array index %d out of bounds (n=%d)", i, len(e))
 				}
 				cur = c.push(e[i])
+			case *jwcc.Array:
+				i, ok := fixArrayBound(len(e.Values), t)
+				if !ok {
+					return c.setErrorf("array index %d out of bounds (n=%d)", i, len(e.Values))
+				}
+				cur = c.push(e.Values[i])
 			case ast.Object:
 				i, ok := fixArrayBound(len(e), t)
 				if !ok {
 					return c.setErrorf("object index %d out of bounds (n=%d)", i, len(e))
 				}
 				cur = c.push(e[i])
+			case *jwcc.Object:
+				i, ok := fixArrayBound(len(e.Members), t)
+				if !ok {
+					return c.setErrorf("object index %d out of bounds (n=%d)", i, len(e.Members))
+				}
+				cur = c.push(e.Members[i])
 			default:
 				return c.setErrorf("cannot traverse %T with %v", cur, elt)
 			}
