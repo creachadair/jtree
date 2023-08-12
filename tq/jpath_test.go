@@ -105,7 +105,7 @@ func TestJSONPathInputs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			v, err := tq.Eval(val, test.query)
+			v, err := tq.Eval[ast.Value](val, test.query)
 			if err != nil {
 				t.Fatalf("Eval failed: %v", err)
 			}

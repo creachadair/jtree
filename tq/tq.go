@@ -61,10 +61,14 @@ import (
 
 // Eval evaluates the given query beginning from root, returning the resulting
 // value or an error.
-func Eval(root ast.Value, q Query) (ast.Value, error) {
+func Eval[T ast.Value](root ast.Value, q Query) (T, error) {
 	var empty *qstate
 	_, w, err := q.eval(empty.bind("$", root), root)
-	return w, err
+	if t, ok := w.(T); ok {
+		return t, nil
+	}
+	var zero T
+	return zero, err
 }
 
 // A Query describes a traversal of a JSON value. The behavior of a query is

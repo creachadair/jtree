@@ -22,7 +22,7 @@ func mustParseString(s string) ast.Value {
 func Example_simple() {
 	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
-	v, err := tq.Eval(root, tq.Path(1, "c", "d"))
+	v, err := tq.Eval[ast.Bool](root, tq.Path(1, "c", "d"))
 
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
@@ -35,7 +35,7 @@ func Example_simple() {
 func Example_small() {
 	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
 
-	v, err := tq.Eval(root, tq.Path(
+	v, err := tq.Eval[ast.Bool](root, tq.Path(
 		tq.As("@", 1, "c"), "$@", "d",
 	))
 	if err != nil {
@@ -60,7 +60,7 @@ func Example_medium() {
   }
 }`)
 
-	v, err := tq.Eval(root, tq.Path(
+	obj, err := tq.Eval[ast.Object](root, tq.Path(
 		// Bind c to the "complaint" object.
 		tq.As("c", "complaint"),
 
@@ -87,7 +87,6 @@ func Example_medium() {
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
-	obj := v.(ast.Object)
 	fmt.Printf("Hello, my name is: %s\n", obj.Find("name").Value)
 	fmt.Println(obj.Find("act").Value.JSON())
 	fmt.Printf("Prepare to %s", obj.Find("req").Value)
