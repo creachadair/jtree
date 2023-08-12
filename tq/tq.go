@@ -43,6 +43,13 @@
 // yields the value "true".
 //
 // The special name "$" is pre-bound to the root of the input.
+//
+// # Case Sensitivity
+//
+// By default, object keys are case-sensitive. To compare keys without regard
+// to case, use tq.NKey. Path constructors support the shorthand "%x" for a
+// query like tq.NKey("x"). You can escape this if you want the literal string
+// "%x" by writing "%%x".
 package tq
 
 import (
@@ -218,13 +225,13 @@ func Keys() Query { return keysQuery{} }
 
 // A Get query ignores its input and instead returns the value associated with
 // the specified parameter name. The query fails if the name is not defined.
-func Get(name string) Query { base, _ := isMarked(name); return getQuery{base} }
+func Get(name string) Query { base, _ := splitMark(name); return getQuery{base} }
 
 // As evaluates the given subquery on its input, then returns its input in an
 // environment where name is bound to the result from the subquery. If the
 // subquery is empty, the name is bound to the input itself.
 func As(name string, keys ...any) Query {
-	base, _ := isMarked(name)
+	base, _ := splitMark(name)
 	return asQuery{base, Path(keys...)}
 }
 

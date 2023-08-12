@@ -88,6 +88,13 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("NKey", func(t *testing.T) {
+		v := mustEval(t, tq.Path("%EPISODES", 0, tq.NKey("AIRDATE")))
+		if got := v.String(); got != wantString {
+			t.Errorf("Result: got %q, want %q", got, wantString)
+		}
+	})
+
 	t.Run("EmptyAlt", func(t *testing.T) {
 		if v, err := tq.Eval(val, tq.Alt{}); err == nil {
 			t.Errorf("Empty Alt: got %+v, want error", v)

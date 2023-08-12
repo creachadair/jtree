@@ -13,11 +13,15 @@ import (
 func pathElem(key any) Query {
 	switch t := key.(type) {
 	case string:
-		s, ok := isMarked(t)
-		if ok {
+		s, tag := splitMark(t)
+		switch tag {
+		case "$":
 			return Get(s)
+		case "%":
+			return NKey(s)
+		default:
+			return objKey(s)
 		}
-		return objKey(s)
 	case int:
 		return nthQuery(t)
 	case Query:
@@ -27,6 +31,20 @@ func pathElem(key any) Query {
 	default:
 		panic(fmt.Sprintf("invalid path element %T", key))
 	}
+}
+
+// NKey is a query for an object key using case-insensitive comparison.
+type NKey string
+
+func (n NKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	return with(qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
+		for _, mem := range obj {
+			if strings.EqualFold(mem.Key.String(), string(n)) {
+				return qs, mem.Value, nil
+			}
+		}
+		return qs, nil, fmt.Errorf("key %q not found", n)
+	})
 }
 
 type objKey string
@@ -261,15 +279,22 @@ func (keysQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return qs, nil, fmt.Errorf("cannot list keys of %T", v)
 }
 
-func isMarked(s string) (string, bool) {
-	if s == "$" {
-		return s, true
-	} else if strings.HasPrefix(s, "$$") {
-		return s[1:], false
-	} else if strings.HasPrefix(s, "$") {
-		return s[1:], true
+func splitMark(s string) (key, mark string) {
+	if s == "" {
+		return "", ""
 	}
-	return s, false
+	tag, rest := s[:1], s[1:]
+	switch tag {
+	case "$", "%":
+		if strings.HasPrefix(rest, tag) {
+			return rest, "" // escaped: %%x → %x, ""
+		} else if tag == "$" && rest == "" {
+			return tag, tag // tagged: $ → $, $
+		}
+		return rest, tag // tagged: %x → x, %
+	default:
+		return s, ""
+	}
 }
 
 type getQuery struct{ name string }
