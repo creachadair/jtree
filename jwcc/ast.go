@@ -126,7 +126,7 @@ func (o *Object) FindKey(f func(ast.Text) bool) *Member {
 }
 
 // Find is shorthand for FindKey with a case-insensitive name match on key.
-func (o *Object) Find(key string) *Member { return o.FindKey(ast.KeyEqualFold(key)) }
+func (o *Object) Find(key string) *Member { return o.FindKey(ast.TextEqualFold(key)) }
 
 // IndexKey returns the index of the first member of o for whose key f reports
 // true, or -1.

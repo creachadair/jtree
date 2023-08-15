@@ -39,19 +39,19 @@ func TestCursor(t *testing.T) {
 		{"WrongType", []any{11}, v, true},
 
 		{"ArrayPos", []any{"list", 1},
-			v.(ast.Object).FindKey(ast.KeyEqual("list")).Value.(ast.Array)[1],
+			v.(ast.Object).Find("list").Value.(ast.Array)[1],
 			false,
 		},
 		{"ArrayNeg", []any{"list", -1},
-			v.(ast.Object).FindKey(ast.KeyEqual("list")).Value.(ast.Array)[1],
+			v.(ast.Object).Find("list").Value.(ast.Array)[1],
 			false,
 		},
 		{"ArrayRange", []any{"o", 25},
-			v.(ast.Object).FindKey(ast.KeyEqual("o")).Value,
+			v.(ast.Object).Find("o").Value,
 			true,
 		},
 		{"ObjPath", []any{"xyz", "d"},
-			v.(ast.Object).FindKey(ast.KeyEqual("xyz")).Value.(ast.Object).FindKey(ast.KeyEqual("d")),
+			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d"),
 			false,
 		},
 		{"ObjPathTail", []any{"xyz", "d", nil},
@@ -63,8 +63,8 @@ func TestCursor(t *testing.T) {
 		{"FuncObj", []any{"xyz", testPathFunc}, ast.ToValue(3), false},
 		{"FuncWrong", []any{"xyz", "d", testPathFunc},
 			v.(ast.Object).
-				FindKey(ast.KeyEqual("xyz")).Value.(ast.Object).
-				FindKey(ast.KeyEqual("d")).Value,
+				FindKey(ast.TextEqual("xyz")).Value.(ast.Object).
+				FindKey(ast.TextEqual("d")).Value,
 			true,
 		},
 	}
@@ -111,23 +111,23 @@ func TestCursorJWCC(t *testing.T) {
 		{"WrongType", []any{11}, doc.Value, true},
 
 		{"ArrayPos", []any{"list", 1},
-			doc.Value.(*jwcc.Object).FindKey(ast.KeyEqual("list")).Value.(*jwcc.Array).Values[1],
+			doc.Value.(*jwcc.Object).Find("list").Value.(*jwcc.Array).Values[1],
 			false,
 		},
 		{"ArrayNeg", []any{"list", -1},
-			doc.Value.(*jwcc.Object).FindKey(ast.KeyEqual("list")).Value.(*jwcc.Array).Values[1],
+			doc.Value.(*jwcc.Object).Find("list").Value.(*jwcc.Array).Values[1],
 			false,
 		},
 		{"ArrayRange", []any{"o", 25},
-			doc.Value.(*jwcc.Object).FindKey(ast.KeyEqual("o")).Value,
+			doc.Value.(*jwcc.Object).Find("o").Value,
 			true,
 		},
 		{"ObjPath", []any{"xyz", "d"},
-			doc.Value.(*jwcc.Object).FindKey(ast.KeyEqual("xyz")).Value.(*jwcc.Object).FindKey(ast.KeyEqual("d")),
+			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d"),
 			false,
 		},
 		{"ObjPathTail", []any{"xyz", "d", nil},
-			doc.Value.(*jwcc.Object).FindKey(ast.KeyEqual("xyz")).Value.(*jwcc.Object).FindKey(ast.KeyEqual("d")).Value,
+			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
 			false,
 		},
 
@@ -135,8 +135,8 @@ func TestCursorJWCC(t *testing.T) {
 		{"FuncObj", []any{"xyz", testPathFunc}, jwcc.ToValue(3), false},
 		{"FuncWrong", []any{"xyz", "d", testPathFunc},
 			doc.Value.(*jwcc.Object).
-				FindKey(ast.KeyEqual("xyz")).Value.(*jwcc.Object).
-				FindKey(ast.KeyEqual("d")).Value,
+				FindKey(ast.TextEqual("xyz")).Value.(*jwcc.Object).
+				FindKey(ast.TextEqual("d")).Value,
 			true,
 		},
 	}

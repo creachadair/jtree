@@ -200,9 +200,9 @@ func fixArrayBound(n, i int) (int, bool) {
 
 func keyMatch(key string) func(ast.Text) bool {
 	if strings.HasPrefix(key, "%%") {
-		return ast.KeyEqual(key[1:])
+		return ast.TextEqual(key[1:])
 	} else if strings.HasPrefix(key, "%") {
-		return ast.KeyEqualFold(key[1:])
+		return ast.TextEqualFold(key[1:])
 	}
-	return ast.KeyEqual(key)
+	return ast.TextEqual(key)
 }

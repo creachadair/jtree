@@ -38,7 +38,7 @@ type NKey string
 
 func (n NKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return with(qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
-		mem := obj.FindKey(ast.KeyEqualFold(string(n)))
+		mem := obj.FindKey(ast.TextEqualFold(string(n)))
 		if mem == nil {
 			return qs, nil, fmt.Errorf("key %q not found", n)
 		}

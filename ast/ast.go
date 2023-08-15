@@ -38,15 +38,15 @@ type Number interface {
 // An Object is a collection of key-value members.
 type Object []*Member
 
-// KeyEqual returns a matching function for FindKey and IndexKey that reports
+// TextEqual returns a matching function for FindKey and IndexKey that reports
 // true for a case-sensitive equality to key.
-func KeyEqual(key string) func(Text) bool {
+func TextEqual(key string) func(Text) bool {
 	return func(t Text) bool { return t.String() == key }
 }
 
-// KeyEqualFold returns a matching function for FindKey and IndexKey that
+// TextEqualFold returns a matching function for FindKey and IndexKey that
 // reports true for a case-folded equality to key.
-func KeyEqualFold(key string) func(Text) bool {
+func TextEqualFold(key string) func(Text) bool {
 	return func(t Text) bool { return strings.EqualFold(t.String(), key) }
 }
 
@@ -59,7 +59,7 @@ func (o Object) FindKey(f func(Text) bool) *Member {
 }
 
 // Find is shorthand for FindKey with a case-insensitive name match on key.
-func (o Object) Find(key string) *Member { return o.FindKey(KeyEqualFold(key)) }
+func (o Object) Find(key string) *Member { return o.FindKey(TextEqualFold(key)) }
 
 // IndexKey returns the index of the first member of o for whose key f reports
 // true, or -1.
