@@ -181,7 +181,7 @@ func (c *Cursor) Down(path ...any) *Cursor {
 					return c.setErrorf("no matching member found")
 				}
 				cur = c.push(m)
-			case jwcc.Object:
+			case *jwcc.Object:
 				m := e.FindKey(t)
 				if m == nil {
 					return c.setErrorf("no matching member found")
