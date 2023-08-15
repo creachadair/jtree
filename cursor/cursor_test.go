@@ -62,7 +62,9 @@ func TestCursor(t *testing.T) {
 		{"FuncArray", []any{"o", testPathFunc}, ast.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, ast.ToValue(3), false},
 		{"FuncWrong", []any{"xyz", "d", testPathFunc},
-			v.(ast.Object).Find("xyz").Value.(ast.Object).Find("d").Value,
+			v.(ast.Object).
+				FindKey(ast.TextEqual("xyz")).Value.(ast.Object).
+				FindKey(ast.TextEqual("d")).Value,
 			true,
 		},
 	}
@@ -132,7 +134,9 @@ func TestCursorJWCC(t *testing.T) {
 		{"FuncArray", []any{"o", testPathFunc}, jwcc.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, jwcc.ToValue(3), false},
 		{"FuncWrong", []any{"xyz", "d", testPathFunc},
-			doc.Value.(*jwcc.Object).Find("xyz").Value.(*jwcc.Object).Find("d").Value,
+			doc.Value.(*jwcc.Object).
+				FindKey(ast.TextEqual("xyz")).Value.(*jwcc.Object).
+				FindKey(ast.TextEqual("d")).Value,
 			true,
 		},
 	}

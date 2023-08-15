@@ -5,6 +5,7 @@ package cursor
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/creachadair/jtree/ast"
 	"github.com/creachadair/jtree/jwcc"
@@ -87,6 +88,10 @@ func (c *Cursor) Reset() { c.stk = c.stk[:0]; c.err = nil }
 // elements continue from the value of that member. Use a nil path element to
 // resolve an object member at the end of a path.
 //
+// By default, object members are compared case-sensitively. A string path
+// element beginning with "%" requests a case-insensitive match. Double the
+// leading "%" to escape this meaning.
+//
 // If a path element is an integer, the corresponding value must be an array or
 // object, and the integer resolves to an index in the array or object.
 // Negative indices count backward from the end (-1 is last, -2 second last).
@@ -115,13 +120,13 @@ func (c *Cursor) Down(path ...any) *Cursor {
 		case string:
 			switch e := cur.(type) {
 			case ast.Object:
-				m := e.Find(t)
+				m := e.FindKey(keyMatch(t))
 				if m == nil {
 					return c.setErrorf("key %q not found", t)
 				}
 				cur = c.push(m)
 			case *jwcc.Object:
-				m := e.Find(t)
+				m := e.FindKey(keyMatch(t))
 				if m == nil {
 					return c.setErrorf("key %q not found", t)
 				}
@@ -191,4 +196,13 @@ func fixArrayBound(n, i int) (int, bool) {
 		i += n
 	}
 	return i, i >= 0 && i < n
+}
+
+func keyMatch(key string) func(ast.Text) bool {
+	if strings.HasPrefix(key, "%%") {
+		return ast.TextEqual(key[1:])
+	} else if strings.HasPrefix(key, "%") {
+		return ast.TextEqualFold(key[1:])
+	}
+	return ast.TextEqual(key)
 }
