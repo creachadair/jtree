@@ -117,18 +117,22 @@ func (o *Object) Undecorate() ast.Value {
 	return out
 }
 
-// Find returns the first member of o with the given key, or nil.
-func (o *Object) Find(key string) *Member {
-	if i := o.Index(key); i >= 0 {
+// FindKey returns the first member of o for whose key f reports true, or nil.
+func (o *Object) FindKey(f func(ast.Text) bool) *Member {
+	if i := o.IndexKey(f); i >= 0 {
 		return o.Members[i]
 	}
 	return nil
 }
 
-// Index returns the index of the first member of o with the given key, or -1.
-func (o *Object) Index(key string) int {
+// Find is shorthand for FindKey with a case-insensitive name match on key.
+func (o *Object) Find(key string) *Member { return o.FindKey(ast.KeyEqualFold(key)) }
+
+// IndexKey returns the index of the first member of o for whose key f reports
+// true, or -1.
+func (o *Object) IndexKey(f func(ast.Text) bool) int {
 	for i, m := range o.Members {
-		if m.Key.String() == key {
+		if f(m.Key) {
 			return i
 		}
 	}

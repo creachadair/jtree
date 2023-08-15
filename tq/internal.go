@@ -38,12 +38,11 @@ type NKey string
 
 func (n NKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return with(qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
-		for _, mem := range obj {
-			if strings.EqualFold(mem.Key.String(), string(n)) {
-				return qs, mem.Value, nil
-			}
+		mem := obj.FindKey(ast.KeyEqualFold(string(n)))
+		if mem == nil {
+			return qs, nil, fmt.Errorf("key %q not found", n)
 		}
-		return qs, nil, fmt.Errorf("key %q not found", n)
+		return qs, mem.Value, nil
 	})
 }
 
