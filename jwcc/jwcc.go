@@ -51,6 +51,9 @@ func (c Comments) IsEmpty() bool {
 	return len(c.Before) == 0 && c.Line == "" && len(c.End) == 0
 }
 
+// Clear discards the contents of c, leaving it empty.
+func (c *Comments) Clear() { c.Before = nil; c.Line = ""; c.End = nil }
+
 // Parse parses and returns a single JWCC value from r.  If r contains data
 // after the first value, apart from comments and whitespace, Parse returns the
 // first value along with an ast.ErrExtraInput error.
