@@ -59,6 +59,11 @@ func TestCursor(t *testing.T) {
 			false,
 		},
 
+		{"FuncMatch", []any{"xyz", ast.TextEqualFold("D"), nil},
+			ast.ToValue(true),
+			false,
+		},
+		{"FuncNoMatch", []any{ast.TextEqual("?")}, v, true},
 		{"FuncArray", []any{"o", testPathFunc}, ast.ToValue(2), false},
 		{"FuncObj", []any{"xyz", testPathFunc}, ast.ToValue(3), false},
 		{"FuncWrong", []any{"xyz", "d", testPathFunc},

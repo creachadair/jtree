@@ -97,12 +97,20 @@ func (c *Cursor) Reset() { c.stk = c.stk[:0]; c.err = nil }
 // Negative indices count backward from the end (-1 is last, -2 second last).
 // An error is reported if the index is out of bounds.
 //
-// If a path element is a function, the function is executed and its result
-// becomes the next object in the sequence. The function must have a signature
+// If a path element is a function with this signature
+//
+//	func(ast.Text) bool
+//
+// the corresponding value must be an object, and the function resolves the
+// first object member whose key is reported true by the function.
+//
+// If a path element is a function with this signature
 //
 //	func(ast.Value) (ast.Value, error)
 //
-// If the function reports an error, traversal stops and the error is recorded.
+// the function is executed and its result becomes the next object in the
+// sequence.  If the function reports an error, traversal stops and the error
+// is recorded.
 func (c *Cursor) Down(path ...any) *Cursor {
 	c.err = nil // reset error
 	cur := c.Value()
@@ -163,6 +171,24 @@ func (c *Cursor) Down(path ...any) *Cursor {
 				cur = c.push(e.Members[i])
 			default:
 				return c.setErrorf("cannot traverse %T with %v", cur, elt)
+			}
+
+		case func(ast.Text) bool:
+			switch e := cur.(type) {
+			case ast.Object:
+				m := e.FindKey(t)
+				if m == nil {
+					return c.setErrorf("no matching member found")
+				}
+				cur = c.push(m)
+			case jwcc.Object:
+				m := e.FindKey(t)
+				if m == nil {
+					return c.setErrorf("no matching member found")
+				}
+				cur = c.push(m)
+			default:
+				return c.setErrorf("cannot traverse %T with %T", cur, elt)
 			}
 
 		case func(ast.Value) (ast.Value, error):
