@@ -33,6 +33,29 @@ type Value interface {
 // Comments read during parsing are stored as-seen in the input, including
 // comment markers.  When adding or editing a comment programmatically, comment
 // markers are optional; the text will be decorated when formatting the output.
+// To include blank space separating multiple chunks of comment text, include
+// an empty string. To include a blank line in the middle of a chunk, include
+// a comment marker.
+//
+// For example:
+//
+//	c := jtree.Comments{Before: []string{"a", "", "b"}}
+//
+// renders as:
+//
+//	// a
+//
+//	// b
+//
+// By contrast:
+//
+//	c := jtree.Comments{Before: []string{"a", "//", "c"}}
+//
+// renders as:
+//
+//	// a
+//	//
+//	// b
 //
 // If a comment begins with "//", it will be processed as line comments.
 // If a comment begins with "/*" it will be processed as a block comment.
