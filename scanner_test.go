@@ -100,6 +100,8 @@ false /*
 			jtree.String, jtree.LineComment, jtree.False, jtree.BlockComment,
 			jtree.Integer, jtree.Null, jtree.LSquare, jtree.LBrace, jtree.RBrace, jtree.RSquare,
 		}},
+
+		{"/* x */\n{\n}//foo", []jtree.Token{jtree.BlockComment, jtree.LBrace, jtree.RBrace, jtree.LineComment}},
 	}
 
 	for _, test := range tests {
@@ -176,6 +178,43 @@ func TestQuote(t *testing.T) {
 		got := string(jtree.Quote(test.input))
 		if got != test.want {
 			t.Errorf("Input: %#q\nGot:  %#q\nWant: %#q", test.input, got, test.want)
+		}
+	}
+}
+
+func TestScannerLoc(t *testing.T) {
+	type tokPos struct {
+		Tok jtree.Token
+		Pos string
+	}
+	tests := []struct {
+		input string
+		want  []tokPos
+	}{
+		{"", nil},
+		{"{ }", []tokPos{{jtree.LBrace, "1:0-1"}, {jtree.RBrace, "1:2-3"}}},
+		{`"foo" // bar`, []tokPos{{jtree.String, "1:0-5"}, {jtree.LineComment, "1:6-12"}}},
+		{"/* ok */\ntrue\n false\n", []tokPos{{jtree.BlockComment, "1:0-8"}, {jtree.True, "2:0-4"}, {jtree.False, "3:1-6"}}},
+		{"/* abc */", []tokPos{{jtree.BlockComment, "1:0-9"}}},
+		{"/* ok\n*/\n null", []tokPos{{jtree.BlockComment, "1:0-2:2"}, {jtree.Null, "3:1-5"}}},
+		{"// first\n[1, /*x*/, 2\n]", []tokPos{
+			{jtree.LineComment, "1:0-2:0"}, {jtree.LSquare, "2:0-1"}, {jtree.Integer, "2:1-2"},
+			{jtree.Comma, "2:2-3"}, {jtree.BlockComment, "2:4-9"}, {jtree.Comma, "2:9-10"},
+			{jtree.Integer, "2:11-12"}, {jtree.RSquare, "3:0-1"},
+		}},
+	}
+	for _, tc := range tests {
+		var got []tokPos
+		s := jtree.NewScanner(strings.NewReader(tc.input))
+		s.AllowComments(true)
+		for s.Next() == nil {
+			got = append(got, tokPos{s.Token(), s.Location().String()})
+		}
+		if s.Err() != io.EOF {
+			t.Errorf("Next failed: %v", s.Err())
+		}
+		if diff := cmp.Diff(tc.want, got); diff != "" {
+			t.Errorf("Input: %#q\nTokens: (-want, +got)\n%s", tc.input, diff)
 		}
 	}
 }

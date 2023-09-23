@@ -117,11 +117,11 @@ func (s *Scanner) Next() error {
 
 		// Discard whitespace.
 		if isSpace(ch) {
-			s.pos, s.pline, s.pcol = s.end, s.eline, s.ecol
 			if ch == '\n' {
 				s.eline++
 				s.ecol = 0
 			}
+			s.pos, s.pline, s.pcol = s.end, s.eline, s.ecol
 			continue
 		}
 
@@ -351,15 +351,10 @@ func (s *Scanner) scanComment(first rune) error {
 			s.buf.WriteRune(next)
 			if next == '/' {
 				s.tok = BlockComment
-				for _, b := range s.buf.Bytes() {
-					if b == '\n' {
-						s.eline++
-						s.ecol = 0
-					} else {
-						s.ecol++
-					}
-				}
 				return nil
+			} else if next == '\n' {
+				s.eline++
+				s.ecol = 0
 			}
 
 			// We saw "*" but not "/", so keep scanning for the end of the block.
@@ -423,6 +418,10 @@ func (s *Scanner) readWhile(f func(rune) bool) (int, rune, error) {
 			return nr, 0, err
 		} else if !f(ch) {
 			return nr, ch, nil
+		}
+		if ch == '\n' {
+			s.eline++
+			s.ecol = 0
 		}
 		s.buf.WriteRune(ch)
 		nr++
