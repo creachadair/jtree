@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
 )
 
@@ -170,8 +171,8 @@ func (o Object) Sort() {
 type commentStub struct {
 	Value // placeholder, not used
 
-	text        string
-	first, last int
+	text string
+	vloc jtree.Location
 }
 
 // arrayStub is a stack placeholder for an incomplete array during parsing.

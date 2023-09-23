@@ -65,7 +65,7 @@ type Comments struct {
 	Line   string
 	End    []string
 
-	first, last int
+	vloc jtree.Location // the location of the value this is attached to
 }
 
 // IsEmpty reports whether c is "empty", meaning it has no non-empty comment
@@ -76,6 +76,9 @@ func (c Comments) IsEmpty() bool {
 
 // Clear discards the contents of c, leaving it empty.
 func (c *Comments) Clear() { c.Before = nil; c.Line = ""; c.End = nil }
+
+// ValueLocation reports the location of the specified value.
+func ValueLocation(v Value) jtree.Location { return v.Comments().vloc }
 
 // Parse parses and returns a single JWCC value from r.  If r contains data
 // after the first value, apart from comments and whitespace, Parse returns the
@@ -93,11 +96,16 @@ func Parse(r io.Reader) (*Document, error) {
 	}
 	v := h.stk[0]
 	d := &Document{Value: v}
+	vc := v.Comments()
+	d.com.vloc.Span.End = vc.vloc.Span.End
+	d.com.vloc.Last = vc.vloc.Last
 	h.stk[0] = d
 	if !h.eof {
 		err := st.ParseOne(h)
-		_, com := h.consumeComments()
-		d.Comments().End = com
+		_, loc, com := h.consumeComments()
+		d.com.End = com
+		d.com.vloc.Span.End = loc.Span.End
+		d.com.vloc.Last = loc.Last
 		if err != nil && !errors.Is(err, io.EOF) {
 			return d, errors.Join(ast.ErrExtraInput, err)
 		}
@@ -118,10 +126,14 @@ func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
-	_, com := h.consumeComments() // trailing comments at the end of the object
+	_, _, com := h.consumeComments() // trailing comments at the end of the object
 	for i := len(h.stk) - 1; i >= 0; i-- {
 		if stub, ok := h.stk[i].(*objectStub); ok {
-			stub.Comments().End = com
+			oloc := loc.Location()
+			sc := stub.Comments()
+			sc.End = com
+			sc.vloc.Span.End = oloc.Span.End
+			sc.vloc.Last = oloc.Last
 
 			ms := make([]*Member, 0, len(h.stk)-i-1)
 			for j := i + 1; j < len(h.stk); j++ {
@@ -130,7 +142,7 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 			h.stk = h.stk[:i+1]
 			h.stk[i] = &Object{
 				Members: ms,
-				com:     *stub.Comments(),
+				com:     *sc,
 			}
 			return nil
 		}
@@ -144,10 +156,14 @@ func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
-	_, com := h.consumeComments()
+	_, _, com := h.consumeComments()
 	for i := len(h.stk) - 1; i >= 0; i-- {
 		if stub, ok := h.stk[i].(*arrayStub); ok {
-			stub.Comments().End = com
+			aloc := loc.Location()
+			sc := stub.Comments()
+			sc.End = com
+			sc.vloc.Span.End = aloc.Span.End
+			sc.vloc.Last = aloc.Last
 
 			vals := make([]Value, len(h.stk)-i-1)
 			copy(vals, h.stk[i+1:])
@@ -155,7 +171,7 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 
 			h.stk[i] = &Array{
 				Values: vals,
-				com:    *stub.Comments(),
+				com:    *sc,
 			}
 			return nil
 		}
@@ -174,12 +190,15 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 
 func (h *parseHandler) EndMember(loc jtree.Anchor) error {
 	// Stack: ... [incomplete-member] [value] [comment...]
-	_, com := h.consumeComments()
+	_, _, com := h.consumeComments()
 	n := len(h.stk)
 	m := h.stk[n-2].(*Member)
-	m.Comments().End = com
-	m.Comments().last = loc.Location().Last.Line
+	mloc := loc.Location()
+	mc := m.Comments()
+	mc.End = com
+	mc.vloc.Last = mloc.Last
 	m.Value = h.stk[n-1]
+	mc.vloc.Span.End = m.Value.Comments().vloc.Span.End
 	h.stk = h.stk[:n-1]
 	// Stack: ... [complete-member: value]
 	return nil
@@ -237,7 +256,7 @@ func (h *parseHandler) Comment(loc jtree.Anchor) { h.pushComment(loc) }
 // consumeComments removes all comments from the top of the stack to form a
 // group. It returns nil if no comments were found atop the stack, otherwise
 // it returns the last line of the group.
-func (h *parseHandler) consumeComments() (int, []string) {
+func (h *parseHandler) consumeComments() (int, jtree.Location, []string) {
 	var grp []string
 
 	// As we scan comments, keep track of gaps between runs of comment lines and
@@ -251,6 +270,7 @@ func (h *parseHandler) consumeComments() (int, []string) {
 	//    // three
 	//
 	// returns ["// one", "// two", "", "// three"].
+	var loc jtree.Location
 
 	i, prev, last := len(h.stk)-1, -1, 0
 	for i >= 0 {
@@ -258,23 +278,29 @@ func (h *parseHandler) consumeComments() (int, []string) {
 		if !ok {
 			break
 		}
+		if prev < 0 {
+			loc = c.vloc
+		} else {
+			loc.Span.Pos = c.vloc.Span.Pos
+			loc.First = c.vloc.First
+		}
 
 		// Record the last line of the topmost comment.
 		if len(grp) == 0 {
-			last = c.last
+			last = c.vloc.Last.Line
 		}
 
 		// If there is a gap, inject a blank..
-		if c.last < prev {
+		if c.vloc.Last.Line < prev {
 			grp = append(grp, "")
 		}
-		prev = c.first
+		prev = c.vloc.First.Line
 
 		grp = append(grp, c.text)
 		i--
 	}
 	if len(grp) == 0 {
-		return 0, nil // no comments found
+		return 0, loc, nil // no comments found
 	}
 	if strings.HasSuffix(grp[len(grp)-1], "\n") {
 		last-- // compensate for the newline at the end of a line comment
@@ -282,7 +308,7 @@ func (h *parseHandler) consumeComments() (int, []string) {
 
 	h.stk = h.stk[:i+1] // pop
 	slices.Reverse(grp)
-	return last, grp
+	return last, loc, grp
 }
 
 // pushComment handles a comment token by either adjoining it to the grammar
@@ -294,7 +320,7 @@ func (h *parseHandler) pushComment(loc jtree.Anchor) {
 			// skip; we don't attach line comments to internal stubs
 		default:
 			c := h.stk[i].Comments()
-			if c.last == loc.Location().First.Line { // same line
+			if c.vloc.Last.Line == loc.Location().First.Line { // same line
 				if m, ok := h.stk[i].(*Member); ok {
 					if m.Value == nil {
 						// The member is not complete, don't claim this comment.
@@ -316,24 +342,21 @@ func (h *parseHandler) pushComment(loc jtree.Anchor) {
 			}
 		}
 	}
-	com := loc.Location()
 	h.stk = append(h.stk, commentStub{
-		text:  string(loc.Text()),
-		first: com.First.Line,
-		last:  com.Last.Line,
+		text: string(loc.Text()),
+		vloc: loc.Location(),
 	})
 }
 
 // pushValue pushes v atop the stack after handling any pending comments.
 func (h *parseHandler) pushValue(loc jtree.Anchor, v Value) {
-	last, com := h.consumeComments() // do this first, it may update the stack
+	last, _, com := h.consumeComments() // do this first, it may update the stack
 	c := v.Comments()
 	vp := loc.Location()
+	c.vloc = vp
 	if len(com) != 0 && last+1 < vp.First.Line {
 		com = append(com, "")
 	}
 	c.Before = com
-	c.first = vp.First.Line
-	c.last = vp.Last.Line
 	h.stk = append(h.stk, v)
 }
