@@ -4,12 +4,17 @@
 package cursor
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/creachadair/jtree/ast"
 	"github.com/creachadair/jtree/jwcc"
 )
+
+// ErrKeyNotFound is a sentinel error reported when a name or array index
+// lookup fails into a value of the correct type.
+var ErrKeyNotFound = errors.New("key not found")
 
 // Path traverses a sequential path into the structure of v where path elements
 // are as documented for the Cursor.Down method.  This is a convenience wrapper
@@ -130,13 +135,13 @@ func (c *Cursor) Down(path ...any) *Cursor {
 			case ast.Object:
 				m := e.FindKey(keyMatch(t))
 				if m == nil {
-					return c.setErrorf("key %q not found", t)
+					return c.setErrorf("%w: %q", ErrKeyNotFound, t)
 				}
 				cur = c.push(m)
 			case *jwcc.Object:
 				m := e.FindKey(keyMatch(t))
 				if m == nil {
-					return c.setErrorf("key %q not found", t)
+					return c.setErrorf("%w: %q", ErrKeyNotFound, t)
 				}
 				cur = c.push(m)
 			default:
@@ -148,25 +153,25 @@ func (c *Cursor) Down(path ...any) *Cursor {
 			case ast.Array:
 				i, ok := fixArrayBound(len(e), t)
 				if !ok {
-					return c.setErrorf("array index %d out of bounds (n=%d)", i, len(e))
+					return c.setErrorf("%w: array index %d out of bounds (n=%d)", ErrKeyNotFound, i, len(e))
 				}
 				cur = c.push(e[i])
 			case *jwcc.Array:
 				i, ok := fixArrayBound(len(e.Values), t)
 				if !ok {
-					return c.setErrorf("array index %d out of bounds (n=%d)", i, len(e.Values))
+					return c.setErrorf("%w: array index %d out of bounds (n=%d)", ErrKeyNotFound, i, len(e.Values))
 				}
 				cur = c.push(e.Values[i])
 			case ast.Object:
 				i, ok := fixArrayBound(len(e), t)
 				if !ok {
-					return c.setErrorf("object index %d out of bounds (n=%d)", i, len(e))
+					return c.setErrorf("%w: object index %d out of bounds (n=%d)", ErrKeyNotFound, i, len(e))
 				}
 				cur = c.push(e[i])
 			case *jwcc.Object:
 				i, ok := fixArrayBound(len(e.Members), t)
 				if !ok {
-					return c.setErrorf("object index %d out of bounds (n=%d)", i, len(e.Members))
+					return c.setErrorf("%w: object index %d out of bounds (n=%d)", ErrKeyNotFound, i, len(e.Members))
 				}
 				cur = c.push(e.Members[i])
 			default:
@@ -178,13 +183,13 @@ func (c *Cursor) Down(path ...any) *Cursor {
 			case ast.Object:
 				m := e.FindKey(t)
 				if m == nil {
-					return c.setErrorf("no matching member found")
+					return c.setErrorf("%w: no matching member", ErrKeyNotFound)
 				}
 				cur = c.push(m)
 			case *jwcc.Object:
 				m := e.FindKey(t)
 				if m == nil {
-					return c.setErrorf("no matching member found")
+					return c.setErrorf("%w: no matching member", ErrKeyNotFound)
 				}
 				cur = c.push(m)
 			default:
