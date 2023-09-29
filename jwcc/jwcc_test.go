@@ -3,7 +3,6 @@
 package jwcc_test
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -146,7 +145,5 @@ func TestDecorate(t *testing.T) {
 	for i, v := range out.Values {
 		v.Comments().Line = fmt.Sprintf("comment %d", i+1)
 	}
-	var buf bytes.Buffer
-	jwcc.Format(&buf, out)
-	t.Logf("Result:\n%s", buf.String())
+	t.Logf("Result:\n%s", jwcc.FormatToString(out))
 }

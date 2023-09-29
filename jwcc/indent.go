@@ -3,6 +3,7 @@
 package jwcc
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -22,6 +23,16 @@ func (f Formatter) maxLineItems() int { return 3 }
 func Format(w io.Writer, v Value) error {
 	var f Formatter
 	return f.Format(w, v)
+}
+
+// FormatToString formats v to a string with default settings.
+// In case of error in formatting, it returns an empty string.
+func FormatToString(v Value) string {
+	var buf bytes.Buffer
+	if Format(&buf, v) != nil {
+		return ""
+	}
+	return buf.String()
 }
 
 // Format renders a pretty-printed representation of v to w using the settings
