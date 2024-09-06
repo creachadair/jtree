@@ -1,5 +1,6 @@
 // Copyright (C) 2023 Michael J. Fromberger. All Rights Reserved.
 
+// Package escape handles quoting and unquoting of JSON strings.
 package escape
 
 import (

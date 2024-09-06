@@ -200,35 +200,37 @@ func (a Array) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return qs, out, nil
 }
 
-// A Delete query removes the specified key from its input object and returns
-// the resulting object. It is an error if the input is not an object, but no
-// error is reported if the input lacks that key. A JSON null value is treated
-// as an empty object for purposes of this query.
+// Delete returns a query that removes the specified key from its input object
+// and returns the resulting object. It is an error if the input is not an
+// object, but no error is reported if the input lacks that key. A JSON null
+// value is treated as an empty object for purposes of this query.
 func Delete(name string) Query { return delQuery{name} }
 
-// A Set query adds name to a copy of its input object, with the value from the
-// given query evaluated on that input, and returns the resulting object.
+// Set returns a query that adds name to a copy of its input object, with the
+// value from the given query evaluated on that input, and returns the
+// resulting object.
 //
 // If name already exists in the input, its value is replaced in the output. It
 // is an error if the input is not an object.  A JSON null value is treated as
 // an empty object for purposes of this query.
 func Set(name string, keys ...any) Query { return setQuery{name, Path(keys...)} }
 
-// A Value query ignores its input and returns the given value.  The value must
-// be a string, int, float, bool, nil, or ast.Value.
+// Value returns a query that ignores its input and returns the given value.
+// The value must be a string, int, float, bool, nil, or ast.Value.
 func Value(v any) Query { return constQuery{ast.ToValue(v)} }
 
-// A Glob query returns an array of its inputs. If the input is an array, the
-// array is returned unchanged. If the input is an object, the result is an
-// array of all the object values.
+// Glob returns a query that yields an array of its inputs. If the input is an
+// array, the array is returned unchanged. If the input is an object, the
+// result is an array of all the object values.
 func Glob() Query { return globQuery{} }
 
-// A Keys query returns an array of the keys of an object value. It is an error
-// if the input is not an object or null.
+// Keys returns a query that yields an array of the keys of an object value. It
+// is an error if the input is not an object or null.
 func Keys() Query { return keysQuery{} }
 
-// A Get query ignores its input and instead returns the value associated with
-// the specified parameter name. The query fails if the name is not defined.
+// Get returns a query that ignores its input and instead returns the value
+// associated with the specified parameter name. The query fails if the name is
+// not defined.
 func Get(name string) Query { base, _ := splitMark(name); return getQuery{base} }
 
 // As evaluates the given subquery on its input, then returns its input in an
