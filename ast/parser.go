@@ -68,8 +68,8 @@ func Parse(r io.Reader) ([]Value, error) {
 }
 
 // ParseSingle parses and returns a single JSON value from r. If r contains
-// more data after the first value, ParseOne returns the first value along with
-// an ErrExtraInput error.
+// more data after the first value, ParseSingle returns the first value along
+// with an ErrExtraInput error.
 func ParseSingle(r io.Reader) (Value, error) {
 	p := NewParser(r)
 	v, err := p.Parse()
