@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"unique"
 
 	"github.com/creachadair/jtree"
 	"go4.org/mem"
@@ -31,7 +32,7 @@ func (p *Parser) AllowJWCC(ok bool) {
 
 // NewParser constructs a parser that consumes input from r.
 func NewParser(r io.Reader) *Parser {
-	h := &parseHandler{ic: make(jtree.Interner)}
+	h := new(parseHandler)
 	return &Parser{h: h, st: jtree.NewStream(r)}
 }
 
@@ -112,7 +113,6 @@ func ParseSingle(r io.Reader) (Value, error) {
 // syntax trees for JSON values.
 type parseHandler struct {
 	stk []Value
-	ic  jtree.Interner
 }
 
 func (h *parseHandler) reduceValue(v Value) error {
@@ -162,7 +162,9 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	return h.push(&Member{Key: Quoted(h.ic.Intern(loc.Text()))})
+	t := unique.Make(string(loc.Text()))
+	h.push(&Member{Key: Quoted(t.Value())})
+	return nil
 }
 
 func (h *parseHandler) EndMember(loc jtree.Anchor) error { return nil }

@@ -37,20 +37,6 @@ func unquoteMem(src mem.RO) ([]byte, error) {
 	return escape.Unquote(src.Slice(1, src.Len()-1))
 }
 
-// Interner is a deduplicating string interning map.
-type Interner map[string]string
-
-// Intern returns text as a string, ensuring that only one string is allocated
-// for each unique text.
-func (n Interner) Intern(text []byte) string {
-	s, ok := n[string(text)] // N.B. lookup special-cased by the compiler
-	if !ok {
-		s = string(text)
-		n[s] = s
-	}
-	return s
-}
-
 // ParseInt behaves as [strconv.ParseInt], but does not copy its argument.
 func ParseInt(text []byte, base, bitSize int) (int64, error) {
 	return mem.ParseInt(mem.B(text), base, bitSize)

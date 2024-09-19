@@ -9,6 +9,7 @@ import (
 	"io"
 	"slices"
 	"strings"
+	"unique"
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
@@ -119,7 +120,7 @@ func Parse(r io.Reader) (*Document, error) {
 	st.AllowComments(true)
 	st.AllowTrailingCommas(true)
 
-	h := &parseHandler{ic: make(jtree.Interner)}
+	h := new(parseHandler)
 	if err := st.ParseOne(h); err != nil {
 		return nil, err
 	} else if len(h.stk) != 1 {
@@ -147,7 +148,6 @@ func Parse(r io.Reader) (*Document, error) {
 // parseHandler implements the jtree.Handler interface for JWCC values.
 type parseHandler struct {
 	stk []Value
-	ic  jtree.Interner
 	eof bool
 }
 
@@ -215,7 +215,8 @@ func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
 	// comments that occurred in the input before the colon separator.
 	// We move them all above the key when recording.
 
-	h.pushValue(loc, &Member{Key: ast.Quoted(h.ic.Intern(loc.Text()))})
+	t := unique.Make(string(loc.Text()))
+	h.pushValue(loc, &Member{Key: ast.Quoted(t.Value())})
 	return nil
 }
 
