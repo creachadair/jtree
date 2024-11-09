@@ -1,6 +1,7 @@
 # jtree
 
 [![GoDoc](https://img.shields.io/static/v1?label=godoc&message=reference&color=purple)](https://pkg.go.dev/github.com/creachadair/jtree)
+[![CI](https://github.com/creachadair/jtree/actions/workflows/go-presubmit.yml/badge.svg?event=push&branch=main)](https://github.com/creachadair/jtree/actions/workflows/go-presubmit.yml)
 
 This repository defines a Go module that implements an streaming JSON scanner
 and parser.
