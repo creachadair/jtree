@@ -104,16 +104,12 @@ func (h *parseHandler) reduceValue(v Value) error {
 		}
 	}
 	// Otherwise, accumulate the value normally.
-	h.push(v)
-	return nil
+	return h.push(v)
 }
 
-func (h *parseHandler) push(v Value) { h.stk = append(h.stk, v) }
+func (h *parseHandler) push(v Value) error { h.stk = append(h.stk, v); return nil }
 
-func (h *parseHandler) BeginObject(loc jtree.Anchor) error {
-	h.push(objectStub{})
-	return nil
-}
+func (h *parseHandler) BeginObject(loc jtree.Anchor) error { return h.push(objectStub{}) }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 	for i := len(h.stk) - 1; i >= 0; i-- {
@@ -129,10 +125,7 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 	panic("unbalanced EndObject")
 }
 
-func (h *parseHandler) BeginArray(loc jtree.Anchor) error {
-	h.push(arrayStub{})
-	return nil
-}
+func (h *parseHandler) BeginArray(loc jtree.Anchor) error { return h.push(arrayStub{}) }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 	for i := len(h.stk) - 1; i >= 0; i-- {
@@ -147,8 +140,7 @@ func (h *parseHandler) EndArray(loc jtree.Anchor) error {
 }
 
 func (h *parseHandler) BeginMember(loc jtree.Anchor) error {
-	h.push(&Member{Key: Quoted(h.ic.Intern(loc.Text()))})
-	return nil
+	return h.push(&Member{Key: Quoted(h.ic.Intern(loc.Text()))})
 }
 
 func (h *parseHandler) EndMember(loc jtree.Anchor) error { return nil }
@@ -158,8 +150,7 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 	if err != nil {
 		return err
 	}
-	h.reduceValue(v)
-	return nil
+	return h.reduceValue(v)
 }
 
 // AnchorValue constructs a Value from the specified anchor, or reports an
