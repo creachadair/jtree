@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/tailscale/hujson v0.0.0-20241010212012-29efb4a0184b
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/exp v0.0.0-20250128144449-3edf0e91c1ae
 	honnef.co/go/tools v0.5.1
 )
 
