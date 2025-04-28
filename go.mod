@@ -10,7 +10,6 @@ require (
 require (
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
-	honnef.co/go/tools v0.5.1
 )
 
 require (
@@ -18,6 +17,7 @@ require (
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
+	honnef.co/go/tools v0.5.1 // indirect
 )
 
 tool honnef.co/go/tools/staticcheck
