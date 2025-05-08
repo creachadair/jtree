@@ -115,8 +115,8 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 	for i := len(h.stk) - 1; i >= 0; i-- {
 		if _, ok := h.stk[i].(objectStub); ok {
 			o := make(Object, 0, len(h.stk)-i-1)
-			for j := i + 1; j < len(h.stk); j++ {
-				o = append(o, h.stk[j].(*Member))
+			for _, m := range h.stk[i+1:] {
+				o = append(o, m.(*Member))
 			}
 			h.stk = h.stk[:i]
 			return h.reduceValue(o)
