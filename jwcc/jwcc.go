@@ -136,8 +136,8 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 			sc.vloc.Last = oloc.Last
 
 			ms := make([]*Member, 0, len(h.stk)-i-1)
-			for j := i + 1; j < len(h.stk); j++ {
-				ms = append(ms, h.stk[j].(*Member))
+			for _, m := range h.stk[i+1:] {
+				ms = append(ms, m.(*Member))
 			}
 			h.stk = h.stk[:i+1]
 			h.stk[i] = &Object{
