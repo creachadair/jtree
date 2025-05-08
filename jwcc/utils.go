@@ -24,12 +24,16 @@ func CleanComments(coms ...string) []string {
 	return out
 }
 
-// Decorate converts an ast.Value into an equivalent jwcc.Value.
+// Decorate converts an [ast.Value] into an equivalent [jwcc.Value].
+// If v is already a [jwcc.Value], it is returned unmodified.
+// Otherwise, the resulting value has empty comments.
 func Decorate(v ast.Value) Value {
 	if v == nil {
 		return nil
 	}
 	switch t := v.(type) {
+	case Value:
+		return t
 	case ast.Object:
 		o := &Object{Members: make([]*Member, len(t))}
 		for i, m := range t {

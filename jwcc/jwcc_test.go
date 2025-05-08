@@ -3,6 +3,7 @@
 package jwcc_test
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -129,21 +130,46 @@ func TestCleanComments(t *testing.T) {
 }
 
 func TestDecorate(t *testing.T) {
-	in := ast.Array{
-		ast.ToValue("foo"),
-		ast.ToValue(1),
-		ast.ToValue(true),
-		ast.ToValue(nil),
-	}
-	out, ok := jwcc.Decorate(in).(*jwcc.Array)
-	if !ok {
-		t.Fatalf("Incorrect type: %T", out)
-	}
-	if got, want := out.JSON(), in.JSON(); got != want {
-		t.Errorf("Decorated JSON: got %q, want %q", got, want)
-	}
-	for i, v := range out.Values {
-		v.Comments().Line = fmt.Sprintf("comment %d", i+1)
-	}
-	t.Logf("Result:\n%s", jwcc.FormatToString(out))
+	t.Run("Plain", func(t *testing.T) {
+		s := jwcc.ToValue("bar")
+		s.Comments().Line = "already commented"
+		in := ast.Array{
+			ast.ToValue("foo"),
+			ast.ToValue(1),
+			ast.ToValue(true),
+			ast.ToValue(nil),
+			s,
+		}
+		out, ok := jwcc.Decorate(in).(*jwcc.Array)
+		if !ok {
+			t.Fatalf("Incorrect type: %T", out)
+		}
+		if got, want := out.JSON(), in.JSON(); got != want {
+			t.Errorf("Decorated JSON: got %q, want %q", got, want)
+		}
+		for i, v := range out.Values {
+			if c := v.Comments(); c.Line == "" {
+				c.Line = fmt.Sprintf("comment %d", i+1)
+			}
+		}
+		t.Logf("Result:\n%s", jwcc.FormatToString(out))
+	})
+
+	t.Run("Decorated", func(t *testing.T) {
+		in := jwcc.ToValue("foo")
+		in.Comments().Line = "hello world"
+
+		// A value that is already decorated must not be decorated further.
+		out := jwcc.Decorate(in)
+		if out != in {
+			t.Errorf("Decorate JWCC: got %[1]T (%[1]v), want %[2]T (%[2]v)", out, in)
+		}
+
+		var got, want bytes.Buffer
+		jwcc.Format(&got, out)
+		jwcc.Format(&want, in)
+		if diff := cmp.Diff(got.String(), want.String()); diff != "" {
+			t.Errorf("Decorated JWCC (-got, +want):\n%s", diff)
+		}
+	})
 }
