@@ -3,7 +3,6 @@
 package jwcc_test
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -165,10 +164,9 @@ func TestDecorate(t *testing.T) {
 			t.Errorf("Decorate JWCC: got %[1]T (%[1]v), want %[2]T (%[2]v)", out, in)
 		}
 
-		var got, want bytes.Buffer
-		jwcc.Format(&got, out)
-		jwcc.Format(&want, in)
-		if diff := cmp.Diff(got.String(), want.String()); diff != "" {
+		got := jwcc.FormatToString(out)
+		want := jwcc.FormatToString(in)
+		if diff := cmp.Diff(got, want); diff != "" {
 			t.Errorf("Decorated JWCC (-got, +want):\n%s", diff)
 		}
 	})
