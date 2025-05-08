@@ -25,7 +25,7 @@
 // The Stream type implements an event-driven stream parser for JSON.  The
 // parser works by calling methods on a Handler value to report the structure
 // of the input. In case of error, parsing is terminated and an error of
-// concrete type *jtree.SyntaxError is returned.
+// concrete type [*SyntaxError] is returned.
 //
 // Construct a Stream from an io.Reader, and call its Parse method. Parse
 // returns nil if the input was fully processed without error. If a Handler

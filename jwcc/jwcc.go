@@ -15,7 +15,7 @@ import (
 )
 
 // A Value is a JSON value optionally decorated with comments.
-// The concrete type is one *Array, *Datum, *Document, or *Object.
+// The concrete type is one of [*Array], [*Datum], [*Document], or [*Object].
 type Value interface {
 	ast.Value
 
