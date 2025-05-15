@@ -9,14 +9,14 @@ require (
 
 require (
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 )
 
 require (
 	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/tools v0.32.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	honnef.co/go/tools v0.5.1 // indirect
 )
 
