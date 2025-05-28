@@ -97,6 +97,11 @@ func mustParse(t *testing.T, zf *zip.File) (ast.Value, error) {
 		t.Fatalf("Open %q: %v", zf.Name, err)
 	}
 	defer rc.Close()
+	defer func() {
+		if x := recover(); x != nil {
+			t.Fatalf("Unexpected panic: %v", x)
+		}
+	}()
 	return ast.ParseSingle(rc)
 }
 
@@ -104,7 +109,7 @@ func TestCompliance(t *testing.T) {
 	if !*doHardTest {
 		t.Skip("Skipping compliance test because --compliance-test is false")
 	}
-	var numYes, numYesErrs, numNo, numNoErrs int
+	var numYes, numYesErrs, numNo, numNoErrs, numIndet, numIndetErrs int
 	mustFetchTestFiles(t, func(f *zip.File) error {
 		_, tail, ok := strings.Cut(f.Name, "/test_parsing/")
 		if !ok || filepath.Ext(tail) != ".json" {
@@ -128,16 +133,23 @@ func TestCompliance(t *testing.T) {
 					numNoErrs++
 					t.Errorf("Test %q: wanted error\n%v", tail, v)
 				} else {
-					t.Logf("- [expected]: %v", err)
+					t.Logf("- got expected parse error: %v", err)
 				}
 			})
 		case "i":
-			// OK, skip silently
+			numIndet++
+			t.Run(tail, func(t *testing.T) {
+				if _, err := mustParse(t, f); err != nil {
+					numIndetErrs++
+					t.Logf("- got permiited parse error: %v", err)
+				}
+			})
 		default:
-			t.Logf("WARNING: Skipped non-maching filename %q", tail)
+			t.Logf("WARNING: Skipped non-matching filename %q", tail)
 		}
 		return nil
 	})
 	t.Logf("Ran %d positive tests, %d errors", numYes, numYesErrs)
 	t.Logf("Ran %d negative tests, %d errors", numNo, numNoErrs)
+	t.Logf("Ran %d indeterminate tests, %d errors", numIndet, numIndetErrs)
 }
