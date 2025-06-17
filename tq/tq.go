@@ -82,8 +82,17 @@ type Query interface {
 // input value.  If no keys are specified, the input is returned. Each key must
 // be a string (an object key), an int (an array offset), or a nested Query.
 //
-// As a special case, a string beginning with "$" is treated as a Get query.
-// To escape this treatment, double the "$".
+// String queries are case-sensitive by default.  To get case-insensitive
+// lookup for object keys, use [NKey]. A string of the form "%x" is treated as
+// shorthand for NKey("x"). To escape this treatment, double the "%".
+//
+// Array offset (int) queries are 0-indexed. Negative offsets are counted
+// backward from the end of the input array (e.g., -1 denotes the last element
+// of a non-empty input array). If the absolute value of the offset is outside
+// the bounds of the array, the query reports an error.
+//
+// A string of the form "$x" is treated as shorthand for Get("x").  To escape
+// this treatment, double the "$".
 func Path(keys ...any) Query {
 	if len(keys) == 1 {
 		return pathElem(keys[0])
