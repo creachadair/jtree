@@ -27,7 +27,9 @@ var (
 	// is a Minefield", https://seriot.ch/projects/parsing_json.html.
 	//
 	// The test explicitly checks the affirmative (y_*) and negative (n_*)
-	// cases, but does not exercise the indeterminate (i_*) cases.
+	// cases. The indeterminate (i_*) cases are executed to verify that they do
+	// not trigger a panic in the parsing machinery, but are allowed to either
+	// succeed or fail without complaint.
 )
 
 func mustGetArchive(t *testing.T, zipFile string) *zip.Reader {
