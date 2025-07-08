@@ -47,6 +47,16 @@ func TestParse_JWCC(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		vs, err := ast.Parse(strings.NewReader(""))
+		if !errors.Is(err, ast.ErrEmptyInput) {
+			t.Errorf("Parse empty: got %v, want %v", err, ast.ErrEmptyInput)
+		}
+		if len(vs) != 0 {
+			t.Errorf("Parse empty: unexpected values: %v", vs)
+		}
+	})
+
 	input, err := os.ReadFile("../testdata/input.json")
 	if err != nil {
 		t.Fatalf("Reading test input: %v", err)
@@ -153,6 +163,18 @@ func TestRegression(t *testing.T) {
 }
 
 func TestParseSingle(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		for _, input := range []string{"", " ", "\n\t\n"} {
+			v, err := ast.ParseSingle(strings.NewReader(input))
+			if !errors.Is(err, ast.ErrEmptyInput) {
+				t.Errorf("ParseSingle(%q): got error %v, want %v", input, err, ast.ErrEmptyInput)
+			}
+			if v != nil {
+				t.Errorf("ParseSingle(%q): got result %v, want nil", input, v)
+			}
+		}
+	})
+
 	t.Run("Good", func(t *testing.T) {
 		const input = ` [ 1, 2, 3 ]  `
 		v, err := ast.ParseSingle(strings.NewReader(input))
