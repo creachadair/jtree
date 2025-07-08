@@ -20,7 +20,7 @@ func pathElem(key any) Query {
 		case "%":
 			return NKey(s)
 		default:
-			return objKey(s)
+			return Key(s)
 		}
 	case int:
 		return nthQuery(t)
@@ -34,6 +34,7 @@ func pathElem(key any) Query {
 }
 
 // NKey is a query for an object key using case-insensitive comparison.
+// See also: [Key].
 type NKey string
 
 func (n NKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
@@ -46,9 +47,11 @@ func (n NKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	})
 }
 
-type objKey string
+// Key is a query for an object key using case-sensitive comparison.
+// See also: [NKey].
+type Key string
 
-func (o objKey) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+func (o Key) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	return with(qs, v, func(obj ast.Object) (*qstate, ast.Value, error) {
 		mem := obj.Find(string(o))
 		if mem == nil {
@@ -329,7 +332,7 @@ func (r refQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	case ast.Number:
 		return nthQuery(int(t.Int())).eval(qs, v)
 	case ast.Text:
-		return objKey(t.String()).eval(qs, v)
+		return Key(t.String()).eval(qs, v)
 	}
 	return qs, nil, fmt.Errorf("value %T is not a valid reference", w)
 }
