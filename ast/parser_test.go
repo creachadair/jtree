@@ -114,6 +114,26 @@ func TestParse(t *testing.T) {
 	})
 }
 
+func TestParseRange(t *testing.T) {
+	const input = `1"foo"{ }true null[ "a" , "b" ]{"key": "value"}"stop"1 3 4`
+
+	var got []string
+	want := []string{"1", `"foo"`, "{}", "true", "null", `["a","b"]`, `{"key":"value"}`}
+
+	for v, err := range ast.ParseRange(strings.NewReader(input)) {
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if v.String() == "stop" {
+			break
+		}
+		got = append(got, v.JSON())
+	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Range elements (-got, +want):\n%s", diff)
+	}
+}
+
 func TestRegression(t *testing.T) {
 	// Regression: Plain values were not correctly reduced at the top level.
 	t.Run("TopLevelValue", func(t *testing.T) {

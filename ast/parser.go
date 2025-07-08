@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 
 	"github.com/creachadair/jtree"
 	"go4.org/mem"
@@ -49,27 +50,48 @@ func (p *Parser) Parse() (Value, error) {
 
 // Parse parses and returns the JSON values from r. In case of error, any
 // complete values already parsed are returned along with the error.
-// It reports ErrEmptyInput if the input is entirely empty.
+// It reports [ErrEmptyInput] if the input is entirely empty.
 func Parse(r io.Reader) ([]Value, error) {
-	p := NewParser(r)
 	var vs []Value
-	for {
-		v, err := p.Parse()
-		if err == io.EOF {
-			if len(vs) == 0 {
-				return nil, ErrEmptyInput
-			}
-			return vs, nil
-		} else if err != nil {
+	for v, err := range ParseRange(r) {
+		if err != nil {
 			return vs, err
 		}
 		vs = append(vs, v)
 	}
+	if len(vs) == 0 {
+		return nil, ErrEmptyInput
+	}
+	return vs, nil
 }
 
-// ParseSingle parses and returns a single JSON value from r. If r contains
-// more data after the first value, ParseSingle returns the first value along
-// with an ErrExtraInput error.
+// ParseRange parses and yields the JSON values from r.  Each pair produced by
+// the iterator is either a valid JSON value and nil error, or a nil value and
+// a non-nil parse error.  If and when an error occurs, the iterator stops.
+// If the input is empty, the iterator yields no values.
+func ParseRange(r io.Reader) iter.Seq2[Value, error] {
+	p := NewParser(r)
+	return func(yield func(Value, error) bool) {
+		for {
+			v, err := p.Parse()
+			if err == io.EOF {
+				return // no more values
+			} else if err != nil {
+				yield(nil, err)
+				return
+			}
+
+			if !yield(v, nil) {
+				return
+			}
+		}
+	}
+}
+
+// ParseSingle parses and returns a single JSON value from r. If r contains no
+// values, ParseSingle reports nil, [ErrEmptyInput].
+// If r contains more data after the first value, ParseSingle returns the first
+// value, and [ErrExtraInput].
 func ParseSingle(r io.Reader) (Value, error) {
 	p := NewParser(r)
 	v, err := p.Parse()
