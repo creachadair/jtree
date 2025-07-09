@@ -26,14 +26,14 @@
 //
 //	tq.Path(0, "b", tq.As("Q"))
 //
-// Another part of the query can recover this value using a Get query:
+// Another part of the query can recover this value using a [Get] query:
 //
 //	tq.Get("Q")
 //
 // Path constructors support the shorthand "$x" for a query like tq.Get("x").
 // You can escape this if you want the literal string "$x" by writing "$$x".
 //
-// The As query returns its input. To bind a subquery based on the input, put
+// The [As] query returns its input. To bind a subquery based on the input, put
 // that subquery into the As query:
 //
 //	tq.Path(
@@ -47,7 +47,7 @@
 // # Case Sensitivity
 //
 // By default, object keys are case-sensitive. To compare keys without regard
-// to case, use tq.NKey. Path constructors support the shorthand "%x" for a
+// to case, use [NKey]. Path constructors support the shorthand "%x" for a
 // query like tq.NKey("x"). You can escape this if you want the literal string
 // "%x" by writing "%%x".
 package tq
@@ -80,11 +80,11 @@ type Query interface {
 
 // Path traverses a sequence of nested object keys or array indices from the
 // input value.  If no keys are specified, the input is returned. Each key must
-// be a string (an object key), an int (an array offset), or a nested Query.
+// be a string (an object key), an int (an array offset), or a nested [Query].
 //
-// String queries are case-sensitive by default.  To get case-insensitive
-// lookup for object keys, use [NKey]. A string of the form "%x" is treated as
-// shorthand for NKey("x"). To escape this treatment, double the "%".
+// String queries are case-sensitive by default, as [Key].
+// For case-insensitive lookup, use [NKey]. A string of the form "%x" is
+// treated as shorthand for NKey("x"). To escape this treatment, write "%%x".
 //
 // Array offset (int) queries are 0-indexed. Negative offsets are counted
 // backward from the end of the input array (e.g., -1 denotes the last element
