@@ -351,6 +351,23 @@ func (q selectQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 	})
 }
 
+type storeQuery[T ast.Value] struct {
+	target *T
+	q      Query
+}
+
+func (q storeQuery[T]) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
+	_, w, err := q.q.eval(qs, v)
+	if err != nil {
+		return qs, nil, err
+	} else if wt, ok := w.(T); !ok {
+		return qs, nil, fmt.Errorf("got %T, want %T", w, q.target)
+	} else {
+		*q.target = wt
+		return qs, v, nil
+	}
+}
+
 func with[T ast.Value](qs *qstate, v ast.Value, f func(T) (*qstate, ast.Value, error)) (*qstate, ast.Value, error) {
 	if v, ok := v.(T); ok {
 		return f(v)

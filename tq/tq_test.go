@@ -380,6 +380,44 @@ func TestQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Store", func(t *testing.T) {
+		var x ast.Text
+		var y ast.Int
+		mustEval(t, tq.Path(
+			"episodes",
+			tq.Store(&x, 0, "airDate"),
+			tq.Store(&y, 1, "guestNames", tq.Len()),
+		))
+		if got, want := x.String(), "2021-11-30"; got != want {
+			t.Errorf("Store x: got %q, want %q", got, want)
+		}
+		if got, want := int(y), 1; got != want {
+			t.Errorf("Store y: got %d, want %d", got, want)
+		}
+
+		t.Run("NotFound", func(t *testing.T) {
+			var ign ast.Number
+			val := mustParse(t, []byte(`{}`))
+			v, err := tq.Eval[ast.Value](val, tq.Store(&ign, "nonesuch"))
+			if err == nil {
+				t.Errorf("Eval: got %v, wanted error", v)
+			} else {
+				t.Logf("Eval: got expected error: %v", err)
+			}
+		})
+
+		t.Run("WrongType", func(t *testing.T) {
+			var ign ast.Number
+			val := mustParse(t, []byte(`"foo"`))
+			v, err := tq.Eval[ast.Value](val, tq.Store(&ign))
+			if err == nil {
+				t.Errorf("Eval: got %v, wanted error", v)
+			} else {
+				t.Logf("Eval: got expected error: %v", err)
+			}
+		})
+	})
+
 	t.Run("BindGet", func(t *testing.T) {
 		v := mustEval(t, tq.Path(
 			// Let g be all the episode objects that define guestNames.

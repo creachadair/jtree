@@ -110,7 +110,7 @@ func Path(keys ...any) Query {
 }
 
 // Select constructs an array of elements from its input array whose values
-// match the query. The arguments have the same constraints as Path.
+// match the query. The arguments have the same constraints as [Path].
 func Select(keys ...any) Query { return selectQuery{Path(keys...)} }
 
 // Slice selects a slice of an array from offsets lo to hi.  The range includes
@@ -174,7 +174,7 @@ func Recur(keys ...any) Query { return recQuery{Path(keys...)} }
 
 // Each applies a query to each element of an array and returns an array of the
 // resulting values. It fails if the input is not an array.  The arguments have
-// the same constraints as Path.
+// the same constraints as [Path].
 func Each(keys ...any) Query { return eachQuery{Path(keys...)} }
 
 // Object constructs an object with the given keys mapped to the results of
@@ -286,5 +286,14 @@ func (f Func) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 // Ref returns a query that looks up the string or integer value returned by q
 // as an object or array reference on its input. It is an error if the value
 // from q is not a string or a number. The parameter q has the same constraints
-// as the arguments to Path.
+// as the arguments to [Path].
 func Ref(q ...any) Query { return refQuery{Path(q...)} }
+
+// Store returns a query that evaluates the given query on its input and, on
+// success, stores the resulting value into *target.  If the resulting value
+// does not have the specified type, the query fails; otherwise the original
+// input is returned as its result. The arguments have the same constraints as
+// [Path].
+func Store[T ast.Value](target *T, args ...any) Query {
+	return storeQuery[T]{target: target, q: Path(args...)}
+}
