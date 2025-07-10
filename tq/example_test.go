@@ -33,17 +33,24 @@ func Example_simple() {
 }
 
 func Example_small() {
-	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": false}]`)
+	root := mustParseString(`[{"a": 1, "b": 2}, {"c": {"d": true}, "e": "ok"}]`)
 
-	v, err := tq.Eval[ast.Bool](root, tq.Path(
-		tq.As("@", 1, "c"), "$@", "d",
+	var d ast.Bool
+	var e ast.Text
+	_, err := tq.Eval[ast.Bool](root, tq.Path(
+		tq.As("@", 1, "c"),
+
+		tq.Store(&e, 1, "e"),
+		tq.Store(&d, "$@", "d"),
 	))
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
-	fmt.Println(v.JSON())
+	fmt.Println(d)
+	fmt.Println(e)
 	// Output:
 	// true
+	// ok
 }
 
 func Example_medium() {
