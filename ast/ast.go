@@ -311,6 +311,8 @@ func (s String) Quote() Text { return quotedText{data: escape.Quote(mem.S(string
 // JSON renders s as JSON text.
 func (s String) JSON() string { return jtree.Quote(string(s)) }
 
+// String implements part of the Value interface.
+// It returns the unquoted text of s.
 func (s String) String() string { return string(s) }
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
