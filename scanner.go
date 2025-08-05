@@ -348,8 +348,8 @@ func (s *Scanner) scanComment(first rune) error {
 			if err != nil {
 				return err
 			}
-			s.buf.WriteRune(next)
 			if next == '/' {
+				s.buf.WriteRune(next)
 				s.tok = BlockComment
 				return nil
 			} else if next == '\n' {
@@ -358,6 +358,8 @@ func (s *Scanner) scanComment(first rune) error {
 			}
 
 			// We saw "*" but not "/", so keep scanning for the end of the block.
+			// Unread the rune so we will accumulate it on the next pass.
+			s.unrune()
 		}
 
 	default:

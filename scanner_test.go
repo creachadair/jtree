@@ -82,15 +82,21 @@ func TestScanner_withComments(t *testing.T) {
 	tests := []struct {
 		input string
 		want  []jtree.Token
+		coms  []string
 	}{
-		{"/* block comment */\n\n\n", []jtree.Token{jtree.BlockComment}},
-		{"// line 1\n\n// line 2\n", []jtree.Token{jtree.LineComment, jtree.LineComment}},
-		{"// line at EOF", []jtree.Token{jtree.LineComment}},
+		{"/* block comment */\n\n\n", []jtree.Token{jtree.BlockComment},
+			[]string{"/* block comment */"}},
+		{"// line 1\n\n// line 2\n", []jtree.Token{jtree.LineComment, jtree.LineComment},
+			[]string{"// line 1\n", "// line 2\n"}}, // N.B. includes terminating newline, if present
+		{"// line at EOF", []jtree.Token{jtree.LineComment},
+			[]string{"// line at EOF"}},
 		{`{
  "x": 1, // howdy do
  "y" /* hide me */ : 2.0 }`, []jtree.Token{
 			jtree.LBrace, jtree.String, jtree.Colon, jtree.Integer, jtree.Comma, jtree.LineComment,
 			jtree.String, jtree.BlockComment, jtree.Colon, jtree.Number, jtree.RBrace,
+		}, []string{
+			"// howdy do\n", "/* hide me */",
 		}},
 
 		{`"a" // line
@@ -99,23 +105,48 @@ false /*
 */ 1 null [ {} ]`, []jtree.Token{
 			jtree.String, jtree.LineComment, jtree.False, jtree.BlockComment,
 			jtree.Integer, jtree.Null, jtree.LSquare, jtree.LBrace, jtree.RBrace, jtree.RSquare,
+		}, []string{
+			"// line\n", "/*\n  this is a comment\n*/",
 		}},
 
-		{"/* x */\n{\n}//foo", []jtree.Token{jtree.BlockComment, jtree.LBrace, jtree.RBrace, jtree.LineComment}},
+		{"/* x */\n{\n}//foo", []jtree.Token{
+			jtree.BlockComment, jtree.LBrace, jtree.RBrace, jtree.LineComment,
+		}, []string{
+			"/* x */", "//foo",
+		}},
+
+		{"/**\n*/", []jtree.Token{jtree.BlockComment}, []string{"/**\n*/"}},
+
+		{`/**/"foo"/***/"bar"/****/"baz"/*****/false/*x*/null`, []jtree.Token{
+			jtree.BlockComment, jtree.String,
+			jtree.BlockComment, jtree.String,
+			jtree.BlockComment, jtree.String,
+			jtree.BlockComment, jtree.False,
+			jtree.BlockComment, jtree.Null,
+		}, []string{
+			"/**/", "/***/", "/****/", "/*****/", "/*x*/",
+		}},
 	}
 
 	for _, test := range tests {
 		var got []jtree.Token
+		var coms []string
 		s := jtree.NewScanner(strings.NewReader(test.input))
 		s.AllowComments(true)
 		for s.Next() == nil {
 			got = append(got, s.Token())
+			if tok := s.Token(); tok == jtree.LineComment || tok == jtree.BlockComment {
+				coms = append(coms, string(s.Text()))
+			}
 		}
 		if s.Err() != io.EOF {
 			t.Errorf("Next failed: %v", s.Err())
 		}
 		if diff := cmp.Diff(test.want, got); diff != "" {
 			t.Errorf("Input: %#q\nTokens: (-want, +got)\n%s", test.input, diff)
+		}
+		if diff := cmp.Diff(test.coms, coms); diff != "" {
+			t.Errorf("Input: %#q\nComments: (-want, +got)\n%s", test.input, diff)
 		}
 	}
 }
