@@ -3,6 +3,7 @@
 package jwcc_test
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -73,6 +74,21 @@ func TestBasic(t *testing.T) {
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
 	}
+}
+
+func TestRepro(t *testing.T) {
+	const input = `{"a": {"r": { /*** the bad comment ***/ "0": [ false ] } } }`
+
+	doc, err := jwcc.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("MJF :: doc=%+v", doc)
+	var buf bytes.Buffer
+	if err := jwcc.Format(&buf, doc); err != nil {
+		t.Fatal(err)
+	}
+	t.Log(buf.String())
 }
 
 func TestCleanComments(t *testing.T) {
