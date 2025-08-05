@@ -77,8 +77,15 @@ func TestBasic(t *testing.T) {
 }
 
 func TestRepro(t *testing.T) {
-	const input = `{"a": {"r": { /*** the bad comment ***/ "0": [ false ] } } }`
-
+	const input = `{
+  "a": {
+    "r": {
+      /*** the bad comment ***/
+      "0": [ false ],
+    },
+  },
+}
+`
 	doc, err := jwcc.Parse(strings.NewReader(input))
 	if err != nil {
 		t.Fatal(err)
