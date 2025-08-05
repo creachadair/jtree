@@ -9,8 +9,6 @@ import (
 	"io"
 	"strings"
 	"unicode"
-
-	"go4.org/mem"
 )
 
 // Token is the type of a lexical token in the JSON grammar.
@@ -57,6 +55,13 @@ var tokenStr = [...]string{
 	BlockComment: "block commment",
 	LineComment:  "line comment",
 }
+
+// Text used by the scanner to recognize constants without allocating.
+var (
+	trueBytes  = []byte("true")
+	falseBytes = []byte("false")
+	nullBytes  = []byte("null")
+)
 
 func (t Token) String() string {
 	v := int(t)
@@ -148,27 +153,27 @@ func (s *Scanner) Next() error {
 		}
 
 		// Handle constants: true, false, null
-		var want mem.RO
+		var want []byte
 		switch ch {
 		case 't':
 			s.tok = True
-			want = mem.S("true")
+			want = trueBytes
 			err = s.scanName(ch)
 		case 'f':
 			s.tok = False
-			want = mem.S("false")
+			want = falseBytes
 			err = s.scanName(ch)
 		case 'n':
 			s.tok = Null
-			want = mem.S("null")
+			want = nullBytes
 			err = s.scanName(ch)
 		default:
 			return s.failf("unexpected %q", ch)
 		}
 		if err != nil {
 			return err
-		} else if got := mem.B(s.buf.Bytes()); !got.Equal(want) {
-			return s.failf("unknown constant %q", got.StringCopy())
+		} else if !bytes.Equal(s.buf.Bytes(), want) {
+			return s.failf("unknown constant %q", s.buf.Bytes())
 		}
 		return nil // OK, token is already set
 	}
