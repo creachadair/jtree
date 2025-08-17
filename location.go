@@ -42,3 +42,7 @@ func (loc Location) String() string {
 	}
 	return loc.First.String() + "-" + loc.Last.String()
 }
+
+// IsValid reports whether loc is a "valid" location, meaning it is not the
+// zero location.
+func (loc Location) IsValid() bool { return loc != Location{} }

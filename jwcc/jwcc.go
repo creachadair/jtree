@@ -78,6 +78,7 @@ func (c Comments) IsEmpty() bool {
 func (c *Comments) Clear() { c.Before = nil; c.Line = ""; c.End = nil }
 
 // ValueLocation reports the location of the specified value.
+// Values constructed rather than parsed may have a zero location.
 func ValueLocation(v Value) jtree.Location { return v.Comments().vloc }
 
 // Parse parses and returns a single JWCC value from r.  If r contains data
