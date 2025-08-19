@@ -76,6 +76,9 @@ type Stream struct {
 // NewStream constructs a new Stream that consumes input from r.
 func NewStream(r io.Reader) *Stream { return &Stream{s: NewScanner(r)} }
 
+// NewStreamWithScanner constructs a new Stream that consumes input from s.
+func NewStreamWithScanner(s *Scanner) *Stream { return &Stream{s: s} }
+
 // AllowComments configures the scanner associated with s to report (true) or
 // reject (false) comment tokens.
 func (s *Stream) AllowComments(ok bool) { s.s.AllowComments(ok) }
