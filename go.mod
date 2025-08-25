@@ -1,6 +1,6 @@
 module github.com/creachadair/jtree
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
-	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 )
 
 require (

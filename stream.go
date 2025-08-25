@@ -112,7 +112,7 @@ func (s *Stream) Parse(h Handler) (err error) {
 			h.EndOfInput(s.s)
 			return nil
 		} else if err != nil {
-			s.syntaxError(err, err.Error())
+			s.syntaxError(err, "%v", err)
 		}
 
 		s.parseElement(h)
@@ -130,7 +130,7 @@ func (s *Stream) ParseOne(h Handler) (err error) {
 		h.EndOfInput(s.s)
 		return err
 	} else if err != nil {
-		s.syntaxError(err, err.Error())
+		s.syntaxError(err, "%v", err)
 	}
 	s.parseElement(h)
 	return nil
@@ -238,11 +238,11 @@ func (s *Stream) nextToken(h Handler) error {
 
 func (s *Stream) advance(h Handler, tokens ...Token) Token {
 	if err := s.nextToken(h); err != nil {
-		s.syntaxError(err, tokLabel(tokens, err))
+		s.syntaxError(err, "%v", tokLabel(tokens, err))
 	}
 	tok := s.s.Token()
 	if len(tokens) != 0 && !tokOneOf(tok, tokens) {
-		s.syntaxError(nil, tokLabel(tokens, tok))
+		s.syntaxError(nil, "%v", tokLabel(tokens, tok))
 	}
 	return tok
 }
