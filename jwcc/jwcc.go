@@ -31,7 +31,25 @@ type Value interface {
 // any actual comment text.
 //
 // Comments read during parsing are stored as-seen in the input, including
-// comment markers.  When adding or editing a comment programmatically, comment
+// comment markers. Line comments also include their trailing newline.  Blank
+// lines separating groups of comments are represented in the Before and End
+// fields as empty strings. For example, given input:
+//
+//	// a
+//	// b
+//
+//	// c
+//
+//	"value"
+//
+// the resulting Before comment on "value" would be:
+//
+//	[]string{"// a\n", "// b\n", "", "// c\n", ""}
+//
+// The trailing "" indicates that the last comment did not immediately precede
+// the value in the source (though the amount of separation is not stored).
+//
+// When adding or editing a comment programmatically, comment
 // markers are optional; the text will be decorated when formatting the output.
 // To include blank space separating multiple chunks of comment text, include
 // an empty string. To include a blank line in the middle of a chunk, include
