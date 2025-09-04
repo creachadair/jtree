@@ -180,7 +180,7 @@ func (h *parseHandler) Value(loc jtree.Anchor) error {
 func AnchorValue(loc jtree.Anchor) (Value, error) {
 	switch loc.Token() {
 	case jtree.String:
-		return quotedText{data: mem.B(loc.Copy())}, nil
+		return Text{data: mem.B(loc.Copy()), quoted: true}, nil
 	case jtree.Integer:
 		return rawNumber{text: loc.Copy(), isInt: true}, nil
 	case jtree.Number:

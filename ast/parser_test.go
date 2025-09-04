@@ -5,9 +5,7 @@ package ast_test
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -20,12 +18,6 @@ var (
 	_ ast.Number = ast.Int(0)
 	_ ast.Number = ast.Float(0)
 )
-
-type testValue int
-
-func (t testValue) JSON() string    { return strconv.Itoa(int(t)) }
-func (t testValue) String() string  { return fmt.Sprintf("z=%d", t) }
-func (t testValue) Quote() ast.Text { return ast.String(fmt.Sprintf("key=%d", t)).Quote() }
 
 func TestParse_JWCC(t *testing.T) {
 	input, err := os.ReadFile("../testdata/input.jwcc")
@@ -276,11 +268,6 @@ func TestString(t *testing.T) {
 				ast.Field("count", 100),
 			}),
 		}, `{"values":[5,10,true],"page":{"token":"xyz-pdq-zvm","count":100}}`},
-
-		{ast.Object{
-			// If a non-string Keyer is used as a key, it is turned into a string.
-			&ast.Member{Key: testValue(25), Value: testValue(101)},
-		}, `{"key=25":101}`},
 	}
 	for _, test := range tests {
 		got := test.input.JSON()

@@ -260,60 +260,71 @@ func (b Bool) JSON() string {
 
 func (b Bool) String() string { return b.JSON() }
 
-// Text represents a value that can be encoded as a JSON string.
-// The String method of a Text value returns the plain string without quotes.
-type Text interface {
-	Value
-
-	Quote() Text // returns a quoted representation of the text
+// Text represents a string value. Text values may either be "quoted", as
+// represented in JSON source text, or "unquoted" (with quotation marks and
+// escape sequences removed).
+//
+// The String method returns the plain (unescaped) text.
+// The JSON method returns the quoted (escaped) JSON text.
+type Text struct {
+	data   mem.RO
+	quoted bool
 }
-
-// A quotedText is a quoted string value.
-type quotedText struct{ data mem.RO }
-
-// Quote returns q unmodified to satisfy the Text interface.
-func (q quotedText) Quote() Text { return q }
 
 // unquote returns the unescaped text of the string.
-func (q quotedText) unquote() string {
-	n := q.data.Len()
-	if n == 0 {
+// Precondition: t.quoted == true
+func (t Text) unquote() string {
+	if !t.quoted {
+		panic("unquote of un-quoted string")
+	}
+	if n := t.data.Len(); n == 0 {
 		return ""
-	}
-	dec, err := escape.Unquote(q.data.Slice(1, n-1))
-	if err != nil {
+	} else if dec, err := escape.Unquote(t.data.Slice(1, n-1)); err != nil {
 		panic(err)
+	} else {
+		return string(dec)
 	}
-	return string(dec)
 }
 
-// Quoted constructs a quoted text value for s.
-func Quoted(s string) Text { return quotedText{data: mem.S(s)} }
+// String constructs a [Text] value representing the unquoted value s.
+func String(s string) Text { return Text{data: mem.S(s)} }
 
-// Len returns the length in bytes of the unquoted text of q.
-func (q quotedText) Len() int { return len(q.unquote()) }
+// Quoted constructs a [Text] value representing the quoted value s.
+// It is the caller's responsibility to ensure that s is properly quoted.
+func Quoted(s string) Text { return Text{data: mem.S(s), quoted: true} }
+
+// Len returns the length in bytes of the unquoted text of t.
+func (t Text) Len() int {
+	if t.quoted {
+		return len(t.unquote())
+	}
+	return t.data.Len()
+}
 
 // JSON returns the JSON encoding of q.
-func (q quotedText) JSON() string { return q.data.StringCopy() }
+func (t Text) JSON() string {
+	if t.quoted {
+		return t.data.StringCopy()
+	}
+	return escape.Quote(t.data).StringCopy()
+}
 
-// String returns the unquoted string represented by q.
-func (q quotedText) String() string { return q.unquote() }
+// String returns the unquoted string represented by t.
+func (t Text) String() string {
+	if t.quoted {
+		return t.unquote()
+	}
+	return t.data.StringCopy()
+}
 
-// A String is an unquoted text value.
-type String string
-
-// Len returns the length in bytes of s.
-func (s String) Len() int { return len(s) }
-
-// Quote converts s into its quoted representation.
-func (s String) Quote() Text { return quotedText{data: escape.Quote(mem.S(string(s)))} }
-
-// JSON renders s as JSON text.
-func (s String) JSON() string { return jtree.Quote(string(s)) }
-
-// String implements part of the Value interface.
-// It returns the unquoted text of s.
-func (s String) String() string { return string(s) }
+// Quote returns the quoted representation of t, which is t itself if the text
+// was already quoted.
+func (t Text) Quote() Text {
+	if t.quoted {
+		return t
+	}
+	return Text{data: escape.Quote(t.data), quoted: true}
+}
 
 // Null represents the JSON null constant. The length of Null is defined as 0.
 var Null nullValue
