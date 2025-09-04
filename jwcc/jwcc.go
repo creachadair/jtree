@@ -79,9 +79,21 @@ type Value interface {
 // If a comment begins with "/*" it will be processed as a block comment.
 // Multiple lines are OK; they will be reformatted as necessary.
 type Comments struct {
+	// Before contains any comments in the source text preceding the commented
+	// value, beginning on a line after the prior value (if any).  Blank lines
+	// separating groups of comments are represented by an empty string.
 	Before []string
-	Line   string
-	End    []string
+
+	// Line contains a line-ending comment on the same line as the end of the
+	// commented value. It is "" if no line-ending comment was present.
+	Line string
+
+	// End contains any comments in the source text at the end of a Document,
+	// Array, or Object. It is not populated for other value types. For array
+	// and object values, the end comments (if any) are located inside their
+	// enclosing delimiters.  Blank lines separating groups of comments are
+	// represented by an empty string.
+	End []string
 
 	vloc jtree.Location // the location of the value this is attached to
 }
