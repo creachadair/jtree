@@ -326,6 +326,15 @@ func (t Text) Quote() Text {
 	return Text{data: escape.Quote(t.data), quoted: true}
 }
 
+// Unquote returns the unquoted representation of t, which is t itself if the
+// text was already unquoted.
+func (t Text) Unquote() Text {
+	if t.quoted {
+		return Text{data: mem.S(t.unquote())}
+	}
+	return t
+}
+
 // Null represents the JSON null constant. The length of Null is defined as 0.
 var Null nullValue
 
