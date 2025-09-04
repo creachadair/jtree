@@ -276,3 +276,25 @@ func TestString(t *testing.T) {
 		}
 	}
 }
+
+func TestSpelling(t *testing.T) {
+	tests := []struct {
+		input ast.Text
+		want  string
+	}{
+		{ast.String(""), ""},
+		{ast.String("abc"), "abc"},
+		{ast.String("").Quote(), `""`},
+		{ast.Quoted(`""`).Unquote(), ""},
+		{ast.String("abc").Quote(), `"abc"`},
+		{ast.String("a\tb"), "a\tb"},
+		{ast.String("a\tb").Quote(), `"a\tb"`},
+		{ast.Quoted(`"a\tb"`).Unquote(), "a\tb"},
+	}
+
+	for _, tc := range tests {
+		if got := tc.input.Spelling(); got != tc.want {
+			t.Errorf("Spelling(%s): got %q, want %q", tc.input.JSON(), got, tc.want)
+		}
+	}
+}

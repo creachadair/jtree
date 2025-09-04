@@ -317,6 +317,10 @@ func (t Text) String() string {
 	return t.data.StringCopy()
 }
 
+// Spelling returns the spelling of t as-written, which includes quotes and
+// escape sequences if t is quoted.
+func (t Text) Spelling() string { return t.data.StringCopy() }
+
 // Quote returns the quoted representation of t, which is t itself if the text
 // was already quoted.
 func (t Text) Quote() Text {
