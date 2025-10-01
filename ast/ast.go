@@ -111,6 +111,15 @@ func Field(key string, value any) *Member {
 	return &Member{Key: String(key), Value: ToValue(value)}
 }
 
+// ArrayOf constructs an array from args by invoking [ToValue] on each argument.
+func ArrayOf[T any](args ...T) Array {
+	out := make(Array, len(args))
+	for i, arg := range args {
+		out[i] = ToValue(arg)
+	}
+	return out
+}
+
 // ToValue converts a string, int, float, bool, nil, or ast.Value into an
 // ast.Value. It panics if v does not have one of those types.
 func ToValue(v any) Value {

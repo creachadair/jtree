@@ -277,6 +277,25 @@ func TestString(t *testing.T) {
 	}
 }
 
+func TestArrayOf(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		if diff := cmp.Diff(ast.ArrayOf[any]().JSON(), `[]`); diff != "" {
+			t.Errorf("ArrayOf() (-got, +want):\n%s", diff)
+		}
+	})
+	t.Run("Strings", func(t *testing.T) {
+		if diff := cmp.Diff(ast.ArrayOf("a", "b", "c").JSON(), `["a","b","c"]`); diff != "" {
+			t.Errorf("ArrayOf strings (-got, +want):\n%s", diff)
+		}
+	})
+	t.Run("Mixed", func(t *testing.T) {
+		got := ast.ArrayOf[any](ast.Object{ast.Field("foo", "bar")}, "baz", 123, false)
+		if diff := cmp.Diff(got.JSON(), `[{"foo":"bar"},"baz",123,false]`); diff != "" {
+			t.Errorf("ArrayOf mixed (-got, +want):\n%s", diff)
+		}
+	})
+}
+
 func TestSpelling(t *testing.T) {
 	tests := []struct {
 		input ast.Text
