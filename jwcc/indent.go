@@ -76,7 +76,7 @@ func (f Formatter) formatValue(w writeFlusher, v Value, init, indent string, lin
 
 func (f Formatter) formatArray(w writeFlusher, a *Array, init, indent string) bool {
 	if f.isBoring(a) {
-		io.WriteString(w, "[")
+		fmt.Fprint(w, init, "[")
 		for i, v := range a.Values {
 			if i > 0 {
 				io.WriteString(w, ", ")
@@ -200,11 +200,11 @@ func (f Formatter) isBoring(v Value) bool {
 	com := v.Comments()
 	switch t := v.(type) {
 	case *Array:
-		if len(com.Before) != 0 || len(com.End) != 0 {
+		if len(com.End) != 0 {
 			return false
 		}
 		for i, v := range t.Values {
-			if !f.isBoring(v) || i >= f.maxLineItems() {
+			if !f.isBoring(v) || len(v.Comments().Before) != 0 || i >= f.maxLineItems() {
 				return false
 			}
 		}

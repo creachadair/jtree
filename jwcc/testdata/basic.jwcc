@@ -13,6 +13,9 @@
    null, // c
  {"pea":"brain", /*fool*/
 },
+[ "uncommented-item",],
+[ // decoration
+"commented-item"],
 
         /*    I am a block comment
           inside which
