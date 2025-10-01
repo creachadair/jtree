@@ -14,8 +14,23 @@
  {"pea":"brain", /*fool*/
 },
 [ "uncommented-item",],
-[ // decoration
+
+[ "two"
+, "uncommented"
+, "items"
+,],
+
+[1, // ok
+2],
+
+[ // decorated
 "commented-item"],
+
+// forsooth
+["a"
+, "mixed" ,
+// bag
+"of nuts"],
 
         /*    I am a block comment
           inside which

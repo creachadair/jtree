@@ -52,7 +52,7 @@ type writeFlusher interface {
 // If lineCom is true, it renders a line-ending comment for v, if present.
 func (f Formatter) formatValue(w writeFlusher, v Value, init, indent string, lineCom bool) {
 	com := v.Comments()
-	f.indentComments(w, com.Before, indent, true)
+	f.indentComments(w, com.Before, indent, false)
 	switch t := v.(type) {
 	case *Array:
 		f.formatArray(w, t, init, indent)
@@ -148,8 +148,10 @@ func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) 
 		if len(m.Value.Comments().Before) == 0 {
 			f.formatValue(w, m.Value, "", mdent, false)
 		} else {
+			// The value has some comments that need rendering, bump it in one more level.
+			vdent := mdent + f.indent()
 			io.WriteString(w, "\n")
-			f.formatValue(w, m.Value, mdent, mdent, false)
+			f.formatValue(w, m.Value, vdent, vdent, false)
 		}
 
 		// Render a line comment (if there is one) outside the comma.
@@ -187,9 +189,11 @@ func (f Formatter) objSep(v Value) string {
 
 // canInlineComment reports whether comments ss have simple enough structure
 // that they can be rendered inline.
+//
+// TODO(creachadair): We might not need this anymore.
 func (Formatter) canInlineComment(ss []string) bool {
 	if len(ss) == 1 {
-		return strings.HasPrefix(ss[0], "/*") && strings.Count(ss[0], "\n") == 0
+		return strings.HasPrefix(ss[0], "/*") && !strings.Contains(ss[0], "\n")
 	}
 	return false
 }
