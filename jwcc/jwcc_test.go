@@ -75,6 +75,40 @@ func TestBasic(t *testing.T) {
 	}
 }
 
+func TestArrayOf(t *testing.T) {
+	indent := func(v jwcc.Value) string { return jwcc.FormatToString(v) }
+	t.Run("Empty", func(t *testing.T) {
+		if diff := cmp.Diff(indent(jwcc.ArrayOf[any]()), `[]`); diff != "" {
+			t.Errorf("ArrayOf() (-got, +want):\n%s", diff)
+		}
+	})
+	t.Run("Strings", func(t *testing.T) {
+		if diff := cmp.Diff(indent(jwcc.ArrayOf("a", "b", "c")), `["a", "b", "c"]`); diff != "" {
+			t.Errorf("ArrayOf strings (-got, +want):\n%s", diff)
+		}
+	})
+	t.Run("Single", func(t *testing.T) {
+		if diff := cmp.Diff(indent(jwcc.ArrayOf[any](&jwcc.Object{
+			Members: []*jwcc.Member{jwcc.Field("alpha", true)},
+		})), `[{"alpha": true}]`); diff != "" {
+			t.Errorf("ArrayOf simple object (-got, +want):\n%s", diff)
+		}
+	})
+	t.Run("Mixed", func(t *testing.T) {
+		got := jwcc.ArrayOf[any](&jwcc.Object{
+			Members: []*jwcc.Member{jwcc.Field("foo", "bar")},
+		}, "baz", 123, false)
+		if diff := cmp.Diff(indent(got), `[
+  {"foo": "bar"},
+  "baz",
+  123,
+  false,
+]`); diff != "" {
+			t.Errorf("ArrayOf mixed (-got, +want):\n%s", diff)
+		}
+	})
+}
+
 func TestCleanComments(t *testing.T) {
 	tests := []struct {
 		input []string

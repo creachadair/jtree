@@ -101,6 +101,15 @@ func Field(key string, value any) *Member {
 	return &Member{Key: ast.String(key), Value: ToValue(value)}
 }
 
+// ArrayOf constructs an array from args by invoking [ToValue] on each argument.
+func ArrayOf[T any](args ...T) *Array {
+	out := &Array{Values: make([]Value, len(args))}
+	for i, arg := range args {
+		out.Values[i] = ToValue(arg)
+	}
+	return out
+}
+
 // An Object is a collection of key-value members.
 type Object struct {
 	Members []*Member
