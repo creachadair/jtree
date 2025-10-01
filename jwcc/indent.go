@@ -81,7 +81,8 @@ func (f Formatter) formatArray(w writeFlusher, a *Array, init, indent string) bo
 			if i > 0 {
 				io.WriteString(w, ", ")
 			}
-			io.WriteString(w, v.JSON())
+			// We know there can be no line comment, since the array is boring.
+			f.formatValue(w, v, "", "", false)
 		}
 		io.WriteString(w, "]")
 		return true
@@ -115,12 +116,14 @@ func (f Formatter) formatArray(w writeFlusher, a *Array, init, indent string) bo
 
 func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) bool {
 	if f.isBoring(o) {
-		fmt.Fprint(w, "{")
+		fmt.Fprint(w, init, "{")
 		for i, m := range o.Members {
 			if i > 0 {
 				io.WriteString(w, ", ")
 			}
-			fmt.Fprint(w, m.Key.JSON(), ": ", m.Value.JSON())
+			fmt.Fprint(w, m.Key.JSON(), ": ")
+			// We know there can be no line comment, since the object is boring.
+			f.formatValue(w, m.Value, "", "", false)
 		}
 		io.WriteString(w, "}")
 		return true
