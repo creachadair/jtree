@@ -13,6 +13,7 @@ import (
 	"github.com/creachadair/jtree/ast"
 	"github.com/creachadair/jtree/cursor"
 	"github.com/creachadair/jtree/jwcc"
+	"github.com/creachadair/mds/mtest"
 	"github.com/google/go-cmp/cmp"
 
 	_ "embed"
@@ -203,5 +204,46 @@ func TestDecorate(t *testing.T) {
 		if diff := cmp.Diff(got, want); diff != "" {
 			t.Errorf("Decorated JWCC (-got, +want):\n%s", diff)
 		}
+	})
+}
+
+func TestToValue(t *testing.T) {
+	t.Run("Null", func(t *testing.T) {
+		got := jwcc.ToValue(nil)
+		if d, ok := got.(*jwcc.Datum); !ok || d.Value != ast.Null {
+			t.Errorf("got %[1]T %[1]v, want datum null", got)
+		}
+	})
+	t.Run("String", func(t *testing.T) {
+		got := jwcc.ToValue("fuzzy")
+		if d, ok := got.(*jwcc.Datum); !ok || d.Value.String() != "fuzzy" {
+			t.Errorf("got %[1]T %[1]v, want string fuzzy", got)
+		}
+	})
+	t.Run("True", func(t *testing.T) {
+		got := jwcc.ToValue(true)
+		if d, ok := got.(*jwcc.Datum); !ok || d.Value.String() != "true" {
+			t.Errorf("got %[1]T %[1]v, want bool true", got)
+		}
+	})
+	t.Run("Array", func(t *testing.T) {
+		got := jwcc.ToValue(ast.ArrayOf(1, 2, 3))
+		if a, ok := got.(*jwcc.Array); !ok || a.JSON() != `[1,2,3]` {
+			t.Errorf("got %[1]T %[1]v, want array [1,2,3]", got)
+		}
+	})
+	t.Run("Object", func(t *testing.T) {
+		got := jwcc.ToValue(ast.Object{
+			ast.Field("foo", 1),
+			ast.Field("bar", true),
+		})
+		if o, ok := got.(*jwcc.Object); !ok || o.JSON() != `{"foo":1,"bar":true}` {
+			t.Errorf("got %[1]T %[1]v, want object", got)
+		}
+	})
+	t.Run("Invalid", func(t *testing.T) {
+		mtest.MustPanic(t, func() { jwcc.ToValue([]bool{true}) })
+		mtest.MustPanic(t, func() { jwcc.ToValue(func() {}) })
+		mtest.MustPanic(t, func() { jwcc.ToValue(make(chan struct{})) })
 	})
 }
