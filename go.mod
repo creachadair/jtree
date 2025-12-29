@@ -10,7 +10,7 @@ require (
 require (
 	github.com/creachadair/mds v0.25.15
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
-	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9
+	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
 )
 
 require (
