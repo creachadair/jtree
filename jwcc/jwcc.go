@@ -7,11 +7,11 @@ package jwcc
 import (
 	"errors"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/creachadair/jtree"
 	"github.com/creachadair/jtree/ast"
-	"golang.org/x/exp/slices"
 )
 
 // A Value is a JSON value optionally decorated with comments.
