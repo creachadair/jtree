@@ -9,14 +9,15 @@
 // advances to the next input token and returns nil, or reports an error:
 //
 //	s := jtree.NewScanner(input)
-//	for s.Next() == nil {
+//	for s.Next() {
 //	   log.Printf("Next token: %v", s.Token())
 //	}
 //
-// Next returns io.EOF when the input has been fully consumed. Any other error
-// indicates an I/O or lexical error in the input.
+// Next returns false if no further tokens are available. Use [Scanner.Err] to
+// discover the reason why. At the end of the input, [Scanner.Err] returns nil;
+// otherwise it indicates an I/O or lexical error.
 //
-//	if s.Err() != io.EOF {
+//	if s.Err() != nil {
 //	   log.Fatalf("Scanning failed: %v", err)
 //	}
 //

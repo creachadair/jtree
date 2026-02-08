@@ -3,6 +3,7 @@
 package jtree
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"strings"
@@ -218,11 +219,7 @@ func (s *Stream) parseElements(h Handler) {
 }
 
 func (s *Stream) nextToken(h Handler) error {
-	for {
-		if err := s.s.Next(); err != nil {
-			return err
-		}
-
+	for s.s.Next() {
 		// If we see a comment token, pass it to the handler if it implements
 		// CommentHandler. Either way, discard the comment and fetch the next
 		// available comment for the rest of the parser.
@@ -234,6 +231,7 @@ func (s *Stream) nextToken(h Handler) error {
 		}
 		return nil
 	}
+	return cmp.Or(s.s.Err(), io.EOF)
 }
 
 func (s *Stream) advance(h Handler, tokens ...Token) Token {

@@ -100,13 +100,11 @@ func BenchmarkScanner(b *testing.B) {
 		b.Run("Scanner", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				dec := jtree.NewScanner(bytes.NewReader(input))
-				for {
-					err := dec.Next()
-					if err == io.EOF {
-						break
-					} else if err != nil {
-						b.Fatalf("Unexpected error: %v", err)
-					}
+				for dec.Next() {
+					// nothing
+				}
+				if err := dec.Err(); err != nil {
+					b.Fatalf("Unexpected error: %v", err)
 				}
 			}
 		})
