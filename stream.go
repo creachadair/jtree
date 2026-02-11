@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 )
 
@@ -290,12 +291,7 @@ func tokLabel(tokens []Token, got any) string {
 
 // tokOneOf reports whether cur is an element of tokens.
 func tokOneOf(cur Token, tokens []Token) bool {
-	for _, token := range tokens {
-		if cur == token {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(tokens, cur)
 }
 
 // SyntaxError is the concrete type of errors reported by the stream parser.
