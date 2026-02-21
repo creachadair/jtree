@@ -70,6 +70,8 @@ func (d *Document) Comments() *Comments { return &d.com }
 func (d *Document) Undecorate() ast.Value { return d.Value.Undecorate() }
 
 // A Member is a key-value pair in an object.
+// Although a member is not technically a value in the JSON grammar,
+// this type implements the [Value] interface for convenience of use.
 type Member struct {
 	Key   ast.Text
 	Value Value

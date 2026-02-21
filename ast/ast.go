@@ -98,8 +98,9 @@ func (o Object) Sort() {
 	sort.Slice(o, func(i, j int) bool { return o[i].Key.String() < o[j].Key.String() })
 }
 
-// A Member is a single key-value pair belonging to an Object. A Key must
-// support being rendered as text, typically an ast.String.
+// A Member is a single key-value pair belonging to an Object.
+// Although a member is not technically a value in the JSON grammar,
+// this type implements the [Value] interface for convenience of use.
 type Member struct {
 	Key   Text
 	Value Value
