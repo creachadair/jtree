@@ -6,15 +6,15 @@
 //
 // The Scanner type implements a lexical scanner for JSON.  Construct a scanner
 // from an io.Reader and call its Next method to iterate over the stream. Next
-// advances to the next input token and returns nil, or reports an error:
+// advances to the next input token and reports whether it succeeded:
 //
 //	s := jtree.NewScanner(input)
 //	for s.Next() {
 //	   log.Printf("Next token: %v", s.Token())
 //	}
 //
-// Next returns false if no further tokens are available. Use [Scanner.Err] to
-// discover the reason why. At the end of the input, [Scanner.Err] returns nil;
+// Next returns false if no token is available. Use [Scanner.Err] to discover
+// the reason why. At the end of the input, [Scanner.Err] returns nil;
 // otherwise it indicates an I/O or lexical error.
 //
 //	if s.Err() != nil {
