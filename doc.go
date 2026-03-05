@@ -4,9 +4,10 @@
 //
 // # Scanning
 //
-// The Scanner type implements a lexical scanner for JSON.  Construct a scanner
-// from an io.Reader and call its Next method to iterate over the stream. Next
-// advances to the next input token and reports whether it succeeded:
+// The [Scanner] type implements a lexical scanner for JSON.  Construct a
+// scanner from an [io.Reader] and call its [Scanner.Next] method to iterate
+// over the stream. Next advances to the next input token and reports whether
+// it succeeded:
 //
 //	s := jtree.NewScanner(input)
 //	for s.Next() {
@@ -23,22 +24,22 @@
 //
 // # Streaming
 //
-// The Stream type implements an event-driven stream parser for JSON.  The
-// parser works by calling methods on a Handler value to report the structure
+// The [Stream] type implements an event-driven stream parser for JSON.  The
+// parser works by calling methods on a [Handler] value to report the structure
 // of the input. In case of error, parsing is terminated and an error of
 // concrete type [*SyntaxError] is returned.
 //
-// Construct a Stream from an io.Reader, and call its Parse method. Parse
-// returns nil if the input was fully processed without error. If a Handler
-// method reports an error, parsing stops and that error is returned.
+// Construct a [Stream] from an [io.Reader], and call its [Stream.Parse]
+// method. Parse returns nil if the input was fully processed without error. If
+// a Handler method reports an error, parsing stops and that error is returned.
 //
 //	s := jtree.NewStream(input)
 //	if err := s.Parse(handler); err != nil {
 //	   log.Fatalf("Parse failed: %v", err)
 //	}
 //
-// To parse a single value from the front of the input, call ParseOne. This
-// method returns io.EOF if no further values are available:
+// To parse a single value from the front of the input, call [Stream.ParseOne].
+// This method returns [io.EOF] if no further values are available:
 //
 //	if err := s.ParseOne(handle); err == io.EOF {
 //	   log.Print("No more input")
@@ -48,8 +49,8 @@
 //
 // # Handlers
 //
-// The Handler interface accepts parser events from a Stream. The methods of
-// a handler correspond to the syntax of JSON values:
+// The [Handler] interface accepts parser events from a [Stream]. The methods
+// of a handler correspond to the syntax of JSON values:
 //
 //	JSON type  | Methods                   | Description
 //	---------- | ------------------------- | ---------------------------------
@@ -59,12 +60,12 @@
 //	value      | Value                     | true, false, null, number, string
 //	--         | EndOfInput                | end of input
 //
-// Each method is passed an Anchor value that can be used to retrieve location
-// and type information. See the comments on the Handler type for the meaning
+// Each method is passed an [Anchor] value that can be used to retrieve location
+// and type information. See the comments on the [Handler] type for the meaning
 // of each method's anchor value. The Anchor passed to a handler method is only
 // valid for the duration of that method call; the handler must copy any data
 // it needs to retain beyond the lifetime of the call.
 //
 // The parser ensures that corresponding Begin and End methods are correctly
-// paired, or that a SyntaxError is reported.
+// paired, or that a [SyntaxError] is reported.
 package jtree

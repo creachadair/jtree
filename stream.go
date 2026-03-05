@@ -123,7 +123,7 @@ func (s *Stream) Parse(h Handler) (err error) {
 
 // ParseOne parses a single value from the input stream and delivers events to
 // h until the value is complete or an error occurs. If no further value is
-// available from the input, ParseOne returns io.EOF. In case of a syntax
+// available from the input, ParseOne returns [io.EOF]. In case of a syntax
 // error, the returned error has type [*SyntaxError].
 func (s *Stream) ParseOne(h Handler) (err error) {
 	defer s.recoverParseError(&err)
