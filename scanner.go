@@ -520,6 +520,7 @@ func (s *Scanner) copyOf(text []byte) []byte {
 	const minBlockSlop = 4
 	const smallSizeFraction = 16
 	const bufBlockBytes = 16384
+	const maxBlocks = (1 << 20) / bufBlockBytes
 
 	// For values bigger than smallSizeFraction of the block size, don't bother
 	// batching, make an outright copy.
@@ -543,7 +544,12 @@ func (s *Scanner) copyOf(text []byte) []byte {
 		i++
 	}
 	if i == len(s.tbuf) {
-		// No block had room; add a new empty one to the arena.
+		// No block had room. As a safety measure, if we have "too many" blocks,
+		// reset the block cache so a carefully-crafted input cannot drive us to
+		// grow the list indefinitely. Then add a new empty block to the arena.
+		if len(s.tbuf) >= maxBlocks {
+			s.tbuf = nil // release
+		}
 		s.tbuf = append(s.tbuf, make([]byte, 0, bufBlockBytes))
 	}
 	p := len(s.tbuf[i])
