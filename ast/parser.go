@@ -53,7 +53,7 @@ func (p *Parser) Parse() (Value, error) {
 // It reports [ErrEmptyInput] if the input is entirely empty.
 func Parse(r io.Reader) ([]Value, error) {
 	var vs []Value
-	for v, err := range ParseRange(r) {
+	for v, err := range ParseSeq(r) {
 		if err != nil {
 			return vs, err
 		}
@@ -65,11 +65,11 @@ func Parse(r io.Reader) ([]Value, error) {
 	return vs, nil
 }
 
-// ParseRange parses and yields the JSON values from r.  Each pair produced by
+// ParseSeq parses and yields the JSON values from r.  Each pair produced by
 // the iterator is either a valid JSON value and nil error, or a nil value and
-// a non-nil parse error.  If and when an error occurs, the iterator stops.
-// If the input is empty, the iterator yields no values.
-func ParseRange(r io.Reader) iter.Seq2[Value, error] {
+// a non-nil parse error.  If and when an error occurs, the iterator stops.  If
+// the input is empty, the iterator yields no values.
+func ParseSeq(r io.Reader) iter.Seq2[Value, error] {
 	p := NewParser(r)
 	return func(yield func(Value, error) bool) {
 		for {

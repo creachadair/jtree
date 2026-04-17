@@ -116,13 +116,13 @@ func TestParse(t *testing.T) {
 	})
 }
 
-func TestParseRange(t *testing.T) {
+func TestParseseq(t *testing.T) {
 	const input = `1"foo"{ }true null[ "a" , "b" ]{"key": "value"}"stop"1 3 4`
 
 	var got []string
 	want := []string{"1", `"foo"`, "{}", "true", "null", `["a","b"]`, `{"key":"value"}`}
 
-	for v, err := range ast.ParseRange(strings.NewReader(input)) {
+	for v, err := range ast.ParseSeq(strings.NewReader(input)) {
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
