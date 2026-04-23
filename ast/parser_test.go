@@ -116,7 +116,7 @@ func TestParse(t *testing.T) {
 	})
 }
 
-func TestParseseq(t *testing.T) {
+func TestParseSeq(t *testing.T) {
 	const input = `1"foo"{ }true null[ "a" , "b" ]{"key": "value"}"stop"1 3 4`
 
 	var got []string
