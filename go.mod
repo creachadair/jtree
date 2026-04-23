@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/creachadair/mds v0.26.2
+	github.com/creachadair/mds v0.27.1
 	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
 )
 
