@@ -143,7 +143,7 @@ func TestCompliance(t *testing.T) {
 			t.Run(tail, func(t *testing.T) {
 				if _, err := mustParse(t, f); err != nil {
 					numIndetErrs++
-					t.Logf("- got permiited parse error: %v", err)
+					t.Logf("- got permitted parse error: %v", err)
 				}
 			})
 		default:
