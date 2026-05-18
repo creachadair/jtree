@@ -60,40 +60,37 @@ func TestValues(t *testing.T) {
 	}
 }
 
-func evalFunc[T ast.Value](val ast.Value) func(*testing.T, tq.Query) T {
-	return func(t *testing.T, q tq.Query) T {
-		t.Helper()
-		v, err := tq.Eval[T](val, q)
-		if err != nil {
-			t.Fatalf("Eval failed: %v", err)
-		}
-		return v
+func mustEvalTo[T ast.Value](t *testing.T, val ast.Value, q tq.Query) T {
+	t.Helper()
+	v, err := tq.Eval[T](val, q)
+	if err != nil {
+		t.Fatalf("Eval failed: %v", err)
 	}
+	return v
 }
 
 func TestQuery(t *testing.T) {
 	val := mustParseFile(t, "../testdata/input.json")
-	mustEval := evalFunc[ast.Value](val)
 
 	const wantString = "2021-11-30"
 	const wantLength = 563
 
 	t.Run("Path", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", 0, "airDate"))
+		v := mustEvalTo[ast.Text](t, val, tq.Path("episodes", 0, "airDate"))
 		if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
 
 	t.Run("Key", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", 0, "airDate"))
+		v := mustEvalTo[ast.Text](t, val, tq.Path("episodes", 0, "airDate"))
 		if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
 	})
 
 	t.Run("NKey", func(t *testing.T) {
-		v := mustEval(t, tq.Path("%EPISODES", 0, tq.NKey("AIRDATE")))
+		v := mustEvalTo[ast.Text](t, val, tq.Path("%EPISODES", 0, tq.NKey("AIRDATE")))
 		if got := v.String(); got != wantString {
 			t.Errorf("Result: got %q, want %q", got, wantString)
 		}
@@ -106,36 +103,28 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Alt", func(t *testing.T) {
-		v := mustEval(t, tq.Alt{
+		s := mustEvalTo[ast.Array](t, val, tq.Alt{
 			tq.Path(0),
 			tq.Path("episodes"),
 			tq.Value(nil),
 		})
-		if s, ok := v.(ast.Array); !ok {
-			t.Errorf("Result: got %T, want array", v)
-		} else if len(s) != wantLength {
+		if len(s) != wantLength {
 			t.Errorf("Result: got %d elements, want %d", len(s), wantLength)
 		}
 	})
 
 	t.Run("Slice", func(t *testing.T) {
 		const wantJSON = `["2020-03-27","2020-03-26","2020-03-25"]`
-		v := mustEval(t, tq.Path(
+		arr := mustEvalTo[ast.Array](t, val, tq.Path(
 			"episodes", tq.Slice(-3, 0), tq.Each("airDate"),
 		))
-		if arr, ok := v.(ast.Array); !ok {
-			t.Errorf("Result: got %T, want array", v)
-		} else if got := arr.JSON(); got != wantJSON {
+		if got := arr.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 
 	t.Run("Recur1", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", tq.Recur("guestNames", 0), tq.Slice(0, 3)))
-		a, ok := v.(ast.Array)
-		if !ok {
-			t.Fatalf("Result: got %T, want array", v)
-		}
+		a := mustEvalTo[ast.Array](t, val, tq.Path("episodes", tq.Recur("guestNames", 0), tq.Slice(0, 3)))
 		const wantJSON = `["Paul Rosenzweig","Mike Chase","Shane Harris"]`
 		if got := a.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -143,13 +132,9 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur2", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		a := mustEvalTo[ast.Array](t, val, tq.Path(
 			"episodes", tq.Recur("title"), tq.Slice(0, 4),
 		))
-		a, ok := v.(ast.Array)
-		if !ok {
-			t.Fatalf("Result: got %T, want array", v)
-		}
 		const wantJSON = `["Chatter podcast","Book","Book","Articles"]`
 		if got := a.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -164,25 +149,23 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Count", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", tq.Recur("url"), tq.Len()))
-		const wantJSON = `183` // grep '"url"' testdata/input.json | wc -l
-		if got := v.JSON(); got != wantJSON {
-			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
+		got := mustEvalTo[ast.Int](t, val, tq.Path("episodes", tq.Recur("url"), tq.Len()))
+		const want = 183 // grep '"url"' testdata/input.json | wc -l
+		if got != want {
+			t.Errorf("Result: got %d, want %d", got, want)
 		}
 	})
 
 	t.Run("Glob", func(t *testing.T) {
 		// The number of fields in the first object of the episodes array.
-		v := mustEval(t, tq.Path("episodes", 0, tq.Glob(), tq.Len()))
-		if n, ok := v.(ast.Int); !ok {
-			t.Errorf("Result: got %T, want number", v)
-		} else if n != 6 {
+		n := mustEvalTo[ast.Int](t, val, tq.Path("episodes", 0, tq.Glob(), tq.Len()))
+		if n != 6 {
 			t.Errorf("Result: got %v, want 5", n)
 		}
 	})
 
 	t.Run("RecurGlob", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Text](t, val, tq.Path(
 			tq.Recur("links", -1), // the last link object of each set
 			tq.Each(tq.Glob(), 0), // the first field of each such object
 			tq.Path(-5),           // the fifth from the end
@@ -194,7 +177,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Pick", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Array](t, val, tq.Path(
 			tq.Recur("episode"),
 			tq.Pick(0, -1, 5, -3),
 		))
@@ -205,7 +188,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Each", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", tq.Each("airDate"), tq.Slice(-5, 0)))
+		v := mustEvalTo[ast.Array](t, val, tq.Path("episodes", tq.Each("airDate"), tq.Slice(-5, 0)))
 		const wantJSON = `["2020-03-29","2020-03-28","2020-03-27","2020-03-26","2020-03-25"]`
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -213,14 +196,10 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Object", func(t *testing.T) {
-		v := mustEval(t, tq.Object{
+		obj := mustEvalTo[ast.Object](t, val, tq.Object{
 			"first":  tq.Path("episodes", 0, "airDate"),
 			"length": tq.Path("episodes", tq.Len()),
 		})
-		obj, ok := v.(ast.Object)
-		if !ok {
-			t.Fatalf("Result: got %T, want object", v)
-		}
 		if first := obj.Find("first"); first == nil {
 			t.Error(`Missing "first" in result`)
 		} else if got := first.Value.String(); got != wantString {
@@ -234,14 +213,10 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Array", func(t *testing.T) {
-		v := mustEval(t, tq.Array{
+		arr := mustEvalTo[ast.Array](t, val, tq.Array{
 			tq.Path("episodes", tq.Len()),
 			tq.Path("episodes", 0, "hasDetail"),
 		})
-		arr, ok := v.(ast.Array)
-		if !ok {
-			t.Fatalf("Result: got %T, want array", v)
-		}
 		if len(arr) != 2 {
 			t.Fatalf("Result: got %d values, want %d", len(arr), 2)
 		}
@@ -351,7 +326,7 @@ func TestQuery(t *testing.T) {
 
 	t.Run("Mixed", func(t *testing.T) {
 		const wantJSON = `[18,67,56,54,52]`
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Value](t, val, tq.Path(
 			"episodes", tq.Slice(0, 5),
 			tq.Each("summary", tq.Len()),
 		))
@@ -361,7 +336,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Filter", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Value](t, val, tq.Path(
 			"episodes", tq.Select("guestNames"), tq.Each("guestNames", 0), -1,
 		))
 		const want = "Danielle Citron"
@@ -371,7 +346,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Select", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Array](t, val, tq.Path(
 			"episodes", tq.Select("guestNames"), tq.Slice(-1, 0), tq.Each("guestNames", 0),
 		))
 		const wantJSON = `["Danielle Citron"]`
@@ -383,7 +358,7 @@ func TestQuery(t *testing.T) {
 	t.Run("Store", func(t *testing.T) {
 		var x ast.Text
 		var y ast.Int
-		mustEval(t, tq.Path(
+		mustEvalTo[ast.Array](t, val, tq.Path(
 			"episodes",
 			tq.Store(&x, 0, "airDate"),
 			tq.Store(&y, 1, "guestNames", tq.Len()),
@@ -419,7 +394,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("BindGet", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		o := mustEvalTo[ast.Object](t, val, tq.Path(
 			// Let g be all the episode objects that define guestNames.
 			"episodes", tq.Select("guestNames"), tq.As("g"),
 
@@ -432,16 +407,15 @@ func TestQuery(t *testing.T) {
 				"name":   tq.Path(tq.Get("$f"), "guestNames", 0),
 			},
 		))
-		o := v.(ast.Object)
 		o.Sort()
 		const wantJSON = `{"count":468,"name":"Shane Harris","number":554}`
-		if got := v.JSON(); got != wantJSON {
+		if got := o.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
 		}
 	})
 
 	t.Run("Func", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Number](t, val, tq.Path(
 			"episodes", 1,
 
 			// The input is the first episode.
@@ -474,13 +448,13 @@ func TestQuery(t *testing.T) {
 		))
 
 		const wantOut = 547
-		if got := v.(ast.Number).Int(); got != wantOut {
+		if got := v.Int(); got != wantOut {
 			t.Errorf("Result: got %v, want %v", v, wantOut)
 		}
 	})
 
 	t.Run("As", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Bool](t, val, tq.Path(
 			tq.Value(true), tq.As("x"),
 			tq.Alt{
 				tq.Get("y"), // fails (y is not bound)
@@ -492,14 +466,13 @@ func TestQuery(t *testing.T) {
 				tq.Value(false), // not reached (previous alternative succeeded)
 			},
 		))
-
-		if got, ok := v.(ast.Bool); !ok || !bool(got) {
+		if !v {
 			t.Errorf("Result: got %#q, want true", v)
 		}
 	})
 
 	t.Run("Ref", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Text](t, val, tq.Path(
 			tq.As("x", tq.Value("airDate")),
 			tq.As("p", tq.Value(25)),
 			"episodes", tq.Ref("$p"), tq.Ref("$x"),
@@ -511,7 +484,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("RefWild", func(t *testing.T) {
-		v := mustEval(t, tq.Path(
+		v := mustEvalTo[ast.Text](t, val, tq.Path(
 			"episodes",
 
 			// Use the fifth episode number from the end as the lookup index.
@@ -526,7 +499,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("KeysObj", func(t *testing.T) {
-		v := mustEval(t, tq.Path("episodes", 0, tq.Keys(), -1))
+		v := mustEvalTo[ast.Text](t, val, tq.Path("episodes", 0, tq.Keys(), -1))
 		const want = "hasDetail"
 		if got := v.String(); got != want {
 			t.Errorf("Result: got %#q, want %q", v, want)
@@ -534,7 +507,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("KeysNull", func(t *testing.T) {
-		v := mustEval(t, tq.Path(ast.Null, tq.Keys()))
+		v := mustEvalTo[ast.Array](t, val, tq.Path(ast.Null, tq.Keys()))
 		const wantJSON = `[]` // empty array
 		if got := v.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)

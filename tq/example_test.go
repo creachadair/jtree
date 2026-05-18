@@ -37,7 +37,7 @@ func Example_small() {
 
 	var d ast.Bool
 	var e ast.Text
-	_, err := tq.Eval[ast.Bool](root, tq.Path(
+	a, err := tq.Eval[ast.Array](root, tq.Path(
 		tq.As("@", 1, "c"),
 
 		tq.Store(&e, 1, "e"),
@@ -46,9 +46,11 @@ func Example_small() {
 	if err != nil {
 		log.Fatalf("Eval: %v", err)
 	}
+	fmt.Printf("len=%d\n", len(a))
 	fmt.Println(d)
 	fmt.Println(e)
 	// Output:
+	// len=2
 	// true
 	// ok
 }

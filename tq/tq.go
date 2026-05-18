@@ -64,11 +64,15 @@ import (
 func Eval[T ast.Value](root ast.Value, q Query) (T, error) {
 	var empty *qstate
 	_, w, err := q.eval(empty.bind("$", root), root)
-	if t, ok := w.(T); ok {
-		return t, nil
-	}
 	var zero T
-	return zero, err
+	if err != nil {
+		return zero, err
+	}
+	t, ok := w.(T)
+	if !ok {
+		return zero, fmt.Errorf("got %T, want %T", w, zero)
+	}
+	return t, nil
 }
 
 // A Query describes a traversal of a JSON value. The behavior of a query is
