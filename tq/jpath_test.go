@@ -62,8 +62,8 @@ func TestJSONPathInputs(t *testing.T) {
 		},
 		{
 			"LastBook2", "$..book[(@.length-1)]",
-			tq.Recur("book", tq.Ref(tq.Apply(func(v ast.Array) (ast.Int, error) {
-				return ast.Int(v.Len() - 1), nil
+			tq.Recur("book", tq.Ref(tq.Map(func(v ast.Array) ast.Int {
+				return ast.Int(v.Len() - 1)
 			}))),
 
 			`[{"category":"fiction","author":"J. R. R. Tolkien","title":"The Lord of the Rings","isbn":"0-395-19395-8","price":22.99}]`,
