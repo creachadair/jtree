@@ -506,10 +506,13 @@ func hasExtraLeadingZeroes(buf []byte) bool {
 	return false
 }
 
+// The order of values in self must match the order of runes in selfText.
 var self = [...]Token{LBrace, RBrace, LSquare, RSquare, Comma, Colon}
 
+const selfText = "{}[],:"
+
 func selfDelim(ch rune) (Token, bool) {
-	i := strings.IndexRune("{}[],:", ch)
+	i := strings.IndexRune(selfText, ch)
 	if i >= 0 {
 		return self[i], true
 	}
