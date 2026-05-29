@@ -38,14 +38,16 @@ type Number interface {
 // An Object is a collection of key-value members.
 type Object []*Member
 
-// TextEqual returns a matching function for FindKey and IndexKey that reports
-// whether its argument is case-sensitively equal to key.
+// TextEqual returns a matching function for [Object.FindKey] and
+// [Object.IndexKey] that reports whether its argument is case-sensitively
+// equal to key.
 func TextEqual(key string) func(Text) bool {
 	return func(t Text) bool { return t.String() == key }
 }
 
-// TextEqualFold returns a matching function for FindKey and IndexKey that
-// reports whether its argument is case-insensitively equal to key.
+// TextEqualFold returns a matching function for [Object.FindKey] and
+// [Object.IndexKey] that reports whether its argument is case-insensitively
+// equal to key.
 func TextEqualFold(key string) func(Text) bool {
 	return func(t Text) bool { return strings.EqualFold(t.String(), key) }
 }
