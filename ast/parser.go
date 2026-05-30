@@ -37,7 +37,7 @@ func NewParser(r io.Reader) *Parser {
 }
 
 // Parse parses and returns the next JSON value from its input.
-// It returns io.EOF if no further values are available.
+// It returns [io.EOF] if no further values are available.
 func (p *Parser) Parse() (Value, error) {
 	if err := p.st.ParseOne(p.h); err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func ParseSingle(r io.Reader) (Value, error) {
 	return v, nil
 }
 
-// A parseHandler implements the jtree.Handler interface to construct abstract
+// A parseHandler implements the [jtree.Handler] interface to construct abstract
 // syntax trees for JSON values.
 type parseHandler struct {
 	stk []Value
@@ -207,7 +207,7 @@ var ErrEmptyInput = errors.New("empty input")
 // additional values after the first one.
 var ErrExtraInput = errors.New("extra data after value")
 
-// A noMoreInput is a jtree.Handler that reports an error for any input.
+// A noMoreInput is a [jtree.Handler] that reports an error for any input.
 type noMoreInput struct{}
 
 func (noMoreInput) BeginObject(jtree.Anchor) error { return ErrExtraInput }

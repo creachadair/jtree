@@ -114,7 +114,7 @@ func ValueLocation(v Value) jtree.Location { return v.Comments().vloc }
 
 // Parse parses and returns a single JWCC value from r.  If r contains data
 // after the first value, apart from comments and whitespace, Parse returns the
-// first value along with an ast.ErrExtraInput error.
+// first value along with an [ast.ErrExtraInput] error.
 func Parse(r io.Reader) (*Document, error) {
 	st := jtree.NewStream(r)
 	st.AllowComments(true)
@@ -145,7 +145,7 @@ func Parse(r io.Reader) (*Document, error) {
 	return d, nil
 }
 
-// parseHandler implements the jtree.Handler interface for JWCC values.
+// parseHandler implements the [jtree.Handler] interface for JWCC values.
 type parseHandler struct {
 	stk []Value
 	eof bool

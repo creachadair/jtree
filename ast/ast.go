@@ -109,7 +109,7 @@ type Member struct {
 }
 
 // Field constructs an object member with the given key and value.  The value
-// must be a string, int, float, bool, nil, or ast.Value.
+// must be a string, int, float, bool, nil, or [ast.Value].
 func Field(key string, value any) *Member {
 	return &Member{Key: String(key), Value: ToValue(value)}
 }
@@ -123,8 +123,8 @@ func ArrayOf[T any](args ...T) Array {
 	return out
 }
 
-// ToValue converts a string, int, float, bool, nil, or ast.Value into an
-// ast.Value. It panics if v does not have one of those types.
+// ToValue converts a string, int, float, bool, nil, or [ast.Value] into an
+// [ast.Value]. It panics if v does not have one of those types.
 func ToValue(v any) Value {
 	switch t := v.(type) {
 	case string:
