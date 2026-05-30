@@ -288,3 +288,39 @@ func TestUnquote(t *testing.T) {
 		}
 	}
 }
+
+func TestScannerErrors(t *testing.T) {
+	tests := []struct {
+		name, input, want string
+	}{
+		{"bad_keyword", " bad ", "unexpected 'b' (offset 1)"},
+		{"unknown_keyword", "\ttruthy", `unknown constant "truthy" (offset 1)`},
+		{"incomplete_string", `"whoof`, "incomplete string: EOF (offset 6)"},
+		{"bad_Unicode", `"\u03kk"`, "invalid Unicode escape: not a hex digit: 'k' (offset 6)"},
+		{"short_unicode", `"\u03c"`, `invalid Unicode escape: not a hex digit: '"' (offset 7)`},
+		{"botched_escape", `"\q"`, `invalid 'q' after escape (offset 3)`},
+		{"naked_control", "\"ok:\a\"", "unescaped control '\\a' (offset 5)"},
+		{"overlong_rune", string([]byte{'"', 0xc0, 0x80, '"'}), "invalid Unicode rune (offset 2)"},
+		{"extra_zeroes", " 012 34", "extra leading zeroes (offset 1)"},
+		{"extra_zeroes_at_eof", "012", "extra leading zeroes (offset 0)"},
+		{"empty_decimal", "1.", "no digits after decimal point (offset 2)"},
+		{"invalid_expt_junk", "1.0e@", "got '@', want sign or digit (offset 4)"},
+		{"invalid_expt_eof", "1e", "error EOF, want sign or digit (offset 2)"},
+		{"invalid_expt_digits", "1.3e-", "missing exponent digits (offset 5)"},
+		{"bad_comment", "/?", "invalid '?' in comment (offset 1)"},
+		{"unclosed_comment", "/* ...", "incomplete block comment: EOF (offset 6)"},
+		{"unopened_comment", "*/", "unexpected '*' (offset 0)"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := jtree.NewScanner(strings.NewReader(tc.input))
+			s.AllowComments(strings.Contains(tc.name, "comment"))
+			if s.Next() {
+				t.Error("Unexpected success")
+			}
+			if err := s.Err(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("Got err=%v, want %q", err, tc.want)
+			}
+		})
+	}
+}

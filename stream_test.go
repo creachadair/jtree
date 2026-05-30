@@ -161,9 +161,9 @@ Value integer <15>`,
 		{`1 2.0 forthright`, `
 Value integer <1>
 Value number <2.0>`,
-			`at 1:6: unknown constant "forthright" (offset 16)`},
+			`at 1:6: unknown constant "forthright" (offset 6)`},
 		{`"what did you`, ``,
-			`at 1:0: EOF (offset 13)`},
+			`at 1:0: incomplete string: EOF (offset 13)`},
 	}
 
 	for _, test := range tests {

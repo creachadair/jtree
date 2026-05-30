@@ -169,12 +169,12 @@ func (s *Scanner) Next() bool {
 			want = nullBytes
 			err = s.scanName(ch)
 		default:
-			return e2b(s.failf("unexpected %q", ch))
+			return e2b(s.failfPos("unexpected %q", ch))
 		}
 		if err != nil {
 			return false
 		} else if !bytes.Equal(s.buf.Bytes(), want) {
-			return e2b(s.failf("unknown constant %q", s.buf.Bytes()))
+			return e2b(s.failfPos("unknown constant %q", s.buf.Bytes()))
 		}
 		return true // OK, token is already set
 	}
@@ -213,7 +213,7 @@ func (s *Scanner) scanString(open rune) error {
 	for {
 		ch, err := s.rune()
 		if err != nil {
-			return s.fail(err)
+			return s.failf("incomplete string: %w", err)
 		} else if ch == open && !esc {
 			s.buf.WriteRune(ch)
 			s.tok = String
@@ -235,8 +235,8 @@ func (s *Scanner) scanString(open rune) error {
 			esc = false
 		} else if ch < ' ' {
 			return s.failf("unescaped control %q", ch)
-		} else if ch > unicode.MaxRune {
-			return s.failf("invalid Unicode rune %q", ch)
+		} else if ch == unicode.ReplacementChar {
+			return s.failf("invalid Unicode rune")
 		} else {
 			s.buf.WriteRune(ch)
 			esc = ch == '\\'
@@ -262,15 +262,17 @@ func (s *Scanner) scanNumber(start rune) error {
 	if err != nil {
 		if err == io.EOF {
 			s.tok = Integer
-			return nil
+		} else {
+			return err
 		}
-		return err
 	}
 
 	// Check for extra leading zeroes, which are disallowed by the JSON spec.
 	// That is: 0.12 is OK, 01.2 is not.
 	if hasExtraLeadingZeroes(s.buf.Bytes()) {
-		return s.failf("extra leading zeroes")
+		return s.failfPos("extra leading zeroes")
+	} else if err == io.EOF {
+		return nil
 	}
 
 	// If a decimal point follows, consume a fractional part.
@@ -336,9 +338,10 @@ func (s *Scanner) scanComment(first rune) error {
 			s.eline++
 			s.ecol = 0
 		} else if err != io.EOF {
-			return err
+			return s.fail(err)
 		}
 		s.tok = LineComment
+
 		return nil
 
 	case '*': // block comment
@@ -346,7 +349,7 @@ func (s *Scanner) scanComment(first rune) error {
 		for {
 			_, end, err := s.readWhile(isNotStar)
 			if err != nil {
-				return err
+				return s.failf("incomplete block comment: %w", err)
 			}
 			s.buf.WriteRune(end) // end == '*'
 
@@ -407,7 +410,7 @@ func (s *Scanner) unrune() {
 func (s *Scanner) require(f func(rune) bool, label string) (rune, error) {
 	ch, err := s.rune()
 	if err != nil {
-		return 0, s.failf("want %s, got error: %w", label, err)
+		return 0, s.failf("error %w, want %s", err, label)
 	} else if !f(ch) {
 		s.unrune()
 		return 0, s.failf("got %q, want %s", ch, label)
@@ -473,6 +476,10 @@ func (s *Scanner) fail(err error) error {
 
 func (s *Scanner) failf(msg string, args ...any) error {
 	return s.setErr(posError{s.end, fmt.Errorf(msg, args...)})
+}
+
+func (s *Scanner) failfPos(msg string, args ...any) error {
+	return s.setErr(posError{s.pos, fmt.Errorf(msg, args...)})
 }
 
 func isSpace(ch rune) bool {
