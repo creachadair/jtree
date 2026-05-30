@@ -138,7 +138,7 @@ func Parse(r io.Reader) (*Document, error) {
 		d.com.End = com
 		d.com.vloc.Span.End = loc.Span.End
 		d.com.vloc.Last = loc.Last
-		if err != nil && !errors.Is(err, io.EOF) {
+		if err == nil || !errors.Is(err, io.EOF) {
 			return d, errors.Join(ast.ErrExtraInput, err)
 		}
 	}

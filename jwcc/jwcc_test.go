@@ -3,6 +3,7 @@
 package jwcc_test
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -73,6 +74,20 @@ func TestBasic(t *testing.T) {
 
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
+	}
+}
+
+func TestOneValueOnly(t *testing.T) {
+	// This input contains a document with some comments before and after, which
+	// is fine, but then a second value which is not.
+	const input = `// before
+{"x": "y", // ok
+} // also ok
+["bogus"]`
+
+	d, err := jwcc.Parse(strings.NewReader(input))
+	if !errors.Is(err, ast.ErrExtraInput) {
+		t.Errorf("Got %#v, %v; want %v", d, err, ast.ErrExtraInput)
 	}
 }
 
