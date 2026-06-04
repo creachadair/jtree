@@ -28,7 +28,7 @@ func (a *Array) Undecorate() ast.Value {
 	return out
 }
 
-func (a Array) JSON() string {
+func (a *Array) JSON() string {
 	if len(a.Values) == 0 {
 		return "[]"
 	}
@@ -43,9 +43,9 @@ func (a Array) JSON() string {
 	return sb.String()
 }
 
-func (a Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a.Values)) }
+func (a *Array) String() string { return fmt.Sprintf("Array(len=%d)", len(a.Values)) }
 
-func (a Array) Len() int { return len(a.Values) }
+func (a *Array) Len() int { return len(a.Values) }
 
 // A Datum is a commented base value; a string, number, Boolean, or null.
 type Datum struct {
@@ -85,7 +85,7 @@ func (m *Member) Undecorate() ast.Value {
 	return &ast.Member{Key: m.Key, Value: m.Value.Undecorate()}
 }
 
-func (m Member) JSON() string {
+func (m *Member) JSON() string {
 	k := m.Key.Quote().JSON()
 	v := m.Value.JSON()
 	buf := make([]byte, len(k)+len(v)+1)
@@ -95,7 +95,7 @@ func (m Member) JSON() string {
 	return string(buf)
 }
 
-func (m Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
+func (m *Member) String() string { return fmt.Sprintf("Member(key=%q)", m.Key) }
 
 // Field constructs an object member with the given key and value.
 // The value must be a string, int, float, bool, nil, [ast.Value], or [jwcc.Value].
@@ -151,9 +151,9 @@ func (o *Object) IndexKey(f func(ast.Text) bool) int {
 	return -1
 }
 
-func (o Object) Len() int { return len(o.Members) }
+func (o *Object) Len() int { return len(o.Members) }
 
-func (o Object) JSON() string {
+func (o *Object) JSON() string {
 	if len(o.Members) == 0 {
 		return "{}"
 	}
@@ -168,10 +168,10 @@ func (o Object) JSON() string {
 	return sb.String()
 }
 
-func (o Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o.Members)) }
+func (o *Object) String() string { return fmt.Sprintf("Object(len=%d)", len(o.Members)) }
 
 // Sort sorts the object in ascending order by key.
-func (o Object) Sort() {
+func (o *Object) Sort() {
 	sort.Slice(o.Members, func(i, j int) bool {
 		return o.Members[i].Key.String() < o.Members[j].Key.String()
 	})
