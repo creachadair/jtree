@@ -124,7 +124,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur1", func(t *testing.T) {
-		a := mustEvalTo[ast.Array](t, val, tq.Path("episodes", tq.Recur("guestNames", 0), tq.Slice(0, 3)))
+		a := mustEvalTo[ast.Array](t, val, tq.Path(tq.Recur("guestNames", 0), tq.Slice(0, 3)))
 		const wantJSON = `["Paul Rosenzweig","Mike Chase","Shane Harris"]`
 		if got := a.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -132,9 +132,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Recur2", func(t *testing.T) {
-		a := mustEvalTo[ast.Array](t, val, tq.Path(
-			"episodes", tq.Recur("title"), tq.Slice(0, 4),
-		))
+		a := mustEvalTo[ast.Array](t, val, tq.Path(tq.Recur("title"), tq.Slice(0, 4)))
 		const wantJSON = `["Chatter podcast","Book","Book","Articles"]`
 		if got := a.JSON(); got != wantJSON {
 			t.Errorf("Result: got %#q, want %#q", got, wantJSON)
@@ -149,7 +147,7 @@ func TestQuery(t *testing.T) {
 	})
 
 	t.Run("Count", func(t *testing.T) {
-		got := mustEvalTo[ast.Int](t, val, tq.Path("episodes", tq.Recur("url"), tq.Len()))
+		got := mustEvalTo[ast.Int](t, val, tq.Path(tq.Recur("url"), tq.Len()))
 		const want = 183 // grep '"url"' testdata/input.json | wc -l
 		if got != want {
 			t.Errorf("Result: got %d, want %d", got, want)
