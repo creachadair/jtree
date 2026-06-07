@@ -23,7 +23,7 @@ type Anchor interface {
 // an error, parsing stops and that error is returned to the caller.
 // The parser ensures objects and arrays are correctly balanced.
 //
-// The Anchor argument to a Handler method is only valid for the duration of
+// The [Anchor] argument to a Handler method is only valid for the duration of
 // that method call. If the method needs to retain information about the
 // location after it returns, it must copy the relevant data.
 type Handler interface {
