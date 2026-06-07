@@ -324,3 +324,81 @@ func TestScannerErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestScannerEach(t *testing.T) {
+	type anchor struct {
+		Token    jtree.Token
+		Text     string
+		Location string
+	}
+
+	t.Run("OK", func(t *testing.T) {
+		const input = `{ "a": 1, "b": true, "c" : null, "d": [4.5]} /* comment */`
+		// Manually-constructed token stream from input.
+		want := []anchor{
+			{jtree.LBrace, "{", "1:0-1"},
+			{jtree.String, `"a"`, "1:2-5"},
+			{jtree.Colon, ":", "1:5-6"},
+			{jtree.Integer, "1", "1:7-8"},
+			{jtree.Comma, ",", "1:8-9"},
+			{jtree.String, `"b"`, "1:10-13"},
+			{jtree.Colon, ":", "1:13-14"},
+			{jtree.True, "true", "1:15-19"},
+			{jtree.Comma, ",", "1:19-20"},
+			{jtree.String, `"c"`, "1:21-24"},
+			{jtree.Colon, ":", "1:25-26"},
+			{jtree.Null, "null", "1:27-31"},
+			{jtree.Comma, ",", "1:31-32"},
+			{jtree.String, `"d"`, "1:33-36"},
+			{jtree.Colon, ":", "1:36-37"},
+			{jtree.LSquare, "[", "1:38-39"},
+			{jtree.Number, "4.5", "1:39-42"},
+			{jtree.RSquare, "]", "1:42-43"},
+			{jtree.RBrace, "}", "1:43-44"},
+			{jtree.BlockComment, "/* comment */", "1:45-58"},
+		}
+		var got []anchor
+		s := jtree.NewScanner(strings.NewReader(input))
+		s.AllowComments(true)
+		for a, err := range s.Each() {
+			if err != nil {
+				t.Errorf("Error from scanner: %v", err)
+				break
+			}
+			got = append(got, anchor{
+				Token:    a.Token(),
+				Text:     string(a.Text()),
+				Location: a.Location().String(),
+			})
+		}
+		if diff := cmp.Diff(got, want); diff != "" {
+			t.Errorf("Wrong scan result (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		for a, err := range jtree.NewScanner(strings.NewReader("")).Each() {
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			} else {
+				t.Errorf("Unexpected token: %v at %s", a.Token(), a.Location())
+			}
+		}
+	})
+
+	t.Run("Bad", func(t *testing.T) {
+		const badInput = `  1 "five" 6. false`
+		for a, err := range jtree.NewScanner(strings.NewReader(badInput)).Each() {
+			if err != nil {
+				if got, want := a.Location().String(), "1:11-14"; got != want {
+					t.Errorf("Error location is %q, want %q", got, want)
+				} else {
+					t.Logf("Got expected error: %v (OK)", err)
+				}
+				return
+			}
+			t.Logf("token %v (%s) at %s", a.Token(), a.Text(), a.Location())
+		}
+		t.Error("Expected an error before this")
+	})
+}

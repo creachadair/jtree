@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"iter"
 	"strings"
 	"unicode"
 )
@@ -204,6 +205,33 @@ func (s *Scanner) Location() Location {
 		Span:  s.Span(),
 		First: LineCol{Line: s.pline + 1, Column: s.pcol},
 		Last:  LineCol{Line: s.eline + 1, Column: s.ecol},
+	}
+}
+
+// Each returns an iterator over the remaining tokens in s.
+//
+// A pair yielded by the iterator comprises a non-nil [Anchor] and either a nil
+// error, if the anchor denotes a token, or a non-nil error indicating a scan
+// failure. If the error is non-nil, the [Anchor.Location] method can be used
+// to indicate where the error occurred.
+//
+// After reporting an error, the iterator stops. The iterator exits without
+// error at the end of the input.
+//
+// The [Anchor] value returned is only valid for the duration of that loop
+// execution. If the caller needs to retain information about the token beyond
+// that, it must copy the relevant data from the anchor.
+func (s *Scanner) Each() iter.Seq2[Anchor, error] {
+	return func(yield func(Anchor, error) bool) {
+		for s.Next() {
+			if !yield(s, nil) {
+				return
+			}
+		}
+		if err := s.Err(); err != nil {
+			yield(s, err) // N.B. still populate the anchor here
+			return
+		}
 	}
 }
 
