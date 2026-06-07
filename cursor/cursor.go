@@ -82,16 +82,16 @@ func (c *Cursor) Reset() { c.stk = c.stk[:0]; c.err = nil }
 
 // Down traverses a sequential path into the structure of c starting from the
 // current value, where path elements are either strings (denoting object
-// keys), integers (denoting offsets into arrays), functions (see below), or
-// nil.  If the path is valid, the element reached is returned. If the path
-// cannot be completely consumed, traversal stops and an error is recorded. Use
-// Err to recover the error.
+// keys), integers (denoting offsets into arrays), or functions (see below).
+// If the path is valid, the element reached is returned. If the path cannot be
+// completely consumed, traversal stops and an error is recorded. Use Err to
+// recover the error.
 //
 // If a path element is a string, the corresponding value must be an object,
 // and the string resolves an object member with that name. If this is the last
-// element of the path, the member is returned; otherwise, subsequent path
-// elements continue from the value of that member. Use a nil path element to
-// resolve an object member at the end of a path.
+// element of the path, the member value is returned; otherwise, subsequent
+// path elements continue from the member value. Use [Cursor.Up] if you want to
+// access the member itself.
 //
 // By default, object members are compared case-sensitively. A string path
 // element beginning with "%" requests a case-insensitive match. Double the
@@ -211,6 +211,13 @@ func (c *Cursor) Down(path ...any) *Cursor {
 		default:
 			return c.setErrorf("invalid path element %T", elt)
 		}
+	}
+	// If the entire path ended on an object member, advance to the value.
+	switch m := c.Value().(type) {
+	case *ast.Member:
+		c.push(m.Value)
+	case *jwcc.Member:
+		c.push(m.Value)
 	}
 	return c
 }

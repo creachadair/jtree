@@ -55,11 +55,14 @@ func TestBasic(t *testing.T) {
 		t.Errorf("Incorrect JSON (-want, +got):\n%s", diff)
 	}
 
-	p, err := cursor.Path[*jwcc.Member](d.Value, "p")
-	if err != nil {
-		t.Errorf("Path: %v", err)
+	c := cursor.New(d.Value).Down("p").Up()
+	if err := c.Err(); err != nil {
+		t.Errorf("Cursor: %v", err)
+	}
+	if pm, ok := c.Value().(*jwcc.Member); !ok {
+		t.Errorf("Cursor: got %T, want member", c.Value())
 	} else {
-		p.Comments().Before = []string{
+		pm.Comments().Before = []string{
 			"/* All you are about to do\nin the cathedral of your soul",
 			"has come true\nin your dreams.",
 			"/* time to die",
