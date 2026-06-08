@@ -101,8 +101,8 @@ type Comments struct {
 
 // IsEmpty reports whether c is "empty", meaning it has no non-empty comment
 // text for its associated value.
-func (c Comments) IsEmpty() bool {
-	return len(c.Before) == 0 && c.Line == "" && len(c.End) == 0
+func (c *Comments) IsEmpty() bool {
+	return c != nil && len(c.Before) == 0 && c.Line == "" && len(c.End) == 0
 }
 
 // Clear discards the contents of c, leaving it empty.
