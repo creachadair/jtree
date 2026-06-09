@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/mds/mtest"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -315,5 +316,23 @@ func TestSpelling(t *testing.T) {
 		if got := tc.input.Spelling(); got != tc.want {
 			t.Errorf("Spelling(%s): got %q, want %q", tc.input.JSON(), got, tc.want)
 		}
+	}
+}
+
+func TestUnquoteErrors(t *testing.T) {
+	bad := []string{
+		"",         // no quotes
+		`x`,        // short, and no quotes
+		`xy`,       // no quotes
+		`"x`,       // missing open quote
+		`x"`,       // missing close quote
+		`"\u"`,     // incomplete escape sequence
+		`"\u012"`,  // incomplete Unicode escape
+		`"\u012 "`, // invalid hex digit
+	}
+	for _, s := range bad {
+		mtest.MustPanicf(t, func() {
+			ast.Quoted(s).Unquote()
+		}, "expected panic unquoting %#q", s)
 	}
 }

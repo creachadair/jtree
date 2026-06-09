@@ -289,13 +289,15 @@ func (t Text) unquote() string {
 	if !t.quoted {
 		panic("unquote of un-quoted string")
 	}
-	if n := t.data.Len(); n == 0 {
-		return ""
-	} else if dec, err := escape.Unquote(t.data.Slice(1, n-1)); err != nil {
-		panic(err)
-	} else {
-		return string(dec)
+	n := t.data.Len()
+	if n < 2 || t.data.At(0) != '"' || t.data.At(n-1) != '"' {
+		panic("invalid quoted string")
 	}
+	dec, err := escape.Unquote(t.data.Slice(1, n-1))
+	if err != nil {
+		panic(err)
+	}
+	return string(dec)
 }
 
 // String constructs a [Text] value representing the unquoted value s.
@@ -303,6 +305,7 @@ func String(s string) Text { return Text{data: mem.S(s)} }
 
 // Quoted constructs a [Text] value representing the quoted value s.
 // It is the caller's responsibility to ensure that s is properly quoted.
+// If it is not, [Text.String] will panic.
 func Quoted(s string) Text { return Text{data: mem.S(s), quoted: true} }
 
 // Len returns the length in bytes of the unquoted text of t.

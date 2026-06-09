@@ -66,7 +66,7 @@ func Unquote(src mem.RO) ([]byte, error) {
 			}
 			v, err := parseHex(src.SliceTo(4))
 			if err != nil {
-				putRune(utf8.RuneError)
+				return nil, err
 			} else {
 				putRune(rune(v))
 			}

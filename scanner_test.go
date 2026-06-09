@@ -266,8 +266,8 @@ func TestUnquote(t *testing.T) {
 		{`"a \u0026 b"`, "a & b", false},      // short Unicode escape
 		{`"\u"`, ``, true},                    // incomplete Unicode escape
 		{`"\u00"`, ``, true},                  // incomplete Unicode escape
-		{`"\u00x9"`, "\ufffd", false},         // invalid Unicode escape
-		{`"\u019 "`, "\ufffd", false},         // invalid Unicode escape
+		{`"\u00x9"`, ``, true},                // invalid hex digit
+		{`"\u019 "`, ``, true},                // invalid hex digit
 		{`"a\"b"`, `a"b`, false},              // ok
 		{`"a\\b\\cd"`, `a\b\cd`, false},       // ok
 	}
