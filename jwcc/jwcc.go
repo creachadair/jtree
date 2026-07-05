@@ -20,7 +20,8 @@ import (
 type Value interface {
 	ast.Value
 
-	// Comments returns the comments annotating this value.
+	// Comments returns the comments annotating the receiver. The caller may
+	// mutate the value to add, remote, or update the comments.
 	Comments() *Comments
 
 	// Convert this value to an undecorated ast.Value.
