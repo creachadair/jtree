@@ -306,7 +306,14 @@ func String(s string) Text { return Text{data: mem.S(s)} }
 // Quoted constructs a [Text] value representing the quoted value s.
 // It is the caller's responsibility to ensure that s is properly quoted.
 // If it is not, [Text.String] will panic.
-func Quoted(s string) Text { return Text{data: mem.S(s), quoted: true} }
+func Quoted(s string) Text {
+	// Safety check: The input may still not be valid, but panic early if it
+	// does not at least have the required quotation marks.
+	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
+		panic(fmt.Sprintf("invalid quoted string %#q", s))
+	}
+	return Text{data: mem.S(s), quoted: true}
+}
 
 // Len returns the length in bytes of the unquoted text of t.
 func (t Text) Len() int {

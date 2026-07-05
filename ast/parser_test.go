@@ -336,3 +336,10 @@ func TestUnquoteErrors(t *testing.T) {
 		}, "expected panic unquoting %#q", s)
 	}
 }
+
+func TestQuoted(t *testing.T) {
+	for _, bad := range []string{"", `"abc`, `def"`, "ghi"} {
+		mtest.MustPanicf(t, func() { ast.Quoted(bad) },
+			"expected panic on Quoted(%#q)", bad)
+	}
+}
