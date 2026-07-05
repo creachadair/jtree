@@ -4,19 +4,47 @@ package jwcc
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/creachadair/jtree/ast"
+	"github.com/creachadair/mds/value"
 )
 
 // A Formatter carries the settings for pretty-printing JWCC values.
 // A zero value is ready for use with default settings.
-type Formatter struct{}
+type Formatter struct {
+	// If positive, the maximum number of array elements that may be rendered on
+	// a single line. If this is zero or negative and MaxInlineArrayLength is
+	// positive, there is no fixed limit; otherwise the default limit is 3.
+	MaxInlineArrayElements int
 
-func (f Formatter) indent() string { return "  " }
+	// If positive, the maximum length of a single line containing inline array
+	// elements. If this is zero or negative, there is no fixed limit.
+	MaxInlineArrayLength int
 
-func (f Formatter) maxLineItems() int { return 3 }
+	// If non-empty, the string used as the increment of indentation.
+	// If empty, the default is "\x20\x20", that is, two ASCII spaces.
+	Indent string
+}
+
+func (f Formatter) indent() string { return cmp.Or(f.Indent, "  ") }
+
+func (f Formatter) maxInlineArrayElements() int {
+	if n := f.MaxInlineArrayElements; n > 0 {
+		return n
+	} else if f.MaxInlineArrayLength > 0 {
+		return 0 // means: no limit
+	}
+	return 3
+}
+
+func (f Formatter) maxInlineArrayLength() int { return f.MaxInlineArrayLength }
 
 // Format renders a pretty-printed representation of v to w with default
 // settings.
@@ -75,7 +103,7 @@ func (f Formatter) formatValue(w writeFlusher, v Value, init, indent string, lin
 }
 
 func (f Formatter) formatArray(w writeFlusher, a *Array, init, indent string) bool {
-	if f.isBoring(a) {
+	if f.isBoring(a, len(init)) {
 		fmt.Fprint(w, init, "[")
 		for i, v := range a.Values {
 			if i > 0 {
@@ -115,7 +143,7 @@ func (f Formatter) formatArray(w writeFlusher, a *Array, init, indent string) bo
 }
 
 func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) bool {
-	if f.isBoring(o) {
+	if f.isBoring(o, len(init)) {
 		fmt.Fprint(w, init, "{")
 		for i, m := range o.Members {
 			if i > 0 {
@@ -136,14 +164,14 @@ func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) 
 	for i, m := range o.Members {
 		// Leave extra space before the next member if either it or its
 		// predecessor was non-boring.
-		prevBoring, curBoring = curBoring, f.isBoring(m)
+		prevBoring, curBoring = curBoring, f.isBoring(m, len(mdent))
 
 		if i != 0 && !(prevBoring && curBoring) {
 			io.WriteString(w, "\n")
 		}
 
 		f.indentComments(w, m.Comments().Before, mdent, false)
-		fmt.Fprint(w, mdent, m.Key.JSON(), f.objSep(m.Value))
+		fmt.Fprint(w, mdent, m.Key.JSON(), f.objSep(m.Value, len(mdent)))
 
 		if len(m.Value.Comments().Before) == 0 {
 			f.formatValue(w, m.Value, "", mdent, false)
@@ -186,8 +214,8 @@ func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) 
 // objSep returns a key-value separator for the given value.
 // Boring values get indented so they line up in columns;
 // non-boring values are stapled directly to the key.
-func (f Formatter) objSep(v Value) string {
-	if f.isBoring(v) {
+func (f Formatter) objSep(v Value, ilen int) string {
+	if f.isBoring(v, ilen) {
 		return ":\t"
 	}
 	return ": "
@@ -205,31 +233,41 @@ func (Formatter) canInlineComment(ss []string) bool {
 }
 
 // isBoring reports whether v has a simple enough structure that it can be
-// rendered on one line.
-func (f Formatter) isBoring(v Value) bool {
+// rendered on one line, assuming the target line begins indented by ilen
+// bytes.
+func (f Formatter) isBoring(v Value, ilen int) bool {
 	com := v.Comments()
 	switch t := v.(type) {
 	case *Array:
-		if len(com.End) != 0 {
+		if len(com.Before) != 0 || len(com.End) != 0 {
 			return false
 		}
-		for i, v := range t.Values {
-			if !f.isBoring(v) || len(v.Comments().Before) != 0 || i >= f.maxLineItems() {
-				return false
+		if slices.ContainsFunc(t.Values, func(elt Value) bool {
+			return !f.isBoring(elt, ilen) || len(elt.Comments().Before) != 0
+		}) {
+			return false // something in there is not boring enough
+		}
+		if m := f.maxInlineArrayElements(); m > 0 && len(t.Values) > m {
+			return false // too many items
+		}
+		if m := f.maxInlineArrayLength(); m > 0 {
+			// Note: Include ilen, the indentation prior to the array.
+			if elen := f.estimatedLength(t); elen+ilen+len(com.Line) > m {
+				return false // too long for a line
 			}
 		}
 		return true
 	case *Datum:
 		return t.Comments().IsEmpty()
 	case *Member:
-		return len(com.Before) == 0 && len(com.End) == 0 && f.isBoring(t.Value)
+		return len(com.Before) == 0 && len(com.End) == 0 && f.isBoring(t.Value, ilen)
 	case *Object:
 		if len(com.Before) != 0 || len(com.End) != 0 {
 			return false
 		}
 		if len(t.Members) == 1 {
 			m0 := t.Members[0]
-			return m0.Comments().IsEmpty() && m0.Value.Comments().IsEmpty() && f.isBoring(m0.Value)
+			return m0.Comments().IsEmpty() && m0.Value.Comments().IsEmpty() && f.isBoring(m0.Value, ilen)
 		}
 		return len(t.Members) == 0
 	default:
@@ -249,6 +287,66 @@ func (f Formatter) indentComments(w writeFlusher, ss []string, indent string, in
 		}
 		fmt.Fprint(w, indentComment(s, indent), "\n")
 	}
+}
+
+// estimatedLength reports an estimate of how long v would be if formatted in a
+// single line of text, ignoring comments.  The estimate may be somewhat higher
+// or lower than the real value.
+func (f Formatter) estimatedLength(v Value) int {
+	switch v := v.(type) {
+	case *Array:
+		var elen int
+		if len(v.Values) != 0 {
+			for _, elt := range v.Values {
+				elen += f.estimatedLength(elt)
+			}
+			elen += 2 * (len(v.Values) - 1) // for the ", " between elements
+		}
+		return elen + 2 // +2 for "[" and "]"
+
+	case *Object:
+		var elen int
+		if len(v.Members) != 0 {
+			for _, mem := range v.Members {
+				elen += f.estimatedLength(mem)
+			}
+			elen += 2 * (len(v.Members) - 1) // for the ", " between members
+		}
+		return elen + 2 // +2 for "{" and "}"
+
+	case *Member:
+		return len(v.Key.JSON()) + len(": ") + f.estimatedLength(v.Value)
+
+	case *Datum:
+		var nbuf [32]byte
+		switch t := v.Value.(type) {
+		case ast.Text:
+			// Don't swizzle quotations here, this is close enough.
+			// If it's from the parser, it's accurate; otherwise it is short by
+			// the quotation marks and whatever escapes might be needed.
+			// That could be a lot if it's a weird string, but that is uncommon.
+			return len(t.Spelling())
+		case ast.Bool:
+			return value.Cond(t, len("true"), len("false"))
+		case ast.Int:
+			buf := strconv.AppendInt(nbuf[:0], int64(t), 10)
+			return len(buf)
+		case ast.Float:
+			buf := strconv.AppendFloat(nbuf[:0], float64(t), 'g', -1, 64)
+			return len(buf)
+		case ast.Number:
+			return len(t.JSON()) // this should be a rawNumber, so already formatted
+		default:
+			if t == ast.Null {
+				return len("null")
+			}
+		}
+		// fall through in case of something unexpected
+
+	case *Document:
+		return f.estimatedLength(v.Value)
+	}
+	return 0 // shouldn't happen, but fail gracefully
 }
 
 // indentComment realigns comment text from s and indents it by indent.
