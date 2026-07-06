@@ -104,7 +104,7 @@ func Field(key string, value any) *Member {
 }
 
 // ArrayOf constructs an [Array] from args by invoking [ToValue] on each argument.
-func ArrayOf[T any](args ...T) *Array {
+func ArrayOf(args ...any) *Array {
 	out := &Array{Values: make([]Value, len(args))}
 	for i, arg := range args {
 		out.Values[i] = ToValue(arg)

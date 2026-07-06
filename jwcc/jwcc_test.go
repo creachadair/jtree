@@ -98,7 +98,7 @@ func TestOneValueOnly(t *testing.T) {
 func TestArrayOf(t *testing.T) {
 	indent := func(v jwcc.Value) string { return jwcc.FormatToString(v) }
 	t.Run("Empty", func(t *testing.T) {
-		if diff := cmp.Diff(indent(jwcc.ArrayOf[any]()), `[]`); diff != "" {
+		if diff := cmp.Diff(indent(jwcc.ArrayOf()), `[]`); diff != "" {
 			t.Errorf("ArrayOf() (-got, +want):\n%s", diff)
 		}
 	})
@@ -108,14 +108,14 @@ func TestArrayOf(t *testing.T) {
 		}
 	})
 	t.Run("Single", func(t *testing.T) {
-		if diff := cmp.Diff(indent(jwcc.ArrayOf[any](&jwcc.Object{
+		if diff := cmp.Diff(indent(jwcc.ArrayOf(&jwcc.Object{
 			Members: []*jwcc.Member{jwcc.Field("alpha", true)},
 		})), `[{"alpha": true}]`); diff != "" {
 			t.Errorf("ArrayOf simple object (-got, +want):\n%s", diff)
 		}
 	})
 	t.Run("Mixed", func(t *testing.T) {
-		got := jwcc.ArrayOf[any](&jwcc.Object{
+		got := jwcc.ArrayOf(&jwcc.Object{
 			Members: []*jwcc.Member{jwcc.Field("foo", "bar")},
 		}, "baz", 123, false)
 		if diff := cmp.Diff(indent(got), `[
