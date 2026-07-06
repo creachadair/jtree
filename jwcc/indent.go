@@ -155,8 +155,14 @@ func (f Formatter) formatObject(w writeFlusher, o *Object, init, indent string) 
 		}
 
 		// Render a line comment (if there is one) outside the comma.
-		if ln := m.Comments().Line; ln != "" {
-			fmt.Fprint(w, ",", indentComment(ln, "\t"), "\n")
+		//
+		// Note that the member OR the value may have a comment.
+		// The parser will not attach a line comment to the member, but a
+		// constructed member may have one. If both are set, prefer the value's.
+		if ln := m.Value.Comments().Line; ln != "" {
+			fmt.Fprint(w, ",", indentComment(ln, "\t"), "\n") // value's comment
+		} else if ln := m.Comments().Line; ln != "" {
+			fmt.Fprint(w, ",", indentComment(ln, "\t"), "\n") // member's comment
 		} else {
 			fmt.Fprint(w, ",\n")
 		}
@@ -222,7 +228,8 @@ func (f Formatter) isBoring(v Value) bool {
 			return false
 		}
 		if len(t.Members) == 1 {
-			return t.Members[0].Comments().IsEmpty() && f.isBoring(t.Members[0].Value)
+			m0 := t.Members[0]
+			return m0.Comments().IsEmpty() && m0.Value.Comments().IsEmpty() && f.isBoring(m0.Value)
 		}
 		return len(t.Members) == 0
 	default:
