@@ -3,6 +3,7 @@
 package jwcc_test
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -126,6 +127,147 @@ func TestArrayOf(t *testing.T) {
 			t.Errorf("ArrayOf mixed (-got, +want):\n%s", diff)
 		}
 	})
+}
+
+func TestFormatOptions(t *testing.T) {
+	setComment := func(v jwcc.Value, text string) jwcc.Value {
+		v.Comments().Line = text
+		return v
+	}
+	tests := []struct {
+		name  string
+		input jwcc.Value
+		opts  jwcc.Formatter
+		want  string
+	}{
+		{
+			name:  "default_array_3",
+			input: jwcc.ArrayOf("a", "b", "c"),
+			opts:  jwcc.Formatter{},
+			want:  `["a", "b", "c"]`,
+		},
+		{
+			name:  "default_array_4",
+			input: jwcc.ArrayOf(1, 2, 3, 4),
+			opts:  jwcc.Formatter{},
+			want:  "[\n  1,\n  2,\n  3,\n  4,\n]",
+		},
+		{
+			name:  "count_4_array_3",
+			input: jwcc.ArrayOf("a", "b", "c"),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 4},
+			want:  `["a", "b", "c"]`,
+		},
+		{
+			name:  "count_2_array_3",
+			input: jwcc.ArrayOf(1, 2, 3),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 2},
+			want:  "[\n  1,\n  2,\n  3,\n]",
+		},
+		{
+			name:  "count_0_length_10_short",
+			input: jwcc.ArrayOf("a", "b"),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 10},
+			want:  `["a", "b"]`,
+		},
+		{
+			name:  "count_0_length_10_commented",
+			input: setComment(jwcc.ArrayOf(25, 37), "Something to say"),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 10},
+			want:  "[\n  25,\n  37,\n]   // Something to say\n",
+		},
+		{
+			name:  "count_0_length_50_commented",
+			input: setComment(jwcc.ArrayOf(25, 37), "Something to say"),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 50},
+			want:  "[25, 37] // Something to say\n",
+		},
+		{
+			name:  "count_0_length_10_long",
+			input: jwcc.ArrayOf(12345, 67890, 23456),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 10},
+			want:  "[\n  12345,\n  67890,\n  23456,\n]",
+		},
+		{
+			name:  "count_0_length_90_array_5",
+			input: jwcc.ArrayOf("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 90},
+			want:  `["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]`,
+		},
+		{
+			name:  "count_4_length_90_array_5",
+			input: jwcc.ArrayOf(1, 2, 3, 4, 5),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 4, MaxInlineArrayLength: 90},
+			want:  "[\n  1,\n  2,\n  3,\n  4,\n  5,\n]",
+		},
+		{
+			name:  "Nested/count_4_array_3",
+			input: jwcc.ObjectOf(jwcc.Field("foo", jwcc.ArrayOf("a", "b", "c"))),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 4},
+			want:  `{"foo": ["a", "b", "c"]}`,
+		},
+		{
+			name:  "Nested/count_2_array_3",
+			input: jwcc.ObjectOf(jwcc.Field("foo", jwcc.ArrayOf(1, 2, 3))),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 2},
+			want:  "{\n  \"foo\": [\n    1,\n    2,\n    3,\n  ],\n}",
+		},
+		{
+			name:  "Nested/count_0_length_10_short",
+			input: jwcc.ObjectOf(jwcc.Field("foo", jwcc.ArrayOf("a", "b"))),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 10},
+			want:  `{"foo": ["a", "b"]}`,
+		},
+		{
+			name:  "Nested/count_0_length_10_commented",
+			input: jwcc.ObjectOf(jwcc.Field("foo", setComment(jwcc.ArrayOf(23, 37), "history and tradition"))),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 10},
+			want:  "{\n  \"foo\": [\n    23,\n    37,\n  ], // history and tradition\n}",
+		},
+		{
+			name:  "Nested/count_0_length_50_commented",
+			input: jwcc.ObjectOf(jwcc.Field("foo", setComment(jwcc.ArrayOf(25, 37), "history and tradition"))),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 50},
+			want:  "{\n  \"foo\": [25, 37], // history and tradition\n}",
+		},
+		{
+			name:  "Nested/count_0_length_90_array_5",
+			input: jwcc.ObjectOf(jwcc.Field("foo", jwcc.ArrayOf("apple", "pear", "plum", "cherry", "quince"))),
+			opts:  jwcc.Formatter{MaxInlineArrayLength: 90},
+			want:  `{"foo": ["apple", "pear", "plum", "cherry", "quince"]}`,
+		},
+		{
+			name: "Nested/count_0_length_90_array_5_commented",
+			input: jwcc.ObjectOf(jwcc.Field("foo", setComment(
+				jwcc.ArrayOf(123, 456, 789, 1011, 1213), "no laws just vibes"))),
+			opts: jwcc.Formatter{MaxInlineArrayLength: 90},
+			want: "{\n  \"foo\": [123, 456, 789, 1011, 1213], // no laws just vibes\n}",
+		},
+		{
+			name: "Nested/count_0_length_20_array_5_commented",
+			input: jwcc.ObjectOf(jwcc.Field("foo", setComment(
+				jwcc.ArrayOf(123, 456, 789, 1011, 1213), "no laws just vibes"))),
+			opts: jwcc.Formatter{MaxInlineArrayLength: 20},
+			want: "{\n  \"foo\": [\n    123,\n    456,\n    789,\n    1011,\n    1213,\n  ], // no laws just vibes\n}",
+		},
+		{
+			name:  "Nested/count_4_length_90_array_5",
+			input: jwcc.ObjectOf(jwcc.Field("foo", jwcc.ArrayOf(1, 2, 3, 4, 5))),
+			opts:  jwcc.Formatter{MaxInlineArrayElements: 4, MaxInlineArrayLength: 90},
+			want:  "{\n  \"foo\": [\n    1,\n    2,\n    3,\n    4,\n    5,\n  ],\n}",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			if err := tc.opts.Format(&buf, tc.input); err != nil {
+				t.Fatalf("Format input %+v: unexpected error: %v", tc.input, err)
+			}
+			if diff := cmp.Diff(buf.String(), tc.want); diff != "" {
+				t.Errorf("Format %+v (-got, +want):\n%s", tc.input, diff)
+			}
+		})
+	}
 }
 
 func TestCleanComments(t *testing.T) {
