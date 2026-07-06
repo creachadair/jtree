@@ -55,13 +55,7 @@ func Format(w io.Writer, v Value) error {
 
 // FormatToString formats v to a string with default settings.
 // In case of error in formatting, it returns an empty string.
-func FormatToString(v Value) string {
-	var buf bytes.Buffer
-	if Format(&buf, v) != nil {
-		return ""
-	}
-	return buf.String()
-}
+func FormatToString(v Value) string { return Formatter{}.FormatToString(v) }
 
 // Format renders a pretty-printed representation of v to w using the settings
 // from f.
@@ -69,6 +63,16 @@ func (f Formatter) Format(w io.Writer, v Value) error {
 	tw := tabwriter.NewWriter(w, 4, 4, 1, ' ', 0)
 	f.formatValue(tw, v, "", "", true)
 	return tw.Flush()
+}
+
+// FormatToString formats v to a string with the settings in f.  In case of
+// errors in formatting, it returns an empty string.
+func (f Formatter) FormatToString(v Value) string {
+	var buf bytes.Buffer
+	if f.Format(&buf, v) != nil {
+		return ""
+	}
+	return buf.String()
 }
 
 type writeFlusher interface {
