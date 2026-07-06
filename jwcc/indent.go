@@ -400,7 +400,7 @@ func classifyComment(s string) (tag, text string) {
 	ns := strings.TrimSpace(s)
 
 	if tail, ok := strings.CutPrefix(ns, "//"); ok {
-		return "//", tail
+		return "//", strings.TrimSpace(tail)
 	}
 	if tail, ok := strings.CutPrefix(ns, "/*"); ok {
 		base := strings.TrimSuffix(tail, "*/")
