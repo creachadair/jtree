@@ -5,6 +5,7 @@ package tq
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/creachadair/jtree/ast"
@@ -170,12 +171,12 @@ func (q recQuery) eval(qs *qstate, v ast.Value) (*qstate, ast.Value, error) {
 		// N.B. Push in reverse order, so we visit in lexical order.
 		switch t := next.v.(type) {
 		case ast.Object:
-			for i := len(t) - 1; i >= 0; i-- {
-				stk = append(stk, entry{ns, t[i].Value})
+			for _, v := range slices.Backward(t) {
+				stk = append(stk, entry{ns, v.Value})
 			}
 		case ast.Array:
-			for i := len(t) - 1; i >= 0; i-- {
-				stk = append(stk, entry{ns, t[i]})
+			for _, v := range slices.Backward(t) {
+				stk = append(stk, entry{ns, v})
 			}
 		}
 	}

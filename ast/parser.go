@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"slices"
 	"unique"
 
 	"github.com/creachadair/jtree"
@@ -134,8 +135,8 @@ func (h *parseHandler) push(v Value) error { h.stk = append(h.stk, v); return ni
 func (h *parseHandler) BeginObject(loc jtree.Anchor) error { return h.push(objectStub{}) }
 
 func (h *parseHandler) EndObject(loc jtree.Anchor) error {
-	for i := len(h.stk) - 1; i >= 0; i-- {
-		if _, ok := h.stk[i].(objectStub); ok {
+	for i, v := range slices.Backward(h.stk) {
+		if _, ok := v.(objectStub); ok {
 			o := make(Object, 0, len(h.stk)-i-1)
 			for _, m := range h.stk[i+1:] {
 				o = append(o, m.(*Member))
@@ -150,8 +151,8 @@ func (h *parseHandler) EndObject(loc jtree.Anchor) error {
 func (h *parseHandler) BeginArray(loc jtree.Anchor) error { return h.push(arrayStub{}) }
 
 func (h *parseHandler) EndArray(loc jtree.Anchor) error {
-	for i := len(h.stk) - 1; i >= 0; i-- {
-		if _, ok := h.stk[i].(arrayStub); ok {
+	for i, v := range slices.Backward(h.stk) {
+		if _, ok := v.(arrayStub); ok {
 			a := make(Array, len(h.stk)-i-1)
 			copy(a, h.stk[i+1:])
 			h.stk = h.stk[:i]
