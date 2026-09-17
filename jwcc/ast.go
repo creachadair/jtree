@@ -210,8 +210,8 @@ type objectStub struct {
 func (o *objectStub) Comments() *Comments { return &o.com }
 
 // ToValue converts a string, int, float, bool, nil, or [ast.Value] into a
-// [jwcc.Value].  If v is already a [Value] it is returned as-is; otherwise it
-// panics if v does not have one of those types.
+// [jwcc.Value].  If v is already a [Value] it is returned as-is; otherwise
+// ToValue panics if v does not have one of those types.
 //
 // Basic values are converted into [Datum]; [ast.Array] values to [Array],
 // and [ast.Object] values to [Object].
