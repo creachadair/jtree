@@ -589,6 +589,7 @@ func (s *Scanner) copyOf(text []byte) []byte {
 			s.tbuf = nil // release
 		}
 		s.tbuf = append(s.tbuf, make([]byte, 0, bufBlockBytes))
+		i = 0
 	}
 	p := len(s.tbuf[i])
 	s.tbuf[i] = append(s.tbuf[i], text...)
