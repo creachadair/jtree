@@ -43,7 +43,7 @@ func BenchmarkScanner(b *testing.B) {
 
 	b.Run("Std", func(b *testing.B) {
 		b.Run("Unmarshal", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				var ignore any
 				if err := json.Unmarshal(input, &ignore); err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -52,7 +52,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("Tokenize", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				dec := json.NewDecoder(bytes.NewReader(input))
 				for {
 					_, err := dec.Token()
@@ -66,7 +66,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("Decode", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				dec := json.NewDecoder(bytes.NewReader(input))
 				var ignore any
 				if err := dec.Decode(&ignore); err != nil {
@@ -78,7 +78,7 @@ func BenchmarkScanner(b *testing.B) {
 
 	b.Run("HuJSON", func(b *testing.B) {
 		b.Run("Parse", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := hujson.Parse(input)
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -87,7 +87,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("Standardize", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := hujson.Standardize(input)
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -98,7 +98,7 @@ func BenchmarkScanner(b *testing.B) {
 
 	b.Run("JTree", func(b *testing.B) {
 		b.Run("Scanner", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				dec := jtree.NewScanner(bytes.NewReader(input))
 				for dec.Next() {
 					// nothing
@@ -110,7 +110,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("Stream", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				dec := jtree.NewStream(bytes.NewReader(input))
 				if err := dec.Parse(noopHandler{}); err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -119,7 +119,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("ParseAST", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := ast.Parse(bytes.NewReader(input))
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
@@ -130,7 +130,7 @@ func BenchmarkScanner(b *testing.B) {
 
 	b.Run("JWCC", func(b *testing.B) {
 		b.Run("ParseAST", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				p := ast.NewParser(bytes.NewReader(input))
 				p.AllowJWCC(true)
 				for {
@@ -145,7 +145,7 @@ func BenchmarkScanner(b *testing.B) {
 		})
 
 		b.Run("ParseJWCC", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := jwcc.Parse(bytes.NewReader(input))
 				if err != nil {
 					b.Fatalf("Unexpected error: %v", err)
