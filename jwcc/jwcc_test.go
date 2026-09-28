@@ -256,6 +256,15 @@ func TestFormatOptions(t *testing.T) {
 			opts:  jwcc.Formatter{MaxInlineArrayElements: 4, MaxInlineArrayLength: 90},
 			want:  "{\n  \"foo\": [\n    1,\n    2,\n    3,\n    4,\n    5,\n  ],\n}",
 		},
+		{
+			name: "Object/line_at_end",
+			input: func() *jwcc.Object {
+				o := jwcc.ObjectOf(jwcc.Field("foo", jwcc.ToValue(true)))
+				o.Comments().End = []string{"// bar\n"}
+				return o
+			}(),
+			want: "{\n  \"foo\": true,\n\n  // bar\n}",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

@@ -364,7 +364,7 @@ func indentComment(s, indent string) string {
 		case "/*":
 			return indent + "/* " + text + " */"
 		case "//":
-			return indent + "//" + text
+			return indent + "// " + text
 		default:
 			return indent + "// " + text
 		}
