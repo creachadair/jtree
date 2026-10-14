@@ -79,6 +79,20 @@ func TestBasic(t *testing.T) {
 	if err := jwcc.Format(w, d); err != nil {
 		t.Fatalf("Format: %v", err)
 	}
+
+	t.Run("TrailingLineComment", func(t *testing.T) {
+		// A line-comment following the document root, even if it does not end
+		// with a newline, should be properly recognized an attributed.
+		// Note that the newlines after the root are to ensure it is treated
+		// as an end comment rather than attached to the root itself.
+		d, err := jwcc.Parse(strings.NewReader("{}\n\n// OK")) // N.B. No trailing newline on comment
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if diff := cmp.Diff(d.Comments().End, []string{"// OK"}); diff != "" {
+			t.Errorf("End comments (-got, +want):\n%s", diff)
+		}
+	})
 }
 
 func TestOneValueOnly(t *testing.T) {
